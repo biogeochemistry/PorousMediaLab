@@ -29,19 +29,19 @@ C1_res(:,1) = C1_init;
 
 for i=2:size(time,2)
     B = AR*C1_old;
-    [C1_old] = update_bc1_dirichlet(C1_old, BC1_top);
+    [C1_old] = update_bc_dirichlet(C1_old, BC1_top);
     C1_new      = linalg_solver(AL, B);
     C1_res(:,i) = C1_new;
     C1_old       = C1_new;
 end
 
 %% linalg_solver: x = A \ b
-function [outputs] = linalg_solver(A, b)
-    outputs =  A \ b;
+function [x] = linalg_solver(A, b)
+    x =  A \ b;
 
-%% update_bc1_dirichlet: function description
-function [C1_old] = update_bc1_dirichlet(C1_old, BC1_top)
-    C1_old(1)    = BC1_top;
+%% update_bc_dirichlet: function description
+function [C] = update_bc_dirichlet(C, BC_top)
+    C(1)    = BC_top;
 
 %% AL_AR_dirichlet: creates AL and AR matrices with Dirichlet BC
 function [AL, AR] = AL_AR_dirichlet(D,w,phi,dt,dx,N)
