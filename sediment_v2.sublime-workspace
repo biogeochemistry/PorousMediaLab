@@ -1,0 +1,2158 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"b",
+				"b"
+			],
+			[
+				"get",
+				"get_component"
+			],
+			[
+				"Sb",
+				"Sb_five_aq"
+			],
+			[
+				"As",
+				"As_five_aq"
+			],
+			[
+				"conce",
+				"concentration"
+			],
+			[
+				"corre",
+				"corrected"
+			],
+			[
+				"equ",
+				"equation"
+			],
+			[
+				"aq",
+				"aqueous"
+			],
+			[
+				"k",
+				"k_b"
+			],
+			[
+				"chl",
+				"chalk"
+			],
+			[
+				"equlibrium",
+				"equilibrium"
+			],
+			[
+				"depend",
+				"dependence"
+			],
+			[
+				"coefi",
+				"coefficients"
+			],
+			[
+				"clear",
+				"clearpage"
+			],
+			[
+				"cons",
+				"constants"
+			],
+			[
+				"experi",
+				"experiment"
+			],
+			[
+				"Y_interp",
+				"y_interp_1\tstatement"
+			],
+			[
+				"K",
+				"K_eq"
+			],
+			[
+				"K_eq_",
+				"K_eq_main"
+			],
+			[
+				"if",
+				"ifmain\tif __name__ == '__main__'"
+			],
+			[
+				"x",
+				"x0_inp"
+			],
+			[
+				"phre",
+				"phreqc_string"
+			],
+			[
+				"x0_in",
+				"x0_inp\tstatement"
+			],
+			[
+				"at",
+				"ATP_exp2\tstatement"
+			],
+			[
+				"time_exp",
+				"time_exp_1"
+			],
+			[
+				"exe",
+				"Exception"
+			],
+			[
+				"as",
+				"as5_aq_exp_3\tstatement"
+			],
+			[
+				"time",
+				"time_exp_1\tstatement"
+			],
+			[
+				"tim",
+				"time_exp_1\tstatement"
+			],
+			[
+				"inter",
+				"interpolate\tfunction"
+			],
+			[
+				"ini",
+				"initial_conditions\tstatement"
+			],
+			[
+				"com",
+				"components"
+			],
+			[
+				"eq",
+				"eq_\tfunction"
+			],
+			[
+				"cls",
+				"cls"
+			],
+			[
+				"el",
+				"elif\tkeyword"
+			],
+			[
+				"Ma",
+				"MagicMock"
+			],
+			[
+				"mes",
+				"mesh1d\tstatement"
+			],
+			[
+				"run",
+				"run_model"
+			],
+			[
+				"in",
+				"increment\tstatement"
+			],
+			[
+				"spec",
+				"specie"
+			],
+			[
+				"spe",
+				"specie"
+			],
+			[
+				"e",
+				"environment"
+			],
+			[
+				"bc_x0_",
+				"bc_x0_type"
+			],
+			[
+				"bc_",
+				"bc_x0_value"
+			],
+			[
+				"var",
+				"var2"
+			],
+			[
+				"d",
+				"differentiate_all_1_TS\tfunction"
+			],
+			[
+				"moc",
+				"mock_calls\tstatement"
+			],
+			[
+				"mo",
+				"mock_calls"
+			],
+			[
+				"di",
+				"differentiate_all_1_TS\tfunction"
+			],
+			[
+				"differen",
+				"differentiate_transport_terms_all"
+			],
+			[
+				"differe",
+				"differentiate_all_1_TS\tfunction"
+			],
+			[
+				"dif",
+				"differentiate_current_reaction_term  (function)"
+			],
+			[
+				"rate",
+				"rate_law"
+			],
+			[
+				"diffe",
+				"differentiate_reaction_term\tfunction"
+			],
+			[
+				"befo",
+				"before_all"
+			],
+			[
+				"be",
+				"before_all"
+			],
+			[
+				"update_dict_of_conc",
+				"update_dictionary_of_concentrations_test"
+			],
+			[
+				"up",
+				"update\tfunction"
+			],
+			[
+				"E50",
+				"E501"
+			],
+			[
+				"num",
+				"numpy"
+			],
+			[
+				"dict",
+				"dict_of_conc_vec"
+			],
+			[
+				"add",
+				"add_to_dict_of_conc"
+			],
+			[
+				"dic",
+				"dict_of_conc_vec"
+			],
+			[
+				"ad",
+				"add_to_dict"
+			],
+			[
+				"om",
+				"om"
+			],
+			[
+				"ox",
+				"ox"
+			],
+			[
+				"cla",
+				"assert_called_once_with"
+			],
+			[
+				"pde",
+				"pde_stub"
+			],
+			[
+				"B",
+				"BvpPde1D"
+			],
+			[
+				"bvp",
+				"BvpPde1D"
+			],
+			[
+				"spc",
+				"species"
+			],
+			[
+				"call",
+				"assert_called_once_with"
+			],
+			[
+				"ret",
+				"return_value"
+			],
+			[
+				"S",
+				"SpecieCollector"
+			],
+			[
+				"Bv",
+				"BvpPde1D"
+			],
+			[
+				"create",
+				"create_pde"
+			],
+			[
+				"cre",
+				"create_single_container"
+			],
+			[
+				"M",
+				"MagicMock"
+			],
+			[
+				"Spe",
+				"SpecieCollector"
+			],
+			[
+				"re",
+				"return_value"
+			],
+			[
+				"a",
+				"add_specie  (function)"
+			],
+			[
+				"xm",
+				"x_max"
+			],
+			[
+				"make",
+				"make_x_grid"
+			],
+			[
+				"gr",
+				"grid_x"
+			],
+			[
+				"bc_x0",
+				"bc_x0_value"
+			],
+			[
+				"init_c",
+				"init_cond"
+			],
+			[
+				"bc",
+				"bc_xn_type"
+			],
+			[
+				"x_",
+				"x_max"
+			],
+			[
+				"sol",
+				"solve"
+			],
+			[
+				"con",
+				"container"
+			],
+			[
+				"bv",
+				"bvp2"
+			],
+			[
+				"pop",
+				"populate_matrix"
+			],
+			[
+				"popu",
+				"populate_matrix"
+			],
+			[
+				"set",
+				"set_x0_neumann_bc"
+			],
+			[
+				"op",
+				"operator_uj1"
+			],
+			[
+				"xn",
+				"xn_is_dirichlet  (variable)"
+			],
+			[
+				"app",
+				"apply_boundary_conditions"
+			],
+			[
+				"oper",
+				"operator_uj0"
+			],
+			[
+				"u",
+				"uj0"
+			],
+			[
+				"BvpOde",
+				"BvpOde1D"
+			],
+			[
+				"BvpO",
+				"BvpOde1D"
+			],
+			[
+				"BVp",
+				"BvpPde"
+			],
+			[
+				"bvp2",
+				"bvp2d"
+			],
+			[
+				"grid",
+				"grid_x"
+			],
+			[
+				"ode",
+				"ode2d"
+			],
+			[
+				"Bo",
+				"BoundaryConditions2D"
+			],
+			[
+				"num_",
+				"num_y_nodes"
+			],
+			[
+				"test_",
+				"test_boundary_conditions_2D"
+			],
+			[
+				"y",
+				"y"
+			],
+			[
+				"Bou",
+				"BoundaryConditions1D"
+			],
+			[
+				"mode",
+				"model_prob_2d"
+			],
+			[
+				"sec",
+				"SecondOrderOde1D"
+			],
+			[
+				"so",
+				"solution_prob_1"
+			],
+			[
+				"gri",
+				"grid_z  (variable)"
+			],
+			[
+				"bcx",
+				"bcxn"
+			],
+			[
+				"ass",
+				"assert"
+			],
+			[
+				"impo",
+				"imp  (module)"
+			],
+			[
+				"model",
+				"model_prob_2"
+			],
+			[
+				"lef",
+				"left_bc_applied"
+			],
+			[
+				"right_",
+				"right_bc_applied"
+			],
+			[
+				"po",
+				"populate_vector"
+			],
+			[
+				"E",
+				"EXPECT_EQ"
+			],
+			[
+				"cl",
+				"class_\tclass"
+			],
+			[
+				"link",
+				"LINK_DIRECTORIES"
+			],
+			[
+				"SOU",
+				"SOURCE"
+			],
+			[
+				"tar",
+				"targetlink\tCMake: target_link_libraries(...)"
+			],
+			[
+				"N",
+				"NULL"
+			],
+			[
+				"m",
+				"mNodes"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 320.0,
+		"last_filter": "pep",
+		"selected_items":
+		[
+			[
+				"pep",
+				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"tit",
+				"Convert Case: Title Case"
+			],
+			[
+				"repl ip",
+				"SublimeREPL: Python - IPython"
+			],
+			[
+				"insta",
+				"Colorsublime: Install Theme"
+			],
+			[
+				"dis",
+				"Package Control: Disable Package"
+			],
+			[
+				"latdel",
+				"LaTexTools: Delete temporary files"
+			],
+			[
+				"disa",
+				"Package Control: Disable Package"
+			],
+			[
+				"pacen",
+				"Package Control: Enable Package"
+			],
+			[
+				"pac",
+				"Package Control: Install Package"
+			],
+			[
+				"conc",
+				"Convert Case: Lower Case"
+			],
+			[
+				"latde",
+				"LaTexTools: Delete temporary files"
+			],
+			[
+				"align",
+				"Table Cleaner: Align Table"
+			],
+			[
+				"ali",
+				"Table Cleaner: Align Table"
+			],
+			[
+				"alig",
+				"Table Cleaner: Align Table"
+			],
+			[
+				"con",
+				"Convert Case: Title Case"
+			],
+			[
+				"conver",
+				"Convert Case: Title Case"
+			],
+			[
+				"prefe",
+				"Preferences: Settings - User"
+			],
+			[
+				"eval",
+				"Worksheet: Evaluate worksheet"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"gistat",
+				"Git: Status"
+			],
+			[
+				"ss",
+				"Set Syntax: Python"
+			],
+			[
+				"",
+				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"if ",
+				"Snippet: if __name__ == '__main__'"
+			],
+			[
+				"sspyt",
+				"Set Syntax: Python"
+			],
+			[
+				"push",
+				"Git: Push"
+			],
+			[
+				"gista",
+				"Git: Status"
+			],
+			[
+				"stat",
+				"Git: Status"
+			],
+			[
+				"gitsta",
+				"Git: Status"
+			],
+			[
+				"git pu",
+				"Git: Push"
+			],
+			[
+				"latexset",
+				"Preferences: LaTeXing Settings - User"
+			],
+			[
+				"flowfea",
+				"Git-flow: Feature Start"
+			],
+			[
+				"sta",
+				"Git: Status"
+			],
+			[
+				"ana",
+				"Anaconda: Vagrant Init"
+			],
+			[
+				"ena",
+				"Package Control: Enable Package"
+			],
+			[
+				"enab",
+				"Package Control: Enable Package"
+			],
+			[
+				"featfin",
+				"Git-flow: Feature Finish"
+			],
+			[
+				"gitflow",
+				"Git-flow: Release Finish"
+			],
+			[
+				"flow",
+				"Git-flow: Release Start"
+			],
+			[
+				"feat",
+				"Git-flow: Feature Start"
+			],
+			[
+				"gitflo",
+				"Git-flow: Release Start"
+			],
+			[
+				"git push",
+				"Git: Push"
+			],
+			[
+				"git",
+				"Git: Checkout"
+			],
+			[
+				"gitpus",
+				"Git: Push"
+			],
+			[
+				"gitche",
+				"Git: Checkout"
+			],
+			[
+				"gitfea",
+				"Git-flow: Feature Finish"
+			],
+			[
+				"git stat",
+				"Git: Status"
+			],
+			[
+				"comm",
+				"Git: Commit"
+			],
+			[
+				"git ",
+				"SublimeGit: Documentation"
+			],
+			[
+				"pack",
+				"Package Control: Install Package"
+			],
+			[
+				"gitpush",
+				"Git: Push Current Branch"
+			],
+			[
+				"gitpu",
+				"Git: Push"
+			],
+			[
+				"gitfl",
+				"Git-flow: Feature Finish"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"remove ",
+				"Package Control: Remove Package"
+			],
+			[
+				"remo",
+				"Package Control: Remove Package"
+			],
+			[
+				"pa",
+				"Package Control: Install Package"
+			],
+			[
+				"PackageResourceViewer",
+				"PackageResourceViewer: Extract Package"
+			],
+			[
+				"gitf",
+				"Git-flow: Feature Start"
+			],
+			[
+				"statu",
+				"Git: Status"
+			],
+			[
+				"pcakdis",
+				"Package Control: Disable Package"
+			],
+			[
+				"mcca",
+				"Anaconda: McCabe complexity check"
+			],
+			[
+				"pep8",
+				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"pylinte",
+				"SublimeREPL: Python - Sublime Text Console"
+			],
+			[
+				"enable",
+				"Package Control: Enable Package"
+			],
+			[
+				"brea",
+				"Python Breakpoints: Clear All"
+			],
+			[
+				"packains",
+				"Package Control: Install Package"
+			],
+			[
+				"ipy",
+				"Open IPython Notebook"
+			],
+			[
+				"ipyt",
+				"Open IPython Notebook"
+			],
+			[
+				"ipython",
+				"Open IPython Notebook"
+			],
+			[
+				"tags",
+				"Git: Show Tags"
+			],
+			[
+				"packa",
+				"Package Control: Disable Package"
+			],
+			[
+				"pylin",
+				"SublimeREPL: Python - IPython"
+			],
+			[
+				"ruby",
+				"Set Syntax: Ruby"
+			],
+			[
+				"ssruby",
+				"Set Syntax: Ruby"
+			],
+			[
+				"ssc",
+				"Set Syntax: C++11"
+			],
+			[
+				"linter",
+				"SublimeLinter: Show Errors on Save"
+			],
+			[
+				"liner user",
+				"Preferences: SublimeLinter Settings – User"
+			],
+			[
+				"lintersett",
+				"Preferences: SublimeLinter Settings – Default"
+			],
+			[
+				"packare",
+				"Package Control: Remove Package"
+			],
+			[
+				"sftp",
+				"SFTP: Edit Server…"
+			],
+			[
+				"stack",
+				"Stackoverflow: Search Selection"
+			],
+			[
+				"ins",
+				"Package Control: Install Package"
+			],
+			[
+				"case",
+				"Convert Case: camelCase"
+			],
+			[
+				"brak",
+				"BracketHighlighter: Toggle High Visibility Mode"
+			],
+			[
+				"high",
+				"BracketHighlighter: Toggle String Bracket Escape Mode"
+			],
+			[
+				"bracke",
+				"BracketHighlighter: Toggle High Visibility Mode"
+			],
+			[
+				"cmake",
+				"Set Syntax: CMake"
+			],
+			[
+				"gdb",
+				"SublimeGDB: Step Out"
+			],
+			[
+				"linteruser",
+				"Preferences: SublimeLinter Settings – User"
+			],
+			[
+				"linterset",
+				"Preferences: SublimeLinter Settings – User"
+			],
+			[
+				"pcak",
+				"Package Control: Enable Package"
+			],
+			[
+				"gist",
+				"Gist: Open Gist"
+			],
+			[
+				"ssc++",
+				"Set Syntax: C++"
+			],
+			[
+				"gdbde",
+				"Preferences: SublimeGDB Settings – Default"
+			],
+			[
+				"gdbuser",
+				"Preferences: SublimeGDB Settings – User"
+			],
+			[
+				"sublimeuser",
+				"Preferences: SublimeGDB Settings – User"
+			],
+			[
+				"gdb sett",
+				"Preferences: SublimeGDB Settings – Default"
+			],
+			[
+				"git lo",
+				"Git: Log Current File"
+			],
+			[
+				"gua",
+				"Guard: Start Guard"
+			],
+			[
+				"gu",
+				"Guard: Show Guard Output"
+			],
+			[
+				"plag",
+				"Package Control: Install Package"
+			],
+			[
+				"todo",
+				"Show TODOs: Open files only"
+			],
+			[
+				"TODO",
+				"Show TODOs: Open files only"
+			],
+			[
+				":w",
+				":w - Save"
+			],
+			[
+				"gitlo",
+				"Git: Log Current File"
+			],
+			[
+				"packena",
+				"Package Control: Enable Package"
+			],
+			[
+				"dispaca",
+				"Package Control: Disable Package"
+			],
+			[
+				"ctags",
+				"CTags: Show Symbols (file)"
+			],
+			[
+				"ctag",
+				"CTags: Rebuild Tags"
+			],
+			[
+				":s",
+				":w - Save"
+			],
+			[
+				"packaena",
+				"Package Control: Enable Package"
+			],
+			[
+				"gitadd",
+				"Git: Add..."
+			],
+			[
+				"gitco",
+				"Git: Commit"
+			],
+			[
+				"gits",
+				"Git: Status"
+			],
+			[
+				"ss scr",
+				"Set Syntax: Shell Script (Bash)"
+			],
+			[
+				"ss p",
+				"Set Syntax: Python"
+			],
+			[
+				"ss pyth",
+				"Set Syntax: Python"
+			],
+			[
+				"to",
+				"Show TODOs: Project and open files"
+			],
+			[
+				"show",
+				"Show TODOs: Open files only"
+			],
+			[
+				"tod",
+				"Show TODOs: Project and open files"
+			],
+			[
+				"packa dis",
+				"Package Control: Disable Package"
+			],
+			[
+				"git log",
+				"Git: Log Current File"
+			],
+			[
+				"browse",
+				"Preferences: Browse Packages"
+			],
+			[
+				"bro",
+				"Preferences: Browse Packages"
+			]
+		],
+		"width": 570.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"res",
+			"python",
+			"which python",
+			"python",
+			"which python",
+			"python",
+			"git",
+			"ls",
+			"git",
+			"import os; os.getenv('PATH')",
+			"import urllib.request,os; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); open(os.path.join(ipp, pf), 'wb').write(urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ','%20')).read())"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+	],
+	"file_history":
+	[
+		"/Users/MarkelovIgor/git/biogeochemistry/phreeqc_calibration_exp/python/template_calibration.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/Jul2016/Sb.csv",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/Jul2016/As.csv",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/Jul2016/test.csv",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/__init__.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/template_calibration_2_with_rel_path.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/__init.py__.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/template_calibration.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/phreeqc_addon.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_NO3_sensitivity_new.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_Sb_sens.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_As_sens.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/report/u_exp_report/report.tex",
+		"/Users/MarkelovIgor/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_Cr_sens.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/phreeqc_addon.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_NO3_sens.py",
+		"/Users/MarkelovIgor/Library/Application Support/MailMate/Resources/KeyBindings/gmail-extended.plist",
+		"/Users/MarkelovIgor/Library/Application Support/MailMate/Resources/KeyBindings/composer.plist",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_Sb_sensitivity.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_Cr_sensitivity.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/Katya exp/As_exp1solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/template_sensitivity.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_As_sensitivity.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_30.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_21.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_12.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/report/u_exp_report/bibliography.bib",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/U exp paper/bibliography.bib",
+		"/Users/MarkelovIgor/Documents/u_s.txt",
+		"/Users/MarkelovIgor/Dropbox/Uaq_wateq4f_U.out",
+		"/Users/MarkelovIgor/Documents/u_s.csv",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/U exp/U_exp_craie_12.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_30.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_12.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_21.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_5.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/U exp/U_exp_crayeux_21.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/Sens_U_exp_craie_5.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/Sens_U_exp_craie_12.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all_temp_dep.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_all_temp_dep.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_sensitivity.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U exp/U_exp_craie_all_separate.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/Katya exp/As_exp4_speciation_aq.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/As4_exp.py",
+		"/Users/MarkelovIgor/Dropbox/Katya/Exp4_Aug6.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/U exp/U_exp_craie_5.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/Sb_exp2_irr.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/U_exp_craie_30.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/phreeqc/As_exp2.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/As_exp1_irr_sens.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/As_exp2_irr.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/As_exp2solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/U_exp_craie_30.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/As_exp1_irr_try_to_fit_to_2exp.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/As_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/U_exp_craie_30.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/As_exp1.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/As_exp1_irr_2012.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/Data_soil_sorption.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Sb_exp1_irr.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/data/As_exp2_speciation_aq.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_exp1.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_exp2_speciation_aq.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_exp2solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_1_exp_freund.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_2_exp_b.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_2_exp.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/N_1_exp.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp3solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp2solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp1solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/ATP_nM_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/As_1_exp.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp4solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Cr_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/NO3_exp2.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/NO3_exp1.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/NO3_exp1.phr",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Cr_exp1.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Sb_exp1.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Cr_exp1solid.txt",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/Cr_exp2solid.txt",
+		"/Users/MarkelovIgor/Downloads/phreeqpy-0.2.0/examples/iphreeqc/advect.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-lgv0xi/Cr_1_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-8h549b/Cr_1_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-ji5gpk/Cr_1_exp.py",
+		"/Users/MarkelovIgor/.zshrc",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-_bfd5d/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-vnqe15/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-vm3v04/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-8lhvbp/calibration",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-u1mnf6/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-00lx43/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-y1tqq4/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-beb05i/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-z0ufzb/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-w2d19y/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-ns653i/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-smiu_d/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-dm5o74/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-znrb7w/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-0op1co/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-diqukt/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-ppfywh/3_var_calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-rjyyzz/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-86is4w/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-d0687b/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-3i4ows/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-eqkb3f/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-tqjein/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-_m8kf3/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-okvz4z/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-qqlmet/calibration_As_2_3_exp.py",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-wjm942/.zshrc",
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-2xhece/calibration_As_2_3_exp.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/.coveragerc",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/phreeqc.dat",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/specie.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/math_model.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/grid.py",
+		"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python/.coverage"
+	],
+	"find":
+	{
+		"height": 29.0
+	},
+	"find_in_files":
+	{
+		"height": 95.0,
+		"where_history":
+		[
+			"/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python",
+			"<open files>,/Users/MarkelovIgor/Documents/git/biogeochemistry/toolbox_python",
+			"<open files>",
+			"",
+			"/",
+			"",
+			"/",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"update_bc1_dirichlet",
+			"C_",
+			"c_",
+			"C_",
+			"c_",
+			"C_",
+			"c_",
+			"C_",
+			"Cold",
+			"update_bc_dirichlet",
+			"linalg",
+			"D1",
+			"tend",
+			"Sb_three_s ",
+			"Sb_five_s_kin ",
+			"Sb_five_aq ",
+			"As_three_s_kin ",
+			"As_three_aq ",
+			"As_five_s_kin ",
+			"# ",
+			"As_five_s_kin ",
+			"As_five_aq ",
+			"As_five_aq",
+			"As_five",
+			"As_five_aq",
+			"10 *",
+			"100 *",
+			"0.01",
+			"100 *",
+			"0.01",
+			"100 *",
+			"0.01",
+			"100 *",
+			"100",
+			"0.01",
+			"1.15",
+			"0.85",
+			"1.15",
+			"0.85",
+			"1.15",
+			"0.85",
+			"1.15",
+			"0.85",
+			"\n \n",
+			"As_five",
+			"color='r'",
+			"conc",
+			"))\n",
+			"print",
+			"conc_craie",
+			"_30",
+			"U_six",
+			"u_six",
+			"U_six",
+			"u_six",
+			"U_six",
+			"u_six",
+			"U_six",
+			"1000",
+			" ",
+			"      ",
+			"     ",
+			"    ",
+			"   ",
+			".path",
+			"path",
+			"out",
+			"conc",
+			"steps",
+			"%s",
+			"GetSelectedOutputValue",
+			"get_selected_output_array",
+			"#s",
+			"#sens",
+			"sens",
+			"%CO2",
+			"get_selected_output",
+			"make_selected_output2",
+			"out",
+			"\"m_Sb_five_aq(mol/kgw)\"",
+			",",
+			"Km_Sb_respir",
+			"%s",
+			"%",
+			" %s",
+			"=",
+			"#sens",
+			"9e-4",
+			"#sens",
+			"Ethanol",
+			"#sens",
+			"Ethanol",
+			"#sens",
+			"=",
+			"%CO2",
+			"#sens",
+			"=",
+			",",
+			"#sens",
+			"=",
+			"#sens",
+			"%CO2",
+			",",
+			"%CO2",
+			"out",
+			"=",
+			"#sens",
+			"%s",
+			"sens",
+			"2 step",
+			"in 2",
+			"in 30",
+			",",
+			"sens",
+			"_kin",
+			"=",
+			"4.66749E-05",
+			" %s",
+			",",
+			"sens",
+			"%CO2",
+			"sens",
+			"forward",
+			"aviability",
+			".",
+			"concertations",
+			"(",
+			"\\def\\arraystretch{1.2}"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"\t",
+			"five",
+			"As_",
+			"add_species",
+			"Species",
+			"SpeciesCollectorForPde",
+			"Species",
+			"add_species",
+			"_",
+			"_is_",
+			"_",
+			"",
+			"BoundaryConditions1D",
+			"SecondOrderOde1D",
+			"x",
+			"c",
+			"uz",
+			"uzz",
+			"zn",
+			"z0",
+			"zn",
+			"z0",
+			"N",
+			"0",
+			"mpXLeftBcFunc2D",
+			"SetXLeftDirichletBc2D",
+			"mXRightBcIsNeumann",
+			"mXLeftBcIsNeumann",
+			"mXRightBcIsDirichlet",
+			"mYRightBcValue",
+			"mYLeftBcValue",
+			"mXRightBcValue",
+			"mYRightBcIsDirichlet",
+			"mYRightBcIsNeumann",
+			"mYLeftBcIsNeumann",
+			"mXLeftBcValue",
+			"mXLeftBcIsDirichlet",
+			"xRightDerivValue",
+			"xLeftDerivValue",
+			"xRightValue",
+			"xLeftValue",
+			"SetXRightNeumannBc1D",
+			"yRightDerivValue",
+			"yLeftDerivValue",
+			"yRightValue",
+			"yLeftValue",
+			"SetYRightNeumannBc",
+			"SetYLeftNeumannBc",
+			"SetYRightDirichletBc",
+			"SetYLeftDirichletBc",
+			"SetXLeftNeumannBc1D",
+			"SetXRightDirichletBc1D",
+			"SetXLeftDirichletBc1D",
+			"mLeftBcIsDirichlet",
+			"mRightBcIsDirichlet",
+			"mRightBcIsNeumann",
+			"mLeftBcIsNeumann",
+			"SetRightNeumannBc1D",
+			"SetLeftNeumannBc1D",
+			"SetRightDirichletBc1D",
+			"SetLeftDirichletBc1D",
+			"intNodes",
+			"candidate_branches",
+			"branch_candidates",
+			"branch_candidate",
+			"quote_branch_candidate",
+			"normal",
+			"/",
+			"/Users/MarkelovIgor/Documents/git/biogeochemistry",
+			"/",
+			"/Users/MarkelovIgor/Documents/git/biogeochemistry",
+			".*",
+			"*",
+			"",
+			" + ",
+			"HS",
+			"PO4ads",
+			"NO3",
+			"HS",
+			"OMS",
+			"AlOH3",
+			"Ca3PO42",
+			"Ca2",
+			"Ca",
+			"Ca2",
+			"Ca3PO42",
+			"Ca",
+			"Ca3PO42",
+			"Ca2",
+			"Ca3PO42",
+			"Ca",
+			"Sat_FeS"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 29.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.CppYCM.3":
+	{
+		"height": 0.0
+	},
+	"output.CppYCM.5":
+	{
+		"height": 0.0
+	},
+	"output.exec":
+	{
+		"height": 133.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.git":
+	{
+		"height": 114.0
+	},
+	"output.git-checkout":
+	{
+		"height": 110.0
+	},
+	"output.git-commit":
+	{
+		"height": 110.0
+	},
+	"output.git-flow-feature-finish":
+	{
+		"height": 110.0
+	},
+	"output.git-flow-feature-start":
+	{
+		"height": 110.0
+	},
+	"output.git-flow-init":
+	{
+		"height": 110.0
+	},
+	"output.git-flow-release-finish":
+	{
+		"height": 110.0
+	},
+	"output.git-flow-release-start":
+	{
+		"height": 110.0
+	},
+	"output.git-push":
+	{
+		"height": 110.0
+	},
+	"output.guard":
+	{
+		"height": 114.0
+	},
+	"output.sftp":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/Python/Python.sublime-build",
+	"project": "sediment_v2.sublime-project",
+	"replace":
+	{
+		"height": 54.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"sbcali",
+				"phreeqc_calibration_exp/python/Katya experiment/Jul2016/Sb_calib.py"
+			],
+			[
+				"ascal",
+				"phreeqc_calibration_exp/python/Katya experiment/Jul2016/As_calib.py"
+			],
+			[
+				"phreeqc_addon",
+				"phreeqc_calibration_exp/python/phreeqc_addon.py"
+			],
+			[
+				"te",
+				"phreeqc_calibration_exp/python/template_calibration.py"
+			],
+			[
+				"templa",
+				"phreeqc_calibration_exp/python/template_calibration.py"
+			],
+			[
+				"as",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_As_sens.py"
+			],
+			[
+				"asexp4sens",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_As_sens.py"
+			],
+			[
+				"no3new",
+				"phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_NO3_sensitivity_new.phr"
+			],
+			[
+				"no3sens",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_NO3_sens.py"
+			],
+			[
+				"exp4crse",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_Cr_sens.py"
+			],
+			[
+				"exp4sbsens",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_Sb_sens.py"
+			],
+			[
+				"exp4no",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_NO3_sens.py"
+			],
+			[
+				"exp4crsen",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_Cr_sens.py"
+			],
+			[
+				"",
+				"phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_Cr_sensitivity.phr"
+			],
+			[
+				"exp4as",
+				"phreeqc_calibration_exp/python/Katya experiment/exp 4 sens/Exp4_As_sens.py"
+			],
+			[
+				"exp4",
+				"phreeqc_calibration_exp/phreeqc/Katya/exp 4/Exp4_As_sensitivity.phr"
+			],
+			[
+				"sen",
+				"phreeqc_calibration_exp/python/template_sensitivity.py"
+			],
+			[
+				"bib",
+				"U exp paper/bibliography.bib"
+			],
+			[
+				"crai30",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_30.py"
+			],
+			[
+				"crai21",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_21.py"
+			],
+			[
+				"crai12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_12.py"
+			],
+			[
+				"craie5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"cray5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_5.py"
+			],
+			[
+				"craye12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_12.py"
+			],
+			[
+				"cray21",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_21.py"
+			],
+			[
+				"cray30",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_30.py"
+			],
+			[
+				"cray21tx",
+				"phreeqc_calibration_exp/data/U exp/U_exp_crayeux_21.txt"
+			],
+			[
+				"crai5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"phree",
+				"phreeqc_calibration_exp/python/phreeqc_addon.py"
+			],
+			[
+				"craye21",
+				"phreeqc_calibration_exp/data/U exp/U_exp_crayeux_21.txt"
+			],
+			[
+				"cray12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_12.py"
+			],
+			[
+				"cray",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_5.py"
+			],
+			[
+				"craie21",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_21.py"
+			],
+			[
+				"craie",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"sens",
+				"phreeqc_calibration_exp/python/U exp/Sens_U_exp_craie_5.py"
+			],
+			[
+				"cra",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_12.py"
+			],
+			[
+				"alltemp",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all_temp_dep.py"
+			],
+			[
+				"tempdep",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_all_temp_dep.py"
+			],
+			[
+				"phre",
+				"phreeqc_calibration_exp/python/phreeqc_addon.py"
+			],
+			[
+				"crayextemp",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all_temp_dep.py"
+			],
+			[
+				"craye5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_5.py"
+			],
+			[
+				"craie30",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_30.py"
+			],
+			[
+				"cra12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_21.py"
+			],
+			[
+				"templ",
+				"phreeqc_calibration_exp/python/template_sensitivity.py"
+			],
+			[
+				"ucraie5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"sne",
+				"phreeqc_calibration_exp/python/template_sensitivity.py"
+			],
+			[
+				"craydep",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all_temp_dep.py"
+			],
+			[
+				"tempde",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_all_temp_dep.py"
+			],
+			[
+				"craie12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_12.py"
+			],
+			[
+				"cra5",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"u_exp_craie_12",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_12.py"
+			],
+			[
+				"crai",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_5.py"
+			],
+			[
+				"craye",
+				"phreeqc_calibration_exp/python/U exp/U_exp_crayeux_all_temp_dep.py"
+			],
+			[
+				"all",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_all_temp_dep.py"
+			],
+			[
+				"uexpal",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_all.py"
+			],
+			[
+				"u30",
+				"phreeqc_calibration_exp/python/U exp/U_exp_craie_30.py"
+			],
+			[
+				"as2irrpy",
+				"phreeqc_calibration_exp/python/Katya experiment/Sb_exp2_irr.py"
+			],
+			[
+				"cali",
+				"U exp paper/u_calib_sens_markelov.tex"
+			],
+			[
+				"u",
+				"python/U exp/U_exp_craie_30.py"
+			],
+			[
+				"p",
+				"python/phreeqc_addon.py"
+			],
+			[
+				"as2",
+				"phreeqc/As_exp2.phr"
+			],
+			[
+				"assens",
+				"python/As_exp1_irr_sens.py"
+			],
+			[
+				"as_exp1",
+				"data/As_exp1.txt"
+			],
+			[
+				"asexp1irr",
+				"python/As_exp1_irr.py"
+			],
+			[
+				"as_exp2solid",
+				"data/As_exp2solid.txt"
+			],
+			[
+				"as_exp1.txt",
+				"data/As_exp1.txt"
+			],
+			[
+				"as_exp1.tx",
+				"data/As_exp1.txt"
+			],
+			[
+				"as202",
+				"python/As_exp1_irr_2012.py"
+			],
+			[
+				"as1py",
+				"python/As_exp1_irr.py"
+			],
+			[
+				"asexp2py",
+				"python/As_exp2_irr.py"
+			],
+			[
+				"asexp1py",
+				"python/As_exp1_irr_2012.py"
+			],
+			[
+				"sbirr",
+				"python/Sb_exp1_irr.py"
+			],
+			[
+				"astxt",
+				"data/As_exp2.txt"
+			],
+			[
+				"asexpirrpy",
+				"python/As_exp2_irr.py"
+			],
+			[
+				"irrpy",
+				"python/As_exp1_irr.py"
+			],
+			[
+				"asirrse",
+				"python/As_exp1_irr_sens.py"
+			],
+			[
+				"assoli",
+				"As_exp2solid.txt"
+			],
+			[
+				"as2b",
+				"As_2_exp_b.py"
+			],
+			[
+				"asexp1",
+				"As_exp1.txt"
+			],
+			[
+				"as2txt",
+				"As_exp2.txt"
+			],
+			[
+				"aq",
+				"As_exp2_speciation_aq.txt"
+			],
+			[
+				"asexppy",
+				"As_2_exp.py"
+			],
+			[
+				"asexp2",
+				"As_exp2solid.txt"
+			],
+			[
+				"sb",
+				"Sb_exp2solid.txt"
+			],
+			[
+				"sbsol",
+				"Sb_exp1solid.txt"
+			],
+			[
+				"sbso",
+				"Sb_exp4solid.txt"
+			],
+			[
+				"atp",
+				"ATP_nM_exp2.txt"
+			],
+			[
+				"cr",
+				"Cr_exp2.txt"
+			],
+			[
+				"sbexp2",
+				"Sb_exp2.txt"
+			],
+			[
+				"no",
+				"NO3_exp1.txt"
+			],
+			[
+				"no3",
+				"NO3_exp1.txt"
+			],
+			[
+				"sbexp",
+				"Sb_exp1.txt"
+			],
+			[
+				"crsoli",
+				"Cr_exp1solid.txt"
+			],
+			[
+				"cr_s",
+				"Cr_exp2solid.txt"
+			],
+			[
+				"cr_2",
+				"Cr_exp2.txt"
+			],
+			[
+				"crs",
+				"Cr_exp2solid.txt"
+			],
+			[
+				"cr_exp2sol",
+				"Cr_exp2solid.txt"
+			],
+			[
+				"crpy",
+				"Cr_1_exp.py"
+			],
+			[
+				"math",
+				"math_model.py"
+			],
+			[
+				"bvp",
+				"bvp_pde.py"
+			],
+			[
+				"sec",
+				"second_order_ode.py"
+			],
+			[
+				"cove",
+				".coveragerc"
+			],
+			[
+				"main",
+				"main.py"
+			],
+			[
+				"adv",
+				"adv_dif_reac.py"
+			],
+			[
+				"spec",
+				"specie.py"
+			],
+			[
+				"model",
+				"math_model.py"
+			],
+			[
+				"test",
+				"test.py"
+			],
+			[
+				"cover",
+				".coveragerc"
+			],
+			[
+				"co",
+				".coveragerc"
+			],
+			[
+				"set",
+				"setup.cfg"
+			],
+			[
+				"ode",
+				"bvp_ode.py"
+			],
+			[
+				"sp",
+				"specie_collector.py"
+			],
+			[
+				"vp",
+				"bvp_ode.py"
+			],
+			[
+				"cfg",
+				"setup.cfg"
+			],
+			[
+				"cf",
+				"setup.cfg"
+			],
+			[
+				"help",
+				"helpers.py"
+			],
+			[
+				"gu",
+				"Guardfile"
+			],
+			[
+				"bvpode",
+				"bvp_ode.py"
+			],
+			[
+				"se",
+				"second_order_ode.py"
+			],
+			[
+				"cov",
+				".coveragerc"
+			],
+			[
+				"coupled",
+				"coupled_pde.py"
+			],
+			[
+				"gr",
+				"grid.py"
+			],
+			[
+				"bounda",
+				"boundary_conditions.py"
+			],
+			[
+				"gua",
+				"Guardfile"
+			],
+			[
+				"gem",
+				"Gemfile"
+			],
+			[
+				"guard",
+				"Guardfile"
+			],
+			[
+				"lin",
+				"linear_solvers.py"
+			],
+			[
+				"finite",
+				"src/FiniteDifferenceGrid.cpp"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"lan",
+				"~/Documents/git/biogeochemistry/Langtjern/langtjern.sublime-project"
+			],
+			[
+				"",
+				"~/Documents/git/biogeochemistry/bioenergetics/bioenergetics.sublime-project"
+			],
+			[
+				"pap",
+				"~/Documents/git/biogeochemistry/sediments_paper/paper.sublime-project"
+			],
+			[
+				"data",
+				"~/Documents/git/Data-analysis/data.sublime-project"
+			],
+			[
+				"print",
+				"~/Documents/git/printchomp/printchomp.sublime-project"
+			],
+			[
+				"prin",
+				"~/Documents/git/printchomp/printchomp.sublime-project"
+			],
+			[
+				"p",
+				"~/Documents/git/printchomp/printchomp.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 375.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 528.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 228.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
