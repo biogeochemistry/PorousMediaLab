@@ -32,7 +32,7 @@ class Sediment:
         self.species[name]['fx_bottom'] = 0
         self.species[name]['D'] = D
         self.species[name]['res'] = np.zeros((self.N, self.time.size))
-        self.species[name]['res'][:, 0] = (init_C * np.ones((self.N, 1)))[:, 0]
+        self.species[name]['res'][:, 0] = (init_C * np.ones((self.N)))
         self.create_AL_AR(name)
         self.update_bc(name, 0)
         self.dcdt[name] = 0
