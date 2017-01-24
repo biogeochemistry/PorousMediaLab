@@ -10,10 +10,9 @@ import numexpr as ne
 class Sediment:
     """Sediment module solves Advection-Diffusion-Reaction Equation"""
 
-    def __init__(self, L, dx, tend, dt, phi, w):
-        self.L = L
+    def __init__(self, length, dx, tend, dt, phi, w):
+        self.length = length
         self.dx = dx
-        self.tend = tend
         self.dt = dt
         self.phi = phi
         self.w = w
@@ -23,7 +22,7 @@ class Sediment:
         self.rates = {}
         self.estimated_rates = {}
         self.constants = {}
-        self.x = np.linspace(0, L, L / dx + 1)
+        self.x = np.linspace(0, length, length / dx + 1)
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
 
@@ -46,57 +45,46 @@ class Sediment:
     def add_solid_species(self, element, D, init_C, BC_top):
         self.add_species(element, D, init_C, BC_top, False)
 
-    def template_AL_AR(self, element, kappa):
+    def template_AL_AR(self, element, theta):
         e1 = np.ones((self.N, 1))
-        s = kappa * self.species[element]['D'] * self.dt / self.dx / self.dx  #
-        q = kappa * self.w * self.dt / self.dx
-        self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (kappa + s), e1 * (-s / 2 + q / 4)),
+        s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx  #
+        q = theta * self.w * self.dt / self.dx
+        self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (theta + s), e1 * (-s / 2 + q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (kappa - s), e1 * (s / 2 - q / 4)),
+        self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (theta - s), e1 * (s / 2 - q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AL'][-1, -1] = kappa + s
+        self.species[element]['AL'][-1, -1] = theta + s
         self.species[element]['AL'][-1, -2] = -s
-        self.species[element]['AR'][-1, -1] = kappa - s
+        self.species[element]['AR'][-1, -1] = theta - s
         self.species[element]['AR'][-1, -2] = s
 
-        if self.species[element]['solute?']:
-            self.species[element]['AL'][0, 0] = kappa
+        if self.is_solute(element):
+            self.species[element]['AL'][0, 0] = theta
             self.species[element]['AL'][0, 1] = 0
-            self.species[element]['AR'][0, 0] = kappa
+            self.species[element]['AR'][0, 0] = theta
             self.species[element]['AR'][0, 1] = 0
         else:
-            self.species[element]['AL'][0, 0] = kappa + s
+            self.species[element]['AL'][0, 0] = theta + s
             self.species[element]['AL'][0, 1] = -s
-            self.species[element]['AR'][0, 0] = kappa - s
+            self.species[element]['AR'][0, 0] = theta - s
             self.species[element]['AR'][0, 1] = s
 
     def create_AL_AR(self, element):
         # create_AL_AR: creates AL and AR matrices
-        if self.species[element]['solute?']:
-            kappa = self.phi
-        else:
-            kappa = 1 - self.phi
-        self.template_AL_AR(element, kappa)
+        theta = self.phi if self.is_solute(element) else 1 - self.phi
+        self.template_AL_AR(element, theta)
 
     def new_boundary_condition(self, element, bc):
         self.species[element]['bc_top'] = bc
 
     def update_matrices_due_to_bc(self, element, i):
-        if self.species[element]['solute?']:
+        if self.is_solute(element):
             self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            # Lower BC is F = w*phi*C
-            # s = self.phi * self.species[element]['D'] * self.dt / self.dx / self.dx
-            # self.species[element]['B'][-1] = self.species[element]['B'][-1] - 2 * self.species[element]['concentration'][-1, i] * \
-            # self.phi * self.w * s * self.dx / self.phi / self.species[element]['D']
         else:
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
             s = (1 - self.phi) * self.species[element]['D'] * self.dt / self.dx / self.dx
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / (1 - self.phi) / self.species[element]['D']
-            # Lower BC is F = w*(1-phi)*C
-            s = (1 - self.phi) * self.species[element]['D'] * self.dt / self.dx / self.dx
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] - 2 * self.species[element]['concentration'][-1, i] * \
-                (1 - self.phi) * self.w * s * self.dx / (1 - self.phi) / self.species[element]['D']
 
     def solve(self):
         for i in np.arange(1, len(self.time)):
@@ -120,6 +108,32 @@ class Sediment:
             self.update_matrices_due_to_bc(element, i)
             self.profiles[element] = self.species[element]['concentration'][:, i]
             self.estimated_rates[element] = rates[element]
+
+    def is_solute(self, element):
+        return self.species[element]['solute?']
+
+    def plot_depths(self, element, depths=[0, 1, 2, 3, 4], years_to_plot=10):
+        plt.figure()
+        plt.title(element + ' concentrations')
+        if self.time[-1] > years_to_plot:
+            num_of_elem = int(years_to_plot / self.dt)
+        else:
+            num_of_elem = len(self.time)
+        theta = self.phi if self.is_solute(element) else 1 - self.phi
+        for depth in depths:
+            lbl = str(depth) + ' cm'
+            plt.plot(self.time[-num_of_elem:], theta * self.species[element]['concentration'][int(depth / self.dx)][-num_of_elem:], label=lbl)
+        plt.legend()
+        plt.show()
+
+    def plot_profiles(self):
+        plt.figure()
+        plt.title('Profiles')
+        for element in self.species:
+            theta = self.phi if self.is_solute(element) else 1 - self.phi
+            plt.plot(self.x, theta * self.profiles[element], label=element)
+        plt.legend()
+        plt.show()
 
 
 def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
@@ -172,18 +186,18 @@ def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
 if __name__ == '__main__':
     D = 269
     w = 1
-    t = 2
+    t = 50
     dx = 0.1
     L = 10
     phi = 0.9
-    dt = 0.0001
-    rho =
+    dt = 0.001
+    rho = 2
 
     time = np.linspace(0, t, t / dt + 1)
 
     sediment = Sediment(L, dx, t, dt, phi, w)
     sediment.add_solute_species('O2', D, 0.0, 0.15)
-    sediment.add_solid_species('OM', 0.1, 1., 1)
+    sediment.add_solid_species('OM', 0.1, 1., 0.1)
     sediment.constants['k'] = 0.1
     sediment.constants['Km_O2'] = 0.0123
     sediment.rates['R1'] = 'k * OM * O2/(O2+Km_O2)'
@@ -202,14 +216,14 @@ if __name__ == '__main__':
 
     # Bulk concentrations
     # TODO how to convert bulk to mol/mg and conversion factor F?
-    plt.figure()
-    plt.title('Bulk concentrations')
-    plt.plot(sediment.x, phi * sediment.species['O2']['concentration'][:, -1], 'k')
-    plt.plot(sediment.x, (1 - phi) * sediment.species['OM']['concentration'][:, -1], 'b')
-    plt.show()
+    # plt.figure()
+    # plt.title('Bulk concentrations')
+    # plt.plot(sediment.x, phi * sediment.species['O2']['concentration'][:, -1], 'k')
+    # plt.plot(sediment.x, (1 - phi) * sediment.species['OM']['concentration'][:, -1], 'b')
+    # plt.show()
 
-    plt.figure()
-    plt.title('Aq and solid concentrations')
-    plt.plot(sediment.x, sediment.species['O2']['concentration'][:, -1], 'k')
-    plt.plot(sediment.x, sediment.species['OM']['concentration'][:, -1], 'b')
-    plt.show()
+    # plt.figure()
+    # plt.title('Aq and solid concentrations')
+    # plt.plot(sediment.x, sediment.species['O2']['concentration'][:, -1], 'k')
+    # # plt.plot(sediment.x, sediment.species['OM']['concentration'][:, -1], 'b')
+    # plt.show()
