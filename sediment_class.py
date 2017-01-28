@@ -11,7 +11,8 @@ import time
 import warnings
 
 
-np.seterr(all='warn')
+# np.seterr(all='warn')
+# warnings.filterwarnings('error')
 
 def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
@@ -183,8 +184,12 @@ class Sediment:
                 print("Will end approx.:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + total_t)))
 
     def integrate_one_timestep(self, i):
-        self.transport_integrate(i)
-        self.reactions_integrate(i)
+        with np.errstate(divide='raise'):
+            try:
+                self.transport_integrate(i)
+                self.reactions_integrate(i)
+            except FloatingPointError:
+                print('Warning: Numerical instability. Please, adjust dt and dx.')
 
 
     def transport_integrate(self, i):
@@ -389,10 +394,10 @@ def pvc_1996_sediment():
     D = 368
     w = 0.2
     t = 100
-    dx = 0.2
+    dx = 0.1
     L = 25
     phi = 0.9
-    dt = 0.0001
+    dt = 0.001
     rho = 2
     Init_C = 0.231
     bc = 0.231
