@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numexpr as ne
 from scipy import special
 from numba import jit, vectorize
-
-
+import time
 
 def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
@@ -20,7 +19,7 @@ def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
 
         Kn = {}
         for element in dcdt:
-            Kn[element] = dt *  ne.evaluate(dcdt[element], {**coef, **rates_num})
+            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
 
         return Kn
 
@@ -72,7 +71,14 @@ def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
             C_new[element] = C_0[element] + num_rates[element]
         return C_new, num_rates
 
-    return rk4(C0)
+    return butcher5(C0)
+
+
+class DotDict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 
 class Sediment:
@@ -85,15 +91,18 @@ class Sediment:
         self.dt = dt
         self.phi = phi
         self.w = w
-        self.species = {}
-        self.profiles = {}
-        self.dcdt = {}
-        self.rates = {}
-        self.estimated_rates = {}
-        self.constants = {}
+        self.species = DotDict({})
+        self.profiles = DotDict({})
+        self.dcdt = DotDict({})
+        self.rates = DotDict({})
+        self.estimated_rates = DotDict({})
+        self.constants = DotDict({})
         self.x = np.linspace(0, length, length / dx + 1)
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
+
+    def __getattr__(self, attr):
+        return self.species[attr]['concentration']
 
     def add_species(self, element, D, init_C, BC_top, is_solute):
         self.species[element] = {}
@@ -156,12 +165,23 @@ class Sediment:
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / (1 - self.phi) / self.species[element]['D']
 
     def solve(self):
+        print('Simulation of sediment core with following params:\n tend = %.1f years,\n dt = %.0eyears,\n L = %.1f,\n dx = %.0e,\n w = %.2f' % (self.time[-1], self.dt, self.length, self.dx, self.w))
         for i in np.arange(1, len(self.time)):
+            if i == 1:
+                tstart = time.time()
+                print("Simulation started:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
             self.integrate_one_timestep(i)
+            if i == 100:
+                total_t = len(self.time) * (time.time() - tstart) / 100
+                m, s = divmod(total_t, 60)
+                h, m = divmod(m, 60)
+                print("Estimated time of the code execution: %dh:%02dm:%02ds" % (h, m, s))
+                print("Will end approx.:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + total_t)))
 
     def integrate_one_timestep(self, i):
         self.transport_integrate(i)
         self.reactions_integrate(i)
+
 
     def transport_integrate(self, i):
         for element in self.species:
@@ -235,12 +255,10 @@ class Sediment:
         plt.show()
 
 
-
-
 def transport_equation_test():
     D = 40
-    w = 1
-    t = 1
+    w = 0
+    t = 2
     dx = 0.1
     L = 100
     phi = 1
@@ -248,15 +266,16 @@ def transport_equation_test():
 
     C = Sediment(L, dx, t, dt, phi, w)
     C.add_solute_species('O2', D, 0.0, 1)
-    C.dcdt['O2'] = '0'
+    C.dcdt.O2 = '0'
     C.solve()
 
     x = np.linspace(0, L, L / dx + 1)
     sol = 1 / 2 * (special.erfc((x - w * t) / 2 / np.sqrt(D * t)) + np.exp(w * x / D) * special.erfc((x + w * t) / 2 / np.sqrt(D * t)))
 
-    fig = plt.figure()
-    plt.plot(C.x, C.species['O2']['concentration'][:, -1], 'kx')
-    plt.plot(x, sol)
+    plt.figure()
+    plt.plot(x, sol, 'r', label='Analytical solution')
+    plt.plot(C.x, C.O2[:, -1], 'kx', label='Numerical')
+    plt.legend()
     plt.show()
 
 
@@ -309,10 +328,8 @@ def lake_sediments():
     sediment.rates['R3b'] = 'k_OM2 *OM2 * FeOH3 /  (Km_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
     sediment.rates['R4a'] = 'k_OM1*OM1 * FeOOH /  (Km_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
     sediment.rates['R4b'] = 'k_OM2*OM2 * FeOOH /  (Km_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
-    sediment.rates[
-        'R5a'] = 'k_OM1*OM1 * SO4 / (Km_SO4 + SO4 ) * Kin_FeOOH / (Kin_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
-    sediment.rates[
-        'R5b'] = 'k_OM2*OM2 * SO4 / (Km_SO4 + SO4 ) * Kin_FeOOH / (Kin_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
+    sediment.rates['R5a'] = 'k_OM1*OM1 * SO4 / (Km_SO4 + SO4 ) * Kin_FeOOH / (Kin_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
+    sediment.rates['R5b'] = 'k_OM2*OM2 * SO4 / (Km_SO4 + SO4 ) * Kin_FeOOH / (Kin_FeOOH + FeOOH) * Kin_FeOH3 / (Kin_FeOH3 + FeOH3) * Kin_NO3 / (Kin_NO3 + NO3) * Kin_O2 / (Kin_O2 + O2)'
     sediment.rates['R6'] = 'k_tsox * O2 * (HS+H2S)'
     sediment.rates['R7'] = 'k_tS_Fe * FeOH3 *  (HS+H2S)'
     sediment.rates['R8'] = 'k_Feox * Fe2 * O2'
@@ -368,7 +385,7 @@ def pvc_1996_sediment():
     D = 368
     w = 0.2
     t = 100
-    dx = 0.1
+    dx = 0.2
     L = 25
     phi = 0.9
     dt = 0.0001
@@ -431,9 +448,9 @@ def pvc_1996_sediment():
     sediment.constants['k22m'] = 2.5e-1
     sediment.constants['k23'] = 1.5e-5 * 1e+3
     sediment.constants['k23m'] = 1e-3
-    sediment.constants['K_MnCO3'] = 10**(-8.5+6)
-    sediment.constants['K_FeCO3'] = 10**(-8.4+6)
-    sediment.constants['K_FeS'] = 10**(-2.2+3)
+    sediment.constants['K_MnCO3'] = 10**(-8.5 + 6)
+    sediment.constants['K_FeCO3'] = 10**(-8.4 + 6)
+    sediment.constants['K_FeS'] = 10**(-2.2 + 3)
 
     sediment.rates['R1a'] = 'k_OM1 * OM1 * O2 /  (Km_O2 + O2)'
     sediment.rates['R1b'] = 'k_OM2 * OM2 * O2 /  (Km_O2 + O2)'
@@ -489,6 +506,7 @@ def pvc_1996_sediment():
     sediment.solve()
 
     return sediment
+
 
 if __name__ == '__main__':
     transport_equation_test()
