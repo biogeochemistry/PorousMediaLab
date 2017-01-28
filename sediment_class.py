@@ -8,6 +8,10 @@ import numexpr as ne
 from scipy import special
 from numba import jit, vectorize
 import time
+import warnings
+
+
+np.seterr(all='warn')
 
 def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
