@@ -8,11 +8,8 @@ import numexpr as ne
 from scipy import special
 from numba import jit, vectorize
 import time
-import warnings
+import sys
 
-
-# np.seterr(all='warn')
-# warnings.filterwarnings('error')
 
 def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
@@ -105,6 +102,7 @@ class Sediment:
         self.x = np.linspace(0, length, length / dx + 1)
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
+        self.num_adjustments = 0
 
     def __getattr__(self, attr):
         return self.species[attr]['concentration']
@@ -169,34 +167,65 @@ class Sediment:
             s = (1 - self.phi) * self.species[element]['D'] * self.dt / self.dx / self.dx
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / (1 - self.phi) / self.species[element]['D']
 
-    def solve(self):
-        print('Simulation of sediment core with following params:\n tend = %.1f years,\n dt = %.0eyears,\n L = %.1f,\n dx = %.0e,\n w = %.2f' % (self.time[-1], self.dt, self.length, self.dx, self.w))
-        for i in np.arange(1, len(self.time)):
+    def estimate_time_of_computation(self, i):
             if i == 1:
-                tstart = time.time()
-                print("Simulation started:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
-            self.integrate_one_timestep(i)
+                self.tstart = time.time()
+                if self.num_adjustments < 1:
+                    print("Simulation started:\n\t", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             if i == 100:
-                total_t = len(self.time) * (time.time() - tstart) / 100
+                total_t = len(self.time) * (time.time() - self.tstart) / 100
                 m, s = divmod(total_t, 60)
                 h, m = divmod(m, 60)
-                print("Estimated time of the code execution: %dh:%02dm:%02ds" % (h, m, s))
-                print("Will end approx.:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + total_t)))
+                print("\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
+                print("Will finish approx.:\n\t", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
 
-    def integrate_one_timestep(self, i, do_adjust=True):
+    def solve(self, do_adjust=True):
+        if self.num_adjustments < 1:
+            print('Simulation of sediment core with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' % (self.time[-1], self.dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
             try:
-                self.transport_integrate(i)
-                self.reactions_integrate(i)
-            except FloatingPointError:
-                print('Warning: Numerical instability. Please, adjust dt and dx.')
-                r =
-                if do_adjust:
-
-                    pass
+                for i in np.arange(1, len(self.time)):
+                    self.integrate_one_timestep(i)
+                    self.estimate_time_of_computation(i)
+            except FloatingPointError as inst:
+                if do_adjust and self.num_adjustments < 6:
+                    self.restart_solve()
                 else:
-                    raise
+                    print('\nABORT!!!: Numerical instability. Time step was adjusted 5 times with no luck. Please, adjust dt and dx manually...')
+                    sys.exit()
 
+    def reset_concentration_matrices(self):
+        for element in self.species:
+            self.species[element]['concentration'][:, 1:] = np.zeros((self.N, self.time.size - 1))
+            self.profiles[element] = self.species[element]['concentration'][:, 0]
+            self.update_matrices_due_to_bc(element, 0)
+
+    def adjust_dt(self):
+        D = 0
+        for element in self.species:
+            if self.species[element]['D'] > D:
+                D = self.species[element]['D']
+        CFL_D = D * self.dt / self.dx / self.dx
+        CFL_A = self.w * self.dt / self.dx
+        if CFL_A > CFL_D:
+            self.dt = 0.01 * self.dx / self.w
+        else:
+            self.dt = 0.01 * self.dx * self.dx / D
+        CFL_D = D * self.dt / self.dx / self.dx
+        CFL_A = self.w * self.dt / self.dx
+        self.num_adjustments += 1
+        print('\n\nWarning!!: Violation of CFL stability (i.e. CFL > 0.5).')
+        print('Time step was reduced to\n\tdt = %.2e.' % (self.dt))
+        print('New Courant–Friedrichs–Lewy (CFL) condition,\n\tdiffusion: %.2e,\n\tadvective: %.2e.' % (CFL_D, CFL_A))
+
+    def restart_solve(self):
+        self.adjust_dt()
+        self.reset_concentration_matrices()
+        self.solve()
+
+    def integrate_one_timestep(self, i):
+        self.transport_integrate(i)
+        self.reactions_integrate(i)
 
     def transport_integrate(self, i):
         for element in self.species:
@@ -232,7 +261,7 @@ class Sediment:
         plt.show()
 
     def plot_all_profiles(self):
-        for element in self.species:
+        for element in sorted(self.species):
             self.plot_profile(element)
 
     def plot_profile(self, element):
