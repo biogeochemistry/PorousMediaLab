@@ -19,10 +19,10 @@ def ode_integrate(C0, dcdt, rates, coef, dt, parallel):
 
     def k_loop(conc):
         rates_num = {}
-        rates_num = parallel(delayed(paral_num_rates)(v, coef, C0, e) for e, v in rates.items())
-        rates_num = dict(ChainMap(*rates_num))
-        # for element, rate in rates.items():
-        # rates_num[element] = ne.evaluate(rate, {**coef, **conc})
+        # rates_num = parallel(delayed(paral_num_rates)(v, coef, C0, e) for e, v in rates.items())
+        # rates_num = dict(ChainMap(*rates_num))
+        for element, rate in rates.items():
+            rates_num[element] = ne.evaluate(rate, {**coef, **conc})
 
         Kn = {}
         for element in dcdt:
