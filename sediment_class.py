@@ -10,16 +10,16 @@ from collections import ChainMap
 from joblib import Parallel, delayed
 
 
-def ode_integrate(C0, dcdt, rates, coef, dt):
-    """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
+def paral_num_rates(rate, coef, conc, element):
+    return {element: ne.evaluate(rate, {**coef, **conc})}
 
-    def paral_num_rates(rates_num, rates, element):
-        rates_num[element] = ne.evaluate(rates[element], {**coef, **conc})
-        return rates_num
+
+def ode_integrate(C0, dcdt, rates, coef, dt, parallel):
+    """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
 
     def k_loop(conc):
         rates_num = {}
-        rates_num = Parallel(n_jobs=3)(delayed(paral_num_rates)(rates_num, rates_num, e) for e in rates)
+        rates_num = parallel(delayed(paral_num_rates)(v, coef, C0, e) for e, v in rates.items())
         rates_num = dict(ChainMap(*rates_num))
         # for element, rate in rates.items():
         # rates_num[element] = ne.evaluate(rate, {**coef, **conc})
@@ -109,6 +109,7 @@ class Sediment:
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
         self.num_adjustments = 0
+        self.parallel = Parallel(n_jobs=3)
 
     def __getattr__(self, attr):
         return self.species[attr]['concentration']
@@ -234,7 +235,7 @@ class Sediment:
             self.transport_integrate_one_element(element, i)
 
     def reactions_integrate(self, i):
-        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt)
+        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, self.parallel)
 
         for element in C_new:
             C_new[element][C_new[element] < 0] = 0  # the concentration should be positive
