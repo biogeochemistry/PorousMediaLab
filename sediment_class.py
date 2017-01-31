@@ -87,6 +87,7 @@ class Sediment:
         # ne.set_num_threads(ne.detect_number_of_cores())
         self.length = length
         self.dx = dx
+        self.tend = tend
         self.dt = dt
         self.phi = phi
         self.w = w
@@ -110,6 +111,7 @@ class Sediment:
         self.species[element]['bc_top'] = BC_top
         self.species[element]['fx_bottom'] = 0
         self.species[element]['D'] = D
+        self.species[element]['init_C'] = init_C
         self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
         self.species[element]['concentration'][:, 0] = (init_C * np.ones((self.N)))
         self.profiles[element] = self.species[element]['concentration'][:, 0]
@@ -186,38 +188,28 @@ class Sediment:
                     self.estimate_time_of_computation(i)
             except FloatingPointError as inst:
                 if do_adjust and self.num_adjustments < 6:
+                    print('\nWarning: Numerical instability. adjusting dt...')
                     self.restart_solve()
                 else:
                     print('\nABORT!!!: Numerical instability. Time step was adjusted 5 times with no luck. Please, adjust dt and dx manually...')
                     sys.exit()
 
-    def reset_concentration_matrices(self):
+    def redefine_concentration_matrices(self):
         for element in self.species:
-            self.species[element]['concentration'][:, 1:] = np.zeros((self.N, self.time.size - 1))
+            self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
+            self.species[element]['concentration'][:, 0] = (self.species[element]['init_C'] * np.ones((self.N)))
             self.profiles[element] = self.species[element]['concentration'][:, 0]
             self.update_matrices_due_to_bc(element, 0)
 
-    def adjust_dt(self):
-        D = 0
-        for element in self.species:
-            if self.species[element]['D'] > D:
-                D = self.species[element]['D']
-        CFL_D = D * self.dt / self.dx / self.dx
-        CFL_A = self.w * self.dt / self.dx
-        if CFL_A > CFL_D:
-            self.dt = 0.01 * self.dx / self.w
-        else:
-            self.dt = 0.01 * self.dx * self.dx / D
-        CFL_D = D * self.dt / self.dx / self.dx
-        CFL_A = self.w * self.dt / self.dx
+    def adjust_timestep(self):
+        self.dt /= 2
+        self.time = np.linspace(0, self.tend, self.tend / self.dt + 1)
         self.num_adjustments += 1
-        print('\n\nWarning!!: Violation of CFL stability (i.e. CFL > 0.5).')
         print('Time step was reduced to\n\tdt = %.2e.' % (self.dt))
-        print('New Courant–Friedrichs–Lewy (CFL) condition,\n\tdiffusion: %.2e,\n\tadvective: %.2e.' % (CFL_D, CFL_A))
 
     def restart_solve(self):
-        self.adjust_dt()
-        self.reset_concentration_matrices()
+        self.adjust_timestep()
+        self.redefine_concentration_matrices()
         self.solve()
 
     def integrate_one_timestep(self, i):

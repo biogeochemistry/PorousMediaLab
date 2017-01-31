@@ -1,12 +1,12 @@
 from sediment_class import Sediment
 
 D = 368
-w = 1.6 # adjusted from 0.2
-t = 10
+w = 0.2 # adjusted from 0.2
+t = 1
 dx = 0.2
 L = 25
 phi = 0.9
-dt = 0.001
+dt = 5e-4
 rho = 2
 Init_C = 0.231
 bc = 0.231
@@ -22,8 +22,8 @@ sediment.add_solute_species('CH4', 220, 0, 0)
 sediment.add_solute_species('TIC', 220, 0, 0)
 sediment.add_solute_species('TRS', 284, 0, 0)
 
-sediment.add_solid_species('OM1', 20, 1500, 900)
-sediment.add_solid_species('OM2', 20, 500, 200)
+sediment.add_solid_species('OM1', 20, 15, 90)
+sediment.add_solid_species('OM2', 20, 5, 20)
 sediment.add_solid_species('MnO2', 20, 0, 40)
 sediment.add_solid_species('FeOH3', 20, 0, 75)
 sediment.add_solid_species('MnCO3', 20, 0, 0)
