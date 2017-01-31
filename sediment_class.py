@@ -6,15 +6,23 @@ import matplotlib.pyplot as plt
 import numexpr as ne
 import time
 import sys
+from collections import ChainMap
+from joblib import Parallel, delayed
 
 
-def runge_kutta_integrate(C0, dcdt, rates, coef, dt):
+def ode_integrate(C0, dcdt, rates, coef, dt):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
+
+    def paral_num_rates(rates_num, rates, element):
+        rates_num[element] = ne.evaluate(rates[element], {**coef, **conc})
+        return rates_num
 
     def k_loop(conc):
         rates_num = {}
-        for element in rates:
-            rates_num[element] = ne.evaluate(rates[element], {**coef, **conc})
+        rates_num = Parallel(n_jobs=3)(delayed(paral_num_rates)(rates_num, rates_num, e) for e in rates)
+        rates_num = dict(ChainMap(*rates_num))
+        # for element, rate in rates.items():
+        # rates_num[element] = ne.evaluate(rate, {**coef, **conc})
 
         Kn = {}
         for element in dcdt:
@@ -216,14 +224,17 @@ class Sediment:
         self.transport_integrate(i)
         self.reactions_integrate(i)
 
+    def transport_integrate_one_element(self, element, i):
+        self.species[element]['concentration'][:, i] = linalg.spsolve(self.species[element]['AL'], self.species[element]['B'], use_umfpack=True)
+        self.update_matrices_due_to_bc(element, i)
+        self.profiles[element] = self.species[element]['concentration'][:, i]
+
     def transport_integrate(self, i):
         for element in self.species:
-            self.species[element]['concentration'][:, i] = linalg.spsolve(self.species[element]['AL'], self.species[element]['B'], use_umfpack=True)
-            self.update_matrices_due_to_bc(element, i)
-            self.profiles[element] = self.species[element]['concentration'][:, i]
+            self.transport_integrate_one_element(element, i)
 
     def reactions_integrate(self, i):
-        C_new, rates = runge_kutta_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt)
+        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt)
 
         for element in C_new:
             C_new[element][C_new[element] < 0] = 0  # the concentration should be positive
