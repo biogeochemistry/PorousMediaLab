@@ -88,10 +88,10 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-class Sediment:
-    """Sediment module solves Advection-Diffusion-Reaction Equation"""
+class PorousMediaLab:
+    """PorousMediaLab module solves Advection-Diffusion-Reaction Equation"""
 
-    def __init__(self, length, dx, tend, dt, phi, w):
+    def __init__(self, length, dx, tend, dt, phi, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
         self.length = length
         self.dx = dx
@@ -109,15 +109,35 @@ class Sediment:
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
         self.num_adjustments = 0
-        self.parallel = Parallel(n_jobs=3)
+        self.parallel = Parallel(n_jobs=1)
 
     def __getattr__(self, attr):
-        return self.species[attr]['concentration']
+        return self.species[attr]
 
-    def add_species(self, element, D, init_C, BC_top, is_solute):
+    def add_temperature(self, D, init_temperature):
+        self.species['Temperature'] = DotDict({})
+        self.species['Temperature']['is_solute'] = True
+        self.species['Temperature']['bc_top'] = init_temperature
+        self.species['Temperature']['bc_top_type'] = 'dirichlet'
+        self.species['Temperature']['bc_bot'] = init_temperature
+        self.species['Temperature']['bc_bot_type'] = 'dirichlet'
+        self.species['Temperature']['fx_bottom'] = 0
+        self.species['Temperature']['D'] = D
+        self.species['Temperature']['init_C'] = init_temperature
+        self.species['Temperature']['concentration'] = np.zeros((self.N, self.time.size))
+        self.species['Temperature']['concentration'][:, 0] = (init_temperature * np.ones((self.N)))
+        self.profiles['Temperature'] = self.species['Temperature']['concentration'][:, 0]
+        self.template_AL_AR('Temperature', 1)
+        self.update_matrices_due_to_bc('Temperature', 0)
+        self.dcdt['Temperature'] = '0'
+
+    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
-        self.species[element]['bc_top'] = BC_top
+        self.species[element]['bc_top'] = bc_top
+        self.species[element]['bc_top_type'] = bc_top_type
+        self.species[element]['bc_bot'] = bc_bot
+        self.species[element]['bc_bot_type'] = bc_bot_type
         self.species[element]['fx_bottom'] = 0
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
@@ -126,13 +146,13 @@ class Sediment:
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         self.create_AL_AR(element)
         self.update_matrices_due_to_bc(element, 0)
-        self.dcdt[element] = 0
+        self.dcdt[element] = '0'
 
-    def add_solute_species(self, element, D, init_C, BC_top):
-        self.add_species(element, D, init_C, BC_top, True)
+    def add_solute_species(self, element, D, init_C, bc_top):
+        self.add_species(True, element, D, init_C, bc_top, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='neumann')
 
-    def add_solid_species(self, element, D, init_C, BC_top):
-        self.add_species(element, D, init_C, BC_top, False)
+    def add_solid_species(self, element, D, init_C, bc_top):
+        self.add_species(False, element, D, init_C, bc_top, bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
 
     def template_AL_AR(self, element, theta):
         e1 = np.ones((self.N, 1))
@@ -142,21 +162,34 @@ class Sediment:
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
         self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (theta - s), e1 * (s / 2 - q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AL'][-1, -1] = theta + s
-        self.species[element]['AL'][-1, -2] = -s
-        self.species[element]['AR'][-1, -1] = theta - s
-        self.species[element]['AR'][-1, -2] = s
 
-        if self.is_solute(element):
+        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
             self.species[element]['AL'][0, 0] = theta
             self.species[element]['AL'][0, 1] = 0
             self.species[element]['AR'][0, 0] = theta
             self.species[element]['AR'][0, 1] = 0
-        else:
+        elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
             self.species[element]['AL'][0, 0] = theta + s
             self.species[element]['AL'][0, 1] = -s
             self.species[element]['AR'][0, 0] = theta - s
             self.species[element]['AR'][0, 1] = s
+        else:
+            print('\nABORT!!!: Not correct top boundary condition type...')
+            sys.exit()
+
+        if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
+            self.species[element]['AL'][-1, -1] = theta
+            self.species[element]['AL'][-1, -2] = 0
+            self.species[element]['AR'][-1, -1] = theta
+            self.species[element]['AR'][-1, -2] = 0
+        elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+            self.species[element]['AL'][-1, -1] = theta + s
+            self.species[element]['AL'][-1, -2] = -s
+            self.species[element]['AR'][-1, -1] = theta - s
+            self.species[element]['AR'][-1, -2] = s
+        else:
+            print('\nABORT!!!: Not correct bottom boundary condition type...')
+            sys.exit()
 
     def create_AL_AR(self, element):
         # create_AL_AR: creates AL and AR matrices
@@ -167,13 +200,28 @@ class Sediment:
         self.species[element]['bc_top'] = bc
 
     def update_matrices_due_to_bc(self, element, i):
-        if self.is_solute(element):
+        theta = self.phi if self.is_solute(element) else 1 - self.phi
+        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
             self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-        else:
+        elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = (1 - self.phi) * self.species[element]['D'] * self.dt / self.dx / self.dx
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / (1 - self.phi) / self.species[element]['D']
+            s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / theta / self.species[element]['D']
+        else:
+            print('\nABORT!!!: Not correct top boundary condition type...')
+            sys.exit()
+
+        if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
+            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+        elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+            s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / theta / self.species[element]['D']
+        else:
+            print('\nABORT!!!: Not correct top boundary condition type...')
+            sys.exit()
 
     def estimate_time_of_computation(self, i):
         if i == 1:
@@ -238,7 +286,8 @@ class Sediment:
         C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, self.parallel)
 
         for element in C_new:
-            C_new[element][C_new[element] < 0] = 0  # the concentration should be positive
+            if element is not 'Temperature':
+                C_new[element][C_new[element] < 0] = 0  # the concentration should be positive
             self.species[element]['concentration'][:, i] = C_new[element]
             self.update_matrices_due_to_bc(element, i)
             self.profiles[element] = self.species[element]['concentration'][:, i]
@@ -255,6 +304,8 @@ class Sediment:
         else:
             num_of_elem = len(self.time)
         theta = self.phi if self.is_solute(element) else 1 - self.phi
+        if element == 'Temperature':
+            theta = 1
         for depth in depths:
             lbl = str(depth) + ' cm'
             plt.plot(self.time[-num_of_elem:], theta * self.species[element]['concentration'][int(depth / self.dx)][-num_of_elem:], label=lbl)
@@ -267,9 +318,13 @@ class Sediment:
 
     def plot_profile(self, element):
         plt.figure()
-        plt.title('Profiles')
+        plt.title('Bulk ' + element + ' concentration')
         theta = self.phi if self.is_solute(element) else 1 - self.phi
+        if element == 'Temperature':
+            theta = 1
         plt.plot(self.x, theta * self.profiles[element], label=element)
+        plt.ylabel('mmol/L')
+        plt.xlabel('Depth, cm')
         plt.legend()
         plt.show()
 
@@ -299,6 +354,23 @@ class Sediment:
 
         plt.show()
 
+    def plot_contourplots(self):
+        for element in sorted(self.species):
+            self.contour_plot(element)
+
+    def contour_plot(self, element):
+        plt.figure()
+        plt.title('Bulk ' + element + ' concentration')
+        theta = self.phi if self.is_solute(element) else 1 - self.phi
+        if element == 'Temperature':
+            theta = 1
+        X, Y = np.meshgrid(self.time[1::100], -self.x)
+        CS = plt.contourf(X, Y, theta * self.species[element]['concentration'][:, 0:-1:100], 10, cmap=plt.cm.ocean, origin='lower')
+        plt.clabel(CS, inline=1, fontsize=10, colors='w')
+        plt.colorbar(CS)
+        # cbar.ax.set_ylabel('verbosity coefficient')
+        plt.show()
+
 
 def transport_equation_test():
     D = 40
@@ -309,7 +381,7 @@ def transport_equation_test():
     phi = 1
     dt = 0.001
 
-    C = Sediment(L, dx, t, dt, phi, w)
+    C = PorousMediaLab(L, dx, t, dt, phi, w)
     C.add_solute_species('O2', D, 0.0, 1)
     C.dcdt.O2 = '0'
     C.solve()
@@ -319,7 +391,7 @@ def transport_equation_test():
 
     plt.figure()
     plt.plot(x, sol, 'r', label='Analytical solution')
-    plt.plot(C.x, C.O2[:, -1], 'kx', label='Numerical')
+    plt.plot(C.x, C.O2.concentration[:, -1], 'kx', label='Numerical')
     plt.legend()
     plt.show()
 
