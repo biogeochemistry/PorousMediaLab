@@ -28,20 +28,20 @@ ftc_column.add_solid_species('FeOH3', 5, Fe3_init, 0)
 ftc_column.constants['Q10'] = 2
 ftc_column.constants['k_OM'] = 100
 ftc_column.constants['Km_O2'] = 20e-3
-ftc_column.constants['Km_FeOH3'] = 100
+ftc_column.constants['Km_FeOH3'] = 10
 ftc_column.constants['k8'] = 1.4e+5
 
 # Q10**((Temperature-278)/10) *
 # Q10**((Temperature-278)/10) *
 
-# ftc_column.rates['R1'] = 'k_OM * OM * O2 / (Km_O2 + O2)'
-# ftc_column.rates['R2'] = 'k_OM * OM * FeOH3 / (Km_FeOH3 + FeOH3) * Km_O2 / (Km_O2 + O2)'
-# ftc_column.rates['R8'] = 'k8 * O2 * Fe2'
+ftc_column.rates['R1'] = 'k_OM * OM * O2 / (Km_O2 + O2)'
+ftc_column.rates['R2'] = 'k_OM * OM * FeOH3 / (Km_FeOH3 + FeOH3) * Km_O2 / (Km_O2 + O2)'
+ftc_column.rates['R8'] = 'k8 * O2 * Fe2'
 
-# ftc_column.dcdt['OM'] = '-R1-R2'
-# ftc_column.dcdt['O2'] = '-R1-R8'
-# ftc_column.dcdt['FeOH3'] = '-4*R2+R8'
-# ftc_column.dcdt['Fe2'] = '-R8+4*R2'
+ftc_column.dcdt['OM'] = '-R1-R2'
+ftc_column.dcdt['O2'] = '-R1-R8'
+ftc_column.dcdt['FeOH3'] = '-4*R2+R8'
+ftc_column.dcdt['Fe2'] = '-R8+4*R2'
 
 
 
