@@ -122,12 +122,13 @@ class PorousMediaLab:
         self.species['Temperature']['bc_bot'] = init_temperature
         self.species['Temperature']['bc_bot_type'] = 'dirichlet'
         self.species['Temperature']['fx_bottom'] = 0
+        self.species['Temperature']['theta'] = 1
         self.species['Temperature']['D'] = D
         self.species['Temperature']['init_C'] = init_temperature
         self.species['Temperature']['concentration'] = np.zeros((self.N, self.time.size))
         self.species['Temperature']['concentration'][:, 0] = (init_temperature * np.ones((self.N)))
         self.profiles['Temperature'] = self.species['Temperature']['concentration'][:, 0]
-        self.template_AL_AR('Temperature', 1)
+        self.template_AL_AR('Temperature')
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
 
@@ -139,12 +140,13 @@ class PorousMediaLab:
         self.species[element]['bc_bot'] = bc_bot
         self.species[element]['bc_bot_type'] = bc_bot_type
         self.species[element]['fx_bottom'] = 0
+        self.species[element]['theta'] = self.phi if is_solute else 1 - self.phi
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
         self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
         self.species[element]['concentration'][:, 0] = (init_C * np.ones((self.N)))
         self.profiles[element] = self.species[element]['concentration'][:, 0]
-        self.create_AL_AR(element)
+        self.template_AL_AR(element)
         self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
@@ -154,71 +156,69 @@ class PorousMediaLab:
     def add_solid_species(self, element, D, init_C, bc_top):
         self.add_species(False, element, D, init_C, bc_top, bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
 
-    def template_AL_AR(self, element, theta):
+    def template_AL_AR(self, element):
         e1 = np.ones((self.N, 1))
-        s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx  #
-        q = theta * self.w * self.dt / self.dx
-        self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (theta + s), e1 * (-s / 2 + q / 4)),
+        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx  #
+        q = self.species[element]['theta'] * self.w * self.dt / self.dx
+        self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (self.species[element]['theta'] + s), e1 * (-s / 2 + q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (theta - s), e1 * (s / 2 - q / 4)),
+        self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (self.species[element]['theta'] - s), e1 * (s / 2 - q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][0, 0] = theta
+            self.species[element]['AL'][0, 0] = self.species[element]['theta']
             self.species[element]['AL'][0, 1] = 0
-            self.species[element]['AR'][0, 0] = theta
+            self.species[element]['AR'][0, 0] = self.species[element]['theta']
             self.species[element]['AR'][0, 1] = 0
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][0, 0] = theta + s
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'] + s
             self.species[element]['AL'][0, 1] = -s
-            self.species[element]['AR'][0, 0] = theta - s
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'] - s
             self.species[element]['AR'][0, 1] = s
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
 
         if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][-1, -1] = theta
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta']
             self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -1] = theta
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta']
             self.species[element]['AR'][-1, -2] = 0
         elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -1] = theta + s
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'] + s
             self.species[element]['AL'][-1, -2] = -s
-            self.species[element]['AR'][-1, -1] = theta - s
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'] - s
             self.species[element]['AR'][-1, -2] = s
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
             sys.exit()
 
-    def create_AL_AR(self, element):
-        # create_AL_AR: creates AL and AR matrices
-        theta = self.phi if self.is_solute(element) else 1 - self.phi
-        self.template_AL_AR(element, theta)
-
     def new_boundary_condition(self, element, bc):
         self.species[element]['bc_top'] = bc
 
     def update_matrices_due_to_bc(self, element, i):
-        theta = self.phi if self.is_solute(element) else 1 - self.phi
-        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
+        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-        elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / theta / self.species[element]['D']
-        else:
-            print('\nABORT!!!: Not correct top boundary condition type...')
-            sys.exit()
-
-        if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-        elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+
+        elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+            self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = theta * self.species[element]['D'] * self.dt / self.dx / self.dx
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / theta / self.species[element]['D']
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
+
+        elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
+            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
+
+        elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
+            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
@@ -278,6 +278,8 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
         self.profiles[element] = self.species[element]['concentration'][:, i]
 
+
+
     def transport_integrate(self, i):
         for element in self.species:
             self.transport_integrate_one_element(element, i)
@@ -303,12 +305,9 @@ class PorousMediaLab:
             num_of_elem = int(years_to_plot / self.dt)
         else:
             num_of_elem = len(self.time)
-        theta = self.phi if self.is_solute(element) else 1 - self.phi
-        if element == 'Temperature':
-            theta = 1
         for depth in depths:
             lbl = str(depth) + ' cm'
-            plt.plot(self.time[-num_of_elem:], theta * self.species[element]['concentration'][int(depth / self.dx)][-num_of_elem:], label=lbl)
+            plt.plot(self.time[-num_of_elem:], self.species[element]['theta'] * self.species[element]['concentration'][int(depth / self.dx)][-num_of_elem:], label=lbl)
         plt.legend()
         plt.show()
 
@@ -319,10 +318,7 @@ class PorousMediaLab:
     def plot_profile(self, element):
         plt.figure()
         plt.title('Bulk ' + element + ' concentration')
-        theta = self.phi if self.is_solute(element) else 1 - self.phi
-        if element == 'Temperature':
-            theta = 1
-        plt.plot(self.x, theta * self.profiles[element], label=element)
+        plt.plot(self.x, self.species[element]['theta'] * self.profiles[element], label=element)
         plt.ylabel('mmol/L')
         plt.xlabel('Depth, cm')
         plt.legend()
@@ -347,8 +343,7 @@ class PorousMediaLab:
         axes[-1].patch.set_visible(False)
         colors = ('g', 'r', 'b')
         for element, ax, color in zip(elements_to_plot, axes, colors):
-            theta = self.phi if self.is_solute(element) else 1 - self.phi
-            ax.plot(self.x, theta * self.profiles[element], label=element, color=color)
+            ax.plot(self.x, self.species[element]['theta'] * self.profiles[element], label=element, color=color)
             ax.set_ylabel('%s [mmol/L]' % element, color=color)
             ax.tick_params(axis='y', colors=color)
 
@@ -361,11 +356,8 @@ class PorousMediaLab:
     def contour_plot(self, element):
         plt.figure()
         plt.title('Bulk ' + element + ' concentration')
-        theta = self.phi if self.is_solute(element) else 1 - self.phi
-        if element == 'Temperature':
-            theta = 1
         X, Y = np.meshgrid(self.time[1::100], -self.x)
-        CS = plt.contourf(X, Y, theta * self.species[element]['concentration'][:, 0:-1:100], 10, cmap=plt.cm.ocean, origin='lower')
+        CS = plt.contourf(X, Y, self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:100], 10, cmap=plt.cm.ocean, origin='lower')
         plt.clabel(CS, inline=1, fontsize=10, colors='w')
         plt.colorbar(CS)
         # cbar.ax.set_ylabel('verbosity coefficient')
