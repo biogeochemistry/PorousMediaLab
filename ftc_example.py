@@ -2,7 +2,7 @@ from PorousMediaLab import PorousMediaLab
 import numpy as np
 
 
-t = 182.5 / 365 * 2
+t = 182.5 / 365 * 4
 dx = 0.2
 L = 40
 phi = 0.8
@@ -17,46 +17,45 @@ Fe3_init[x > 25] = 75
 Fe3_init[x > 35] = 0
 
 
-ftc_column = PorousMediaLab(L, dx, t, dt, phi)
-ftc_column.add_temperature(D=281000, init_temperature=5)
+ftc = PorousMediaLab(L, dx, t, dt, phi)
+ftc.add_temperature(D=281000, init_temperature=5)
 
-ftc_column.add_species(is_solute=True, element='O2', D=368, init_C=0, bc_top=0.231, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
-ftc_column.add_species(is_solute=True, element='Fe2', D=127, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
-ftc_column.add_species(is_solute=False, element='OM', D=5, init_C=15, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
-ftc_column.add_solid_species('FeOH3', 5, Fe3_init, 0)
+ftc.add_species(is_solute=True, element='O2', D=368, init_C=0, bc_top=0.231, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+ftc.add_species(is_solute=True, element='Fe2', D=127, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+ftc.add_species(is_solute=False, element='OM', D=5, init_C=15, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+ftc.add_solid_species('FeOH3', 5, Fe3_init, 0)
 
-ftc_column.constants['Q10'] = 2
-ftc_column.constants['k_OM'] = 1
-ftc_column.constants['Km_O2'] = 20e-3
-ftc_column.constants['Km_FeOH3'] = 10
-ftc_column.constants['k8'] = 1.4e+5
+ftc.constants['Q10'] = 2
+ftc.constants['k_OM'] = 1
+ftc.constants['Km_O2'] = 20e-3
+ftc.constants['Km_FeOH3'] = 10
+ftc.constants['k8'] = 1.4e+5
 
 # Q10**((Temperature-278)/10) *
 # Q10**((Temperature-278)/10) *
 
-ftc_column.rates['R1'] = 'k_OM * OM * O2 / (Km_O2 + O2)'
-ftc_column.rates['R2'] = 'k_OM * OM * FeOH3 / (Km_FeOH3 + FeOH3) * Km_O2 / (Km_O2 + O2)'
-ftc_column.rates['R8'] = 'k8 * O2 * Fe2'
+ftc.rates['R1'] = 'Q10**((Temperature-5)/10) * k_OM * OM * O2 / (Km_O2 + O2)'
+ftc.rates['R2'] = 'Q10**((Temperature-5)/10) * k_OM * OM * FeOH3 / (Km_FeOH3 + FeOH3) * Km_O2 / (Km_O2 + O2)'
+ftc.rates['R8'] = 'k8 * O2 * Fe2'
 
-ftc_column.dcdt['OM'] = '-R1-R2'
-ftc_column.dcdt['O2'] = '-R1-R8'
-ftc_column.dcdt['FeOH3'] = '-4*R2+R8'
-ftc_column.dcdt['Fe2'] = '-R8+4*R2'
+ftc.dcdt['OM'] = '-R1-R2'
+ftc.dcdt['O2'] = '-R1-R8'
+ftc.dcdt['FeOH3'] = '-4*R2+R8'
+ftc.dcdt['Fe2'] = '-R8+4*R2'
 
 
-
-for i in range(1, len(ftc_column.time)):
-    temp = 10 + 20 * np.sin(np.pi * 2 * ftc_column.time[i])
-    ftc_column.Temperature.bc_top = temp
+for i in range(1, len(ftc.time)):
+    temp = 10 + 20 * np.sin(np.pi * 2 * ftc.time[i])
+    ftc.Temperature.bc_top = temp
     if temp < 0:
-        ftc_column.O2.bc_top = 0
+        ftc.O2.bc_top = 0
     else:
-        ftc_column.O2.bc_top = 0.231
+        ftc.O2.bc_top = 0.231
 
-    # if ftc_column.time[i] > 182.5*1 / 365:
-    #     ftc_column.Temperature.bc_top = -10
-    # if ftc_column.time[i] > 182.5*2 / 365:
-    #     ftc_column.Temperature.bc_top = 10
-    # if ftc_column.time[i] > 182.5*3 / 365:
-    #     ftc_column.Temperature.bc_top = -10
-    ftc_column.integrate_one_timestep(i)
+    # if ftc.time[i] > 182.5*1 / 365:
+    #     ftc.Temperature.bc_top = -10
+    # if ftc.time[i] > 182.5*2 / 365:
+    #     ftc.Temperature.bc_top = 10
+    # if ftc.time[i] > 182.5*3 / 365:
+    #     ftc.Temperature.bc_top = -10
+    ftc.integrate_one_timestep(i)

@@ -278,8 +278,6 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
         self.profiles[element] = self.species[element]['concentration'][:, i]
 
-
-
     def transport_integrate(self, i):
         for element in self.species:
             self.transport_integrate_one_element(element, i)
@@ -311,17 +309,24 @@ class PorousMediaLab:
         plt.legend()
         plt.show()
 
-    def plot_all_profiles(self):
+    def plot_profiles(self):
         for element in sorted(self.species):
             self.plot_profile(element)
 
     def plot_profile(self, element):
         plt.figure()
-        plt.title('Bulk ' + element + ' concentration')
-        plt.plot(self.x, self.species[element]['theta'] * self.profiles[element], label=element)
-        plt.ylabel('mmol/L')
-        plt.xlabel('Depth, cm')
+        plt.plot(self.species[element]['theta'] * self.profiles[element], -self.x, label=element)
+        if element == 'Temperature':
+            plt.title('Temperature profile')
+            plt.xlabel('Temperature, C')
+        else:
+            plt.title('Bulk ' + element + ' concentration')
+            plt.xlabel('mmol/L')
+        plt.ylabel('Depth, cm')
+        ax = plt.gca()
+        ax.ticklabel_format(useOffset=False)
         plt.legend()
+        plt.tight_layout()
         plt.show()
 
     def plot_3_profiles(self, elements_to_plot=['O2', 'OM1', 'OM2']):
@@ -360,6 +365,8 @@ class PorousMediaLab:
         CS = plt.contourf(X, Y, self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:100], 10, cmap=plt.cm.ocean, origin='lower')
         plt.clabel(CS, inline=1, fontsize=10, colors='w')
         plt.colorbar(CS)
+        ax = plt.gca()
+        ax.ticklabel_format(useOffset=False)
         # cbar.ax.set_ylabel('verbosity coefficient')
         plt.show()
 
