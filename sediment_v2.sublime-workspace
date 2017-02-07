@@ -4,20 +4,52 @@
 		"selected_items":
 		[
 			[
-				"para",
-				"parallel"
+				"rate",
+				"rate_str"
 			],
 			[
-				"rates",
-				"rates_num"
+				"one",
+				"one_rate_num"
+			],
+			[
+				"CFL",
+				"CFL_A"
 			],
 			[
 				"num",
 				"num_adjustments\tstatement"
 			],
 			[
-				"sed",
-				"sediment_class\tmodule"
+				"spe",
+				"species\tstatement"
+			],
+			[
+				"Mn",
+				"MnCO3"
+			],
+			[
+				"ads",
+				"adsFe"
+			],
+			[
+				"Km_Fe",
+				"Km_FeOH3"
+			],
+			[
+				"FeOH3",
+				"FeOH3"
+			],
+			[
+				"add",
+				"add_solid_species"
+			],
+			[
+				"intega",
+				"integrate_one_timestep"
+			],
+			[
+				"conc",
+				"concentrations"
 			],
 			[
 				"cha",
@@ -196,10 +228,6 @@
 				"specie"
 			],
 			[
-				"spe",
-				"specie"
-			],
-			[
 				"e",
 				"environment"
 			],
@@ -244,10 +272,6 @@
 				"differentiate_current_reaction_term  (function)"
 			],
 			[
-				"rate",
-				"rate_law"
-			],
-			[
 				"diffe",
 				"differentiate_reaction_term\tfunction"
 			],
@@ -274,10 +298,6 @@
 			[
 				"dict",
 				"dict_of_conc_vec"
-			],
-			[
-				"add",
-				"add_to_dict_of_conc"
 			],
 			[
 				"dic",
@@ -494,46 +514,56 @@
 			[
 				"ass",
 				"assert"
-			],
-			[
-				"impo",
-				"imp  (module)"
-			],
-			[
-				"model",
-				"model_prob_2"
-			],
-			[
-				"lef",
-				"left_bc_applied"
-			],
-			[
-				"right_",
-				"right_bc_applied"
-			],
-			[
-				"po",
-				"populate_vector"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "sediment_class.py",
+			"contents": "from joblib import Parallel, delayed\nimport multiprocessing\n\n# what are your inputs, and what operation do you want to\n# perform on each input. For example...\n# inputs = range(10)\n# def processInput(i):\n#     return i * i\n\nnum_cores = multiprocessing.cpu_count()\n\n# results = Parallel(n_jobs=num_cores)(delayed(processInput)(i) for i in inputs)\n\n# print(results)\n\n\n# k_1 = dt*dcdt(C0, dt);\n# k_2 = dt*dcdt(C0+0.5*k_1, dt);\n# k_3 = dt*dcdt(C0+0.5*k_2, dt);\n# k_4 = dt*dcdt(C0+k_3, dt);\n# C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6;\n\nimport numpy as np\nimport numexpr as ne\n\ndt = 0.1\n\ncoef = {'k': 1}\nrates = {'R1': 'k*y1*y2'}\ndcdt = {'y1': '-4 * R1', 'y2': '-R1'}\nC0 = {'y2': np.random.rand(400), 'y1': np.random.rand(400)}\n\n\ndef k_loop(conc):\n    rates_num = {}\n\n    for k in rates:\n        rates_num[k] = ne.evaluate(rates[k], {**coef, **conc})\n\n    dcdt_num = {}\n\n    for k in dcdt:\n        dcdt_num[k] = ne.evaluate(dcdt[k], rates_num)\n\n    Kn = {}\n\n    for k in C0:\n        Kn[k] = dt * dcdt_num[k]\n    return Kn\n\n\ndef sum_k(A, B, b):\n    C = {}\n    for k in A:\n        C[k] = A[k] + b * B[k] * dt\n    return C\n\n\ndef result(C_0, k_1, k_2, k_3, k_4):\n    C_new = {}\n    for k in C_0:\n        C_new[k] = C_0[k] + (k_1[k] + 2 * k_2[k] + 2 * k_3[k] + k_4[k]) / 6\n    return C_new\n\n\nk1 = k_loop(C0)\nk2 = k_loop(sum_k(C0, k1, 0.5))\nk3 = k_loop(sum_k(C0, k2, 0.5))\nk4 = k_loop(sum_k(C0, k3, 1))\n\nC_new = result(C0, k1, k2, k3, k4)\n",
+			"file": "test.py",
+			"file_size": 1422,
+			"file_write_time": 131302895110000000,
 			"settings":
 			{
-				"buffer_size": 13718,
+				"buffer_size": 1422,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "test.py",
+			"contents": "L = 100;\nx = 0:0.1:L;\n\nD = 400;\nw = 1;\nt = 1;\n\nC = sediment_v2(D,w,t);\nC_sol = 1/2*( erfc( (x-w*t)./2./sqrt(D*t) ) + exp(w.*x/D).*erfc((x+w.*t)/2/sqrt(D*t)));\n\n\nfigure                 % Creates a figure\nplot(x, C(:,end),'kx', 'MarkerSize', 8,'LineWidth', 2);hold on; plot(x, C_sol, 'LineWidth', 3);legend('numerical','analytical')\nset(gca,'FontSize',18) % Creates an axes and sets its FontSize to 18\ngrid on\ngrid minor\n",
+			"file": "single_run.m",
+			"file_size": 419,
+			"file_write_time": 131290595150000000,
 			"settings":
 			{
-				"buffer_size": 574,
+				"buffer_size": 419,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "PorousMediaLab.py",
+			"settings":
+			{
+				"buffer_size": 22472,
 				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/MarkelovIgor/git/biogeochemistry/FTC_experiments/model/air-water-heat.py",
+			"settings":
+			{
+				"buffer_size": 1668,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "ftc_example.py",
+			"settings":
+			{
+				"buffer_size": 2159,
 				"line_ending": "Unix"
 			}
 		},
@@ -541,16 +571,7 @@
 			"file": "pvc_1996_sediment.py",
 			"settings":
 			{
-				"buffer_size": 6282,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/MarkelovIgor/.ipython/profile_default/ipython_config.py",
-			"settings":
-			{
-				"buffer_size": 21360,
+				"buffer_size": 6284,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -586,6 +607,22 @@
 			[
 				"pep",
 				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"breakpoi",
+				"Python Breakpoints: Clear All"
+			],
+			[
+				"",
+				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"case tit",
+				"Convert Case: Title Case"
+			],
+			[
+				"goto python",
+				"Anaconda: Goto Python object"
 			],
 			[
 				"tit",
@@ -666,10 +703,6 @@
 			[
 				"ss",
 				"Set Syntax: Python"
-			],
-			[
-				"",
-				"Anaconda: Autoformat PEP8 Errors"
 			],
 			[
 				"if ",
@@ -1119,18 +1152,21 @@
 	],
 	"file_history":
 	[
+		"/Users/MarkelovIgor/.zshrc",
+		"/Users/MarkelovIgor/.ipython/profile_default/ipython_config.py",
+		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/lake_sediment.py",
+		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/test.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/rk4_with_eval.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/single_run.py",
-		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/sediment.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/single_run.m",
-		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/test.py",
+		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/sediment.py",
+		"/Users/MarkelovIgor/.config/ipython/profile_default/ipython_config.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/sediment_v2.m",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/class_single_run.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/sediment_class.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/sediment_init_v2.m",
 		"/Users/MarkelovIgor/.ipython/extensions/line_profiler_ext.py",
 		"/Users/MarkelovIgor/.ipython/extensions/memory_profiler_ext.py",
-		"/Users/MarkelovIgor/.ipython/profile_default/ipython_config.py",
 		"/Users/MarkelovIgor/git/biogeochemistry/sediment_2.0/MyLake_fake.m",
 		"/Users/MarkelovIgor/git/biogeochemistry/phreeqc_calibration_exp/python/template_calibration.py",
 		"/Users/MarkelovIgor/Documents/git/biogeochemistry/phreeqc_calibration_exp/python/Katya experiment/Jul2016/Sb.csv",
@@ -1224,7 +1260,6 @@
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-lgv0xi/Cr_1_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-8h549b/Cr_1_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-ji5gpk/Cr_1_exp.py",
-		"/Users/MarkelovIgor/.zshrc",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-_bfd5d/calibration_As_2_3_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-vnqe15/calibration_As_2_3_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-vm3v04/calibration_As_2_3_exp.py",
@@ -1244,9 +1279,7 @@
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-diqukt/calibration_As_2_3_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-ppfywh/3_var_calibration_As_2_3_exp.py",
 		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-rjyyzz/calibration_As_2_3_exp.py",
-		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-86is4w/calibration_As_2_3_exp.py",
-		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-d0687b/calibration_As_2_3_exp.py",
-		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-3i4ows/calibration_As_2_3_exp.py"
+		"/var/folders/49/nrnz8x2x141g4w899z9k4clr0000gn/T/rsub-86is4w/calibration_As_2_3_exp.py"
 	],
 	"find":
 	{
@@ -1272,134 +1305,134 @@
 		"case_sensitive": true,
 		"find_history":
 		[
-			"element",
-			"conc",
-			"coef",
-			"),",
-			"sum_k",
-			"**conc",
-			"C_0",
-			"runge_kutta_integrate",
-			"reset_concentration_matrices",
-			"test_and_adjust_cfl",
-			"dt",
-			"test_and_adjust_cfl",
-			"adjust_dt",
-			"C_new[element]",
+			"rates",
+			"num_ra",
+			"time",
+			"new_boundary_condition",
+			"fx_bottom",
+			"bc_top_type",
+			"bc_bot_type",
+			"if",
+			"transport_integrate",
+			"linal",
+			"lina",
+			"transport_integrate_one_element",
+			"self",
+			"transport_integrate",
+			"create_AL_AR",
+			"template_AL_AR",
+			"theta ",
+			" theta",
+			"theta",
+			"transport_integrate",
+			"is_solute",
+			"bc_",
+			" / theta",
+			"Q10**((Temperature-278)/10) *",
+			"update_matrices_due_to_bc",
+			"or '",
+			"== 'dirichlet'",
+			"== 'neumann'",
+			"_top",
+			"bc_top",
+			"_top_",
+			"rv",
+			"ftc_column.Temperature['concentration']",
+			"180",
+			"150",
+			"BC_top",
+			"/ 365",
+			"7",
+			"(1 - self.phi)",
+			"self.ph",
+			"update_matrices_due_to_bc",
+			"is_solute",
+			"sediment",
+			"species.T",
+			"'T'",
 			"<",
 			">",
-			"sediment",
-			"DotDict",
-			"Sediment",
+			"element",
 			"sediment",
 			"Sediment",
-			"np.ones(400)",
-			"C",
-			"y",
-			"C0",
-			"random.rand",
-			"eval",
-			"sediment",
-			"BC1_top",
-			"C1_res",
-			"tend",
-			"xrange",
-			";",
-			"sediment_rates",
-			"self.species[name]['res'][:, i]",
+			"solute?",
+			"update_matrices_due_to_bc",
+			"'B'",
+			"['B']",
+			"tra",
+			"reset_concentrations",
+			"self.CFL",
+			"self.",
+			"Warning:",
+			"logging_of_computation",
+			"reset_concentrations",
+			"solve",
+			"\\n\\t",
+			"gmtime",
+			"sediments",
+			"sed",
+			"element",
+			"\\n ",
+			"solve",
+			"...",
+			"data",
 			"species",
-			"C0",
-			".*",
-			"sediment_rates",
-			";",
-			"C",
-			"self.phi",
-			" self.N - 2",
-			"self.N - 1",
-			"-1",
-			"1 * kappa",
-			"(1 - self.phi)",
-			"self.phi",
-			"1 +",
-			"* self.phi",
-			"* (1",
-			"solute",
-			"BC_Dirichlet_top",
-			"AL_AR_dirichlet",
-			"integrate",
-			"tend",
-			"C1_res[:, i]",
-			"C1_res[:, i - 1]",
-			"N",
-			"N,",
-			"phi",
-			"csc",
-			"C1_old",
-			"csc",
-			"format = 'csc'",
-			".toar",
-			"@nb.j",
-			"adv_diff",
-			"#",
-			"sediment",
-			"#",
-			"full",
-			"w",
-			"D",
-			"d",
-			"D",
-			"C_F_bottom",
-			"C_BC_top",
-			"C_init",
-			"C_res",
-			"D",
-			"D,",
-			"F_bottom",
-			"BC_top",
-			"C1",
-			", phi, dt, dx, N",
-			"phi, dt, dx, N",
-			" ",
-			"update_bc1_dirichlet",
-			"C_",
-			"c_",
-			"C_",
-			"c_",
-			"C_",
-			"c_",
-			"C_",
-			"Cold",
-			"update_bc_dirichlet",
-			"linalg",
-			"D1",
-			"tend",
-			"Sb_three_s ",
-			"Sb_five_s_kin ",
-			"Sb_five_aq ",
-			"As_three_s_kin ",
-			"As_three_aq ",
-			"As_five_s_kin ",
-			"# ",
-			"As_five_s_kin ",
-			"As_five_aq ",
-			"As_five_aq",
-			"As_five",
-			"As_five_aq",
-			"10 *",
-			"100 *",
-			"0.01",
-			"100 *",
-			"0.01",
-			"100 *",
-			"0.01",
-			"100 *",
-			"100",
-			"0.01",
-			"1.15",
-			"0.85",
-			"1.15",
-			"0.85",
-			"1.15"
+			"data",
+			"spd",
+			"spar",
+			"csr",
+			"),",
+			"ne.evaluate",
+			"),",
+			"optimization='aggressive'",
+			"F *",
+			"add_species",
+			"add_solid_species",
+			"0.3",
+			"TRC",
+			"TC",
+			"TS",
+			"0.1",
+			"Init_C",
+			"R15",
+			"R15 + R23",
+			"R15 + R23 - R23m",
+			"R6",
+			"x",
+			"*OM",
+			"z",
+			"R2",
+			"R2 ",
+			"R2",
+			"R1 ",
+			"R1",
+			"R3 ",
+			"R4 ",
+			"R6 ",
+			"R5",
+			"a",
+			" +",
+			"HS",
+			" CO3 ",
+			"CO3",
+			"HS + H2S",
+			"HS",
+			"CO2",
+			"*",
+			"SO4 / (Km_SO4 + SO4 ) *",
+			"FeOOH",
+			"Km_FeOOH",
+			"FeOH3",
+			"Km_FeOOH / (Km_FeOOH + FeOOH)",
+			"Kin_",
+			"220",
+			"5,",
+			"5",
+			"add_solid_species",
+			"bc",
+			"Init_C",
+			"add_solute_species",
+			"D"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1509,8 +1542,179 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "test.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1422,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								347,
+								347
+							]
+						],
+						"settings":
+						{
+							"apply_syntax_touched": true,
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".:>",
+									"selector": "source.c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": "\\",
+									"selector": "text.tex.latex"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"color_scheme": "Packages/User/Color Highlighter/themes/Solarized-ocean (SL).tmTheme",
+							"syntax": "Packages/Python Improved/PythonImproved.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "single_run.m",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 419,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								44,
+								44
+							]
+						],
+						"settings":
+						{
+							"apply_syntax_touched": true,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"color_scheme": "Packages/User/Color Highlighter/themes/Solarized-ocean (SL).tmTheme",
+							"syntax": "Packages/Matlab/Matlab.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				}
 			]
 		},
 		{
@@ -1518,28 +1722,28 @@
 			"sheets":
 			[
 				{
-					"buffer": 0,
-					"file": "sediment_class.py",
+					"buffer": 2,
+					"file": "PorousMediaLab.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 13718,
+						"buffer_size": 22472,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3915,
-								3915
+								21022,
+								21022
 							]
 						],
 						"settings":
 						{
 							"WordCount":
 							{
-								"changes": 2542,
-								"count": 655,
+								"changes": 7477,
+								"count": 824,
 								"modified": false,
 								"selection": false,
 								"status": -1,
@@ -1575,6 +1779,14 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"bracket_highlighter.busy": false,
@@ -1584,15 +1796,15 @@
 								{
 									"1":
 									[
-										3919,
-										3920
+										21044,
+										21045
 									]
 								},
 								"icon":
 								{
 									"1":
 									[
-										"Packages/BracketHighlighter/icons/round_bracket.png",
+										"Packages/BracketHighlighter/icons/single_quote.png",
 										"brackethighlighter.default"
 									]
 								},
@@ -1600,8 +1812,8 @@
 								{
 									"1":
 									[
-										3910,
-										3911
+										21010,
+										21011
 									]
 								},
 								"unmatched":
@@ -1610,11 +1822,21 @@
 							},
 							"bracket_highlighter.regions":
 							[
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
 								"bh_single_quote",
 								"bh_single_quote_center",
 								"bh_single_quote_open",
@@ -1625,16 +1847,26 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
 								"bh_tag_close",
 								"bh_tag_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
 								"bh_double_quote",
 								"bh_double_quote_center",
 								"bh_double_quote_open",
@@ -1644,27 +1876,7 @@
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content"
+								"bh_unmatched_content"
 							],
 							"color_scheme": "Packages/User/Color Highlighter/themes/Solarized-ocean (SL).tmTheme",
 							"history_list_is_closing": true,
@@ -1673,83 +1885,52 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1985.0,
+						"translation.y": 7142.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "test.py",
+					"buffer": 3,
+					"file": "/Users/MarkelovIgor/git/biogeochemistry/FTC_experiments/model/air-water-heat.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 574,
+						"buffer_size": 1668,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								541,
-								511
+								0,
+								0
 							]
 						],
 						"settings":
 						{
 							"WordCount":
 							{
-								"changes": 936,
-								"count": 61,
+								"changes": 0,
+								"count": 53,
 								"modified": false,
 								"selection": false,
 								"status": -1,
 								"syntax": "plain text"
 							},
 							"apply_syntax_touched": true,
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".:>",
-									"selector": "source.c++ - string - comment - constant.numeric"
-								},
-								{
-									"characters": "\\",
-									"selector": "text.tex.latex"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"auto_name": "",
 							"bracket_highlighter.busy": false,
 							"bracket_highlighter.locations":
 							{
 								"close":
 								{
-									"1":
-									[
-										540,
-										541
-									]
 								},
 								"icon":
 								{
-									"1":
-									[
-										"Packages/BracketHighlighter/icons/square_bracket.png",
-										"brackethighlighter.default"
-									]
 								},
 								"open":
 								{
-									"1":
-									[
-										511,
-										512
-									]
 								},
 								"unmatched":
 								{
@@ -1757,11 +1938,21 @@
 							},
 							"bracket_highlighter.regions":
 							[
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
 								"bh_single_quote",
 								"bh_single_quote_center",
 								"bh_single_quote_open",
@@ -1772,16 +1963,26 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
 								"bh_tag_close",
 								"bh_tag_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
 								"bh_double_quote",
 								"bh_double_quote_center",
 								"bh_double_quote_open",
@@ -1791,27 +1992,7 @@
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content"
+								"bh_unmatched_content"
 							],
 							"syntax": "Packages/Python Improved/PythonImproved.tmLanguage"
 						},
@@ -1819,32 +2000,32 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "pvc_1996_sediment.py",
+					"buffer": 4,
+					"file": "ftc_example.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6282,
+						"buffer_size": 2159,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								79,
-								79
+								2158,
+								2158
 							]
 						],
 						"settings":
 						{
 							"WordCount":
 							{
-								"changes": 50,
-								"count": 459,
+								"changes": 1509,
+								"count": 74,
 								"modified": true,
 								"selection": true,
 								"status": -1,
@@ -1868,6 +2049,10 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"bracket_highlighter.busy": false,
@@ -1888,11 +2073,21 @@
 							},
 							"bracket_highlighter.regions":
 							[
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
 								"bh_single_quote",
 								"bh_single_quote_center",
 								"bh_single_quote_open",
@@ -1903,16 +2098,26 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
 								"bh_tag_close",
 								"bh_tag_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
 								"bh_double_quote",
 								"bh_double_quote_center",
 								"bh_double_quote_open",
@@ -1922,62 +2127,40 @@
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content"
+								"bh_unmatched_content"
 							],
-							"syntax": "Packages/Python Improved/PythonImproved.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"syntax": "Packages/Python Improved/PythonImproved.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "/Users/MarkelovIgor/.ipython/profile_default/ipython_config.py",
+					"buffer": 5,
+					"file": "pvc_1996_sediment.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 21360,
+						"buffer_size": 6284,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								21359,
-								21359
+								86,
+								86
 							]
 						],
 						"settings":
 						{
 							"WordCount":
 							{
-								"changes": 9,
-								"count": 1956,
+								"changes": 379,
+								"count": 459,
 								"modified": false,
 								"selection": false,
 								"status": -1,
@@ -1989,27 +2172,12 @@
 							{
 								"close":
 								{
-									"1":
-									[
-										21358,
-										21359
-									]
 								},
 								"icon":
 								{
-									"1":
-									[
-										"Packages/BracketHighlighter/icons/round_bracket.png",
-										"brackethighlighter.default"
-									]
 								},
 								"open":
 								{
-									"1":
-									[
-										21274,
-										21275
-									]
 								},
 								"unmatched":
 								{
@@ -2017,11 +2185,21 @@
 							},
 							"bracket_highlighter.regions":
 							[
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
 								"bh_single_quote",
 								"bh_single_quote_center",
 								"bh_single_quote_open",
@@ -2032,16 +2210,26 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
 								"bh_tag_close",
 								"bh_tag_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
 								"bh_double_quote",
 								"bh_double_quote_center",
 								"bh_double_quote_open",
@@ -2051,36 +2239,15 @@
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content"
+								"bh_unmatched_content"
 							],
-							"color_scheme": "Packages/User/Color Highlighter/themes/Solarized-ocean (SL).tmTheme",
 							"syntax": "Packages/Python Improved/PythonImproved.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 11458.0,
+						"translation.y": 1.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -2134,7 +2301,7 @@
 	},
 	"output.exec":
 	{
-		"height": 252.0
+		"height": 133.0
 	},
 	"output.find_results":
 	{
@@ -2198,6 +2365,14 @@
 		"selected_items":
 		[
 			[
+				"pvc",
+				"pvc_1996_sediment.py"
+			],
+			[
+				"test",
+				"test.py"
+			],
+			[
 				"sedi",
 				"sediment_class.py"
 			],
@@ -2207,10 +2382,6 @@
 			],
 			[
 				"tes",
-				"test.py"
-			],
-			[
-				"test",
 				"test.py"
 			],
 			[
@@ -2704,10 +2875,6 @@
 			[
 				"gr",
 				"grid.py"
-			],
-			[
-				"bounda",
-				"boundary_conditions.py"
 			]
 		],
 		"width": 0.0

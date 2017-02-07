@@ -1,26 +1,19 @@
 import numpy as np
 from scipy.sparse import spdiags
 from scipy.sparse import linalg
-from scipy import special
 import matplotlib.pyplot as plt
 import numexpr as ne
 import time
 import sys
-from collections import ChainMap
-from joblib import Parallel, delayed
 
 
-def paral_num_rates(rate, coef, conc, element):
-    return {element: ne.evaluate(rate, {**coef, **conc})}
-
-
-def ode_integrate(C0, dcdt, rates, coef, dt, parallel):
-    """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th"""
+def ode_integrate(C0, dcdt, rates, coef, dt, solver=1):
+    """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th
+    where the variables, rates, coef are passed as dictionaries
+    """
 
     def k_loop(conc):
         rates_num = {}
-        # rates_num = parallel(delayed(paral_num_rates)(v, coef, C0, e) for e, v in rates.items())
-        # rates_num = dict(ChainMap(*rates_num))
         for element, rate in rates.items():
             rates_num[element] = ne.evaluate(rate, {**coef, **conc})
 
@@ -78,6 +71,9 @@ def ode_integrate(C0, dcdt, rates, coef, dt, parallel):
             C_new[element] = C_0[element] + num_rates[element]
         return C_new, num_rates
 
+    if solver == 0:
+        return butcher5(C0)
+
     return rk4(C0)
 
 
@@ -89,7 +85,7 @@ class DotDict(dict):
 
 
 class PorousMediaLab:
-    """PorousMediaLab module solves Advection-Diffusion-Reaction Equation"""
+    """PorousMediaLab module solves Advection-Diffusion-Reaction Equation in porous media"""
 
     def __init__(self, length, dx, tend, dt, phi, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
@@ -109,7 +105,6 @@ class PorousMediaLab:
         self.time = np.linspace(0, tend, tend / dt + 1)
         self.N = self.x.size
         self.num_adjustments = 0
-        self.parallel = Parallel(n_jobs=1)
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -155,6 +150,9 @@ class PorousMediaLab:
 
     def add_solid_species(self, element, D, init_C, bc_top):
         self.add_species(False, element, D, init_C, bc_top, bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
+
+    def new_top_boundary_condition(self, element, bc):
+        self.species[element]['bc_top'] = bc
 
     def template_AL_AR(self, element):
         e1 = np.ones((self.N, 1))
@@ -204,9 +202,6 @@ class PorousMediaLab:
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
             sys.exit()
-
-    def new_top_boundary_condition(self, element, bc):
-        self.species[element]['bc_top'] = bc
 
     def update_matrices_due_to_bc(self, element, i):
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
@@ -308,7 +303,7 @@ class PorousMediaLab:
             self.transport_integrate_one_element(element, i)
 
     def reactions_integrate(self, i):
-        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, self.parallel)
+        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver=1)
 
         for element in C_new:
             if element is not 'Temperature':
@@ -438,30 +433,3 @@ class PorousMediaLab:
         cbar.ax.set_ylabel('Rate %s [mmol/L/yr]' % element)
         plt.show()
 
-
-def transport_equation_test():
-    D = 40
-    w = 0
-    t = 2
-    dx = 0.1
-    L = 100
-    phi = 1
-    dt = 0.001
-
-    C = PorousMediaLab(L, dx, t, dt, phi, w)
-    C.add_solute_species('O2', D, 0.0, 1)
-    C.dcdt.O2 = '0'
-    C.solve()
-
-    x = np.linspace(0, L, L / dx + 1)
-    sol = 1 / 2 * (special.erfc((x - w * t) / 2 / np.sqrt(D * t)) + np.exp(w * x / D) * special.erfc((x + w * t) / 2 / np.sqrt(D * t)))
-
-    plt.figure()
-    plt.plot(x, sol, 'r', label='Analytical solution')
-    plt.plot(C.x, C.O2.concentration[:, -1], 'kx', label='Numerical')
-    plt.legend()
-    plt.show()
-
-
-if __name__ == '__main__':
-    transport_equation_test()

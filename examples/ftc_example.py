@@ -59,4 +59,3 @@ for i in range(1, len(ftc.time)):
         ftc.O2.bc_top = 0.231
 
     ftc.integrate_one_timestep(i)
-
