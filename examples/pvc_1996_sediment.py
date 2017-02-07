@@ -1,29 +1,29 @@
-from sediment_class import Sediment
+from PorousMediaLab import PorousMediaLab
 
 D = 368
 w = 0.2 # adjusted from 0.2
-t = 20
+t = 200
 dx = 0.2
 L = 25
 phi = 0.9
-dt = 5e-4
+dt = 1e-4
 rho = 2
 Init_C = 0.231
 bc = 0.231
 
-sediment = Sediment(L, dx, t, dt, phi, w)
-sediment.add_solute_species('O2', D, Init_C, bc)
-sediment.add_solute_species('NO3', 359, 1.5e-3, 1.5e-3)
+sediment = PorousMediaLab(L, dx, t, dt, phi, w)
+sediment.add_solute_species('O2', D, 0, bc)
+sediment.add_solute_species('NO3', 359, 0, 1.5e-3)
 sediment.add_solute_species('Mn2', 220, 2e-3, 2e-3)
 sediment.add_solute_species('Fe2', 127, 0, 0)
-sediment.add_solute_species('SO4', 189, 28, 28)
+sediment.add_solute_species('SO4', 189, 15, 28)
 sediment.add_solute_species('NH4', 363, 22e-3, 22e-3)
 sediment.add_solute_species('CH4', 220, 0, 0)
 sediment.add_solute_species('TIC', 220, 0, 0)
 sediment.add_solute_species('TRS', 284, 0, 0)
 
-sediment.add_solid_species('OM1', 20, 15, 90)
-sediment.add_solid_species('OM2', 20, 5, 20)
+sediment.add_solid_species('OM1', 20, 15, 180)
+sediment.add_solid_species('OM2', 20, 5, 40)
 sediment.add_solid_species('MnO2', 20, 0, 40)
 sediment.add_solid_species('FeOH3', 20, 0, 75)
 sediment.add_solid_species('MnCO3', 20, 0, 0)
