@@ -25,7 +25,7 @@ ftc.add_species(is_solute=True, element='Fe2', D=127, init_C=0, bc_top=0, bc_top
 ftc.add_species(is_solute=False, element='OM', D=5, init_C=15, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
 ftc.add_solid_species('FeOH3', 5, Fe3_init, 0)
 
-ftc.constants['Q10'] = 2
+ftc.constants['Q10'] = 4
 ftc.constants['k_OM'] = 1
 ftc.constants['Km_O2'] = 20e-3
 ftc.constants['Km_FeOH3'] = 10

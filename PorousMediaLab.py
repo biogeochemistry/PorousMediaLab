@@ -344,6 +344,7 @@ class PorousMediaLab:
             lbl = str(depth) + ' cm'
             plt.plot(t, self.species[element]['theta'] * self.species[element]['concentration'][int(depth / self.dx)][-num_of_elem:], label=lbl)
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.grid(linestyle='-', linewidth=0.1)
         plt.show()
 
     def plot_times(self, element, time_slices=[0, 1, 2, 3, 4]):
@@ -359,7 +360,8 @@ class PorousMediaLab:
         for tms in time_slices:
             lbl = '%.2f day' % (tms * 365)
             plt.plot(self.species[element]['theta'] * self.species[element]['concentration'][:, int(tms / self.dt)], -self.x, label=lbl)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+        ax.grid(linestyle='-', linewidth=0.1)
         plt.show()
 
     def plot_profiles(self):
@@ -395,7 +397,7 @@ class PorousMediaLab:
         else:
             X, Y = np.meshgrid(self.time[1::100], -self.x)
             plt.xlabel('Years, [year]')
-        CS = plt.contourf(X, Y, self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:100], 10, origin='lower')
+        CS = plt.contourf(X, Y, self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:100], 51, origin='lower')
         if labels:
             plt.clabel(CS, inline=1, fontsize=10, colors='w')
         cbar = plt.colorbar(CS)
@@ -409,7 +411,9 @@ class PorousMediaLab:
         plt.show()
 
     def plot_contourplots_of_rates(self):
-        for element in sorted(self.species):
+        elements = sorted(self.species)
+        elements.remove('Temperature')
+        for element in elements:
             self.contour_plot_of_rates(element)
 
     def contour_plot_of_rates(self, element, labels=False, days=True):
@@ -417,7 +421,7 @@ class PorousMediaLab:
         plt.title('Rate of %s consumption/production' % element)
         z = self.species[element]['rates'][:, 0:-1:100]
         lim = np.max(np.abs(z))
-        lim = np.linspace(-lim-0.1, +lim+0.1, 51)
+        lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
         if days:
             X, Y = np.meshgrid(self.time[1::100] * 365, -self.x)
             plt.xlabel('Days, [day]')
