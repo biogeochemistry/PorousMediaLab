@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse import spdiags
 from scipy.sparse import linalg
 import matplotlib.pyplot as plt
+import math
 import numexpr as ne
 import time
 import sys
@@ -96,6 +97,7 @@ class PorousMediaLab:
         self.dx = dx
         self.tend = tend
         self.dt = dt
+        self.adjusted_dt = dt
         self.phi = phi
         self.w = w
         self.species = DotDict({})
@@ -105,7 +107,7 @@ class PorousMediaLab:
         self.estimated_rates = DotDict({})
         self.constants = DotDict({})
         self.x = np.linspace(0, length, length / dx + 1)
-        self.time = np.linspace(0, tend, tend / dt + 1)
+        self.time = np.linspace(0, tend, round(tend / dt) + 1)
         self.N = self.x.size
         self.num_adjustments = 0
 
@@ -159,8 +161,8 @@ class PorousMediaLab:
 
     def template_AL_AR(self, element):
         e1 = np.ones((self.N, 1))
-        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx  #
-        q = self.species[element]['theta'] * self.w * self.dt / self.dx
+        s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx  #
+        q = self.species[element]['theta'] * self.w * self.adjusted_dt / self.dx
         self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (self.species[element]['theta'] + s), e1 * (-s / 2 + q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
         self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (self.species[element]['theta'] - s), e1 * (s / 2 - q / 4)),
@@ -208,38 +210,38 @@ class PorousMediaLab:
 
     def update_matrices_due_to_bc(self, element, i):
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
-            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+            self.profiles[element][0] = self.species[element]['bc_top']
+            self.profiles[element][-1] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
 
         elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.profiles[element][0] = self.species[element]['bc_top']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.profiles[element][-1] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['robin']:
-            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
-            s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+            self.profiles[element][-1] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
+            s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * s * self.dx / self.species[element]['theta'] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['robin']:
-            self.species[element]['concentration'][0, i] = self.species[element]['bc_top']
-            self.species[element]['concentration'][-1, i] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.species[element]['concentration'][:, i])
+            self.profiles[element][0] = self.species[element]['bc_top']
+            self.profiles[element][-1] = self.species[element]['bc_bot']
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
 
         else:
             print('\nABORT!!!: Not correct boundary condition...')
@@ -251,7 +253,7 @@ class PorousMediaLab:
             if self.num_adjustments < 1:
                 print("Simulation started:\n\t", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
-            total_t = len(self.time) * (time.time() - self.tstart) / 100
+            total_t = len(self.time) * (time.time() - self.tstart) / 100 * self.dt / self.adjusted_dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print("\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
@@ -259,10 +261,10 @@ class PorousMediaLab:
 
     def solve(self, do_adjust=True):
         if self.num_adjustments < 1:
-            print('Simulation of sediment core with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' % (self.time[-1], self.dt, self.length, self.dx, self.w))
+            print('Simulation of sediment core with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' % (self.time[-1], self.adjusted_dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
             try:
-                for i in np.arange(1, len(self.time)):
+                for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.adjusted_dt) + 1))):
                     self.integrate_one_timestep(i)
                     self.estimate_time_of_computation(i)
             except FloatingPointError as inst:
@@ -279,13 +281,13 @@ class PorousMediaLab:
             self.species[element]['concentration'][:, 0] = (self.species[element]['init_C'] * np.ones((self.N)))
             self.species[element]['rates'] = np.zeros((self.N, self.time.size))
             self.profiles[element] = self.species[element]['concentration'][:, 0]
+            self.template_AL_AR(element)
             self.update_matrices_due_to_bc(element, 0)
 
     def adjust_timestep(self):
-        self.dt /= 2
-        self.time = np.linspace(0, self.tend, self.tend / self.dt + 1)
+        self.adjusted_dt /= 10
         self.num_adjustments += 1
-        print('Time step was reduced to\n\tdt = %.2e.' % (self.dt))
+        print('Time step was reduced to\n\tdt = %.2e.' % (self.adjusted_dt))
 
     def restart_solve(self):
         self.adjust_timestep()
@@ -296,25 +298,30 @@ class PorousMediaLab:
         self.transport_integrate(i)
         self.reactions_integrate(i)
 
-    def transport_integrate_one_element(self, element, i):
-        self.species[element]['concentration'][:, i] = linalg.spsolve(self.species[element]['AL'], self.species[element]['B'], use_umfpack=True)
-        self.update_matrices_due_to_bc(element, i)
-        self.profiles[element] = self.species[element]['concentration'][:, i]
-
     def transport_integrate(self, i):
         for element in self.species:
-            self.transport_integrate_one_element(element, i)
+            self.profiles[element] = linalg.spsolve(self.species[element]['AL'], self.species[element]['B'], use_umfpack=True)
+            self.update_matrices_due_to_bc(element, i)
+            if self.num_adjustments > 0:
+                j = int(round(i * self.adjusted_dt / self.dt))
+            else:
+                j = i
+            self.species[element]['concentration'][:, j] = self.profiles[element]
 
     def reactions_integrate(self, i):
-        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver=1)
+        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver=1)
 
         for element in C_new:
             if element is not 'Temperature':
                 C_new[element][C_new[element] < 0] = 0  # the concentration should be positive
-            self.species[element]['concentration'][:, i] = C_new[element]
+            self.profiles[element] = C_new[element]
             self.update_matrices_due_to_bc(element, i)
-            self.profiles[element] = self.species[element]['concentration'][:, i]
-            self.species[element]['rates'][:, i] = rates[element] / self.dt
+            if self.num_adjustments > 0:
+                j = int(round(i * self.adjusted_dt / self.dt))
+            else:
+                j = i
+            self.species[element]['concentration'][:, j] = self.profiles[element]
+            self.species[element]['rates'][:, j] = rates[element] / self.adjusted_dt
 
     def is_solute(self, element):
         return self.species[element]['is_solute']
@@ -328,7 +335,7 @@ class PorousMediaLab:
         else:
             plt.title('Bulk ' + element + ' concentration at specific depths')
             plt.ylabel('mmol/L')
-        if self.time[-1] > years_to_plot:
+        if self.tend > years_to_plot:
             num_of_elem = int(years_to_plot / self.dt)
         else:
             num_of_elem = len(self.time)
@@ -370,10 +377,10 @@ class PorousMediaLab:
         plt.figure()
         plt.plot(self.species[element]['theta'] * self.profiles[element], -self.x, sns.xkcd_rgb["denim blue"], lw=3, label=element)
         if element == 'Temperature':
-            plt.title('Temperature profile after %.2f days' % (self.time[-1] * 365))
+            plt.title('Temperature profile after %.2f days' % (self.tend * 365))
             plt.xlabel('Temperature, C')
         else:
-            plt.title('Bulk %s concentration after %.2f days' % (element, self.time[-1] * 365))
+            plt.title('Bulk %s concentration after %.2f days' % (element, self.tend * 365))
             plt.xlabel('mmol/L')
         plt.ylabel('Depth, cm')
         ax = plt.gca()
@@ -390,13 +397,16 @@ class PorousMediaLab:
     def contour_plot(self, element, labels=False, days=True):
         plt.figure()
         plt.title('Bulk ' + element + ' concentration')
+        resoluion = 100
+        n = math.ceil(self.time.size / resoluion)
         if days:
-            X, Y = np.meshgrid(self.time[1::100] * 365, -self.x)
+            X, Y = np.meshgrid(self.time[1::n] * 365, -self.x)
             plt.xlabel('Days, [day]')
         else:
-            X, Y = np.meshgrid(self.time[1::100], -self.x)
+            X, Y = np.meshgrid(self.time[1::n], -self.x)
             plt.xlabel('Years, [year]')
-        CS = plt.contourf(X, Y, self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:100], 51, cmap=ListedColormap(sns.color_palette("Blues", 51)), origin='lower')
+        z = self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:n]
+        CS = plt.contourf(X, Y, z, 51, cmap=ListedColormap(sns.color_palette("Blues", 51)), origin='lower')
         if labels:
             plt.clabel(CS, inline=1, fontsize=10, colors='w')
         cbar = plt.colorbar(CS)
@@ -419,14 +429,16 @@ class PorousMediaLab:
     def contour_plot_of_rates(self, element, labels=False, days=True):
         plt.figure()
         plt.title('Rate of %s consumption/production' % element)
-        z = self.species[element]['rates'][:, 0:-1:100]
+        resoluion = 100
+        n = math.ceil(self.time.size / resoluion)
+        z = self.species[element]['rates'][:, 0:-1:n]
         lim = np.max(np.abs(z))
         lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
         if days:
-            X, Y = np.meshgrid(self.time[1::100] * 365, -self.x)
+            X, Y = np.meshgrid(self.time[1::n] * 365, -self.x)
             plt.xlabel('Days, [day]')
         else:
-            X, Y = np.meshgrid(self.time[1::100], -self.x)
+            X, Y = np.meshgrid(self.time[1::n], -self.x)
             plt.xlabel('Years, [year]')
         CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette("RdBu_r", 101)), origin='lower', levels=lim, extend='both')
         if labels:
@@ -437,4 +449,3 @@ class PorousMediaLab:
         ax.ticklabel_format(useOffset=False)
         cbar.ax.set_ylabel('Rate %s [mmol/L/yr]' % element)
         plt.show()
-
