@@ -1,6 +1,5 @@
-# sediment_2.0
-Refactored version of the sediment model: Sediment v2.0
+# PorousMediaLab
 
-Numerical vs analytical solution:
+Toolbox for 1D reactive transport modeling in porous media aimed on easeness of use for user without computational background.
 
-![](fig/numerocal_vs_analytical.png)
+For the example, have a look of simulation of [freeze/thawing cycles](https://github.com/biogeochemistry/PorousMediaLab/blob/master/FT_column_example.ipynb) in saturated soil.
