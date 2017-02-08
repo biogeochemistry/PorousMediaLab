@@ -1,2 +1,0 @@
-[run]
-omit = *mimetools*,*encodings*,*rfc822*,*urllib2*,*subprocess*, *gzip*, *pysparse*, *fipy*, *ast*,*numexpr*, *mock*, *scipy*,*numpy*,*matplotlib*,*PIL*,*mpl_toolkits*,*dateutil*,*cffi*,*ConfigParser*,*FixTk*,*Queue*,*bisect*,*calendar*,*copy_reg*,*csv*,*decimal*,*distutils*,*grid*,*numbers*,*repr*,*six*,*IPython*,*pyparsing*,*PyTrilinos*,*argparse*, *json*, *cProfile*, *decorator*, *fractions*, *getopt*, *getpass*, *mimetypes*, *pty*,*httplib*,*importlib*,*pydoc*,*runpy*,*sqlite3*,*tty*, *shlex*, *timeit*,*codeop*

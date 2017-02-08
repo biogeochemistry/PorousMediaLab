@@ -1,10 +1,17 @@
 # import nose.tools as test
-# from nose.plugins.skip import SkipTest
-# from spec import Spec
+
+from spec import Spec, skip
 import PorousMediaLab
 import numpy as np
 from scipy import special
 # from unittest import TestCase
+
+
+class TestIntialization:
+    """Test the initialization of the PorousMediaLab class with correct bc and init concentrations"""
+
+    def initial_concentrations_test(self):
+        skip()
 
 
 class TestMathModel:
@@ -65,4 +72,20 @@ class TestMathModel:
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
         assert max(num_sol - np.exp(-coef['k'] * time)) < 1e-5
+
+    def adjust_time_test(self):
+        """adjusting time step"""
+        skip()
+
+class TestHandling:
+    """Test the exception handling with correct terminal messages"""
+
+    def ode_solver_key_error_test(self):
+        """key error in ode"""
+        skip()
+
+    def bc_error_test(self):
+        """boundary condition error """
+        skip()
+
 
