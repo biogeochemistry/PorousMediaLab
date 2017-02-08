@@ -2,3 +2,4 @@
 /test.py
 .coverage
 *.sublime-workspace
+/.ipynb_checkpoints/
