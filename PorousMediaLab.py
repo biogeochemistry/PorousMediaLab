@@ -411,7 +411,8 @@ class PorousMediaLab:
 
     def plot_contourplots_of_rates(self):
         elements = sorted(self.species)
-        elements.remove('Temperature')
+        if 'Temperature' in elements:
+            elements.remove('Temperature')
         for element in elements:
             self.contour_plot_of_rates(element)
 
