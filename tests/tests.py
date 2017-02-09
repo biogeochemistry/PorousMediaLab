@@ -1,6 +1,5 @@
-# import nose.tools as test
-
-from spec import Spec, skip
+import unittest
+from spec import skip
 import PorousMediaLab
 import numpy as np
 from scipy import special
@@ -8,11 +7,39 @@ from scipy import special
 
 
 class TestIntialization:
-    """Test the initialization of the PorousMediaLab class with correct bc and init concentrations"""
+    """Test the initialization of the PorousMediaLab class with correct boundary conditions  and initial concentrations"""
 
     def initial_concentrations_test(self):
-        skip()
+        """ Scalar initial condition assigned to the whole vector"""
+        D = 40
+        w = 0.2
+        t = 0.1
+        dx = 0.1
+        L = 1
+        phi = 1
+        dt = 0.1
+        C = PorousMediaLab.PorousMediaLab(L, dx, t, dt, phi, w)
+        init_C = 12.32
+        C.add_solute_species('O2', D, init_C, init_C)
+        print(C.O2.concentration)
+        assert np.array_equal(C.O2.concentration[:, 0], init_C * np.ones((L / dx + 1)))
 
+    def boundary_conditions_test(self):
+        """ Dirichlet BC at the interface always assigned"""
+        D = 40
+        w = 0.2
+        t = 0.1
+        dx = 0.1
+        L = 1
+        phi = 1
+        dt = 0.01
+        C = PorousMediaLab.PorousMediaLab(L, dx, t, dt, phi, w)
+        init_C = 12.32
+        bc = 0.2
+        C.add_solute_species('O2', D, init_C, bc)
+        print(C.O2.concentration)
+        C.solve()
+        assert np.array_equal(C.O2.concentration[0, :], bc * np.ones((t / dt + 1)))
 
 class TestMathModel:
     """Testing the accuracy of numerical solutions of integrators"""
@@ -77,15 +104,20 @@ class TestMathModel:
         """adjusting time step"""
         skip()
 
-class TestHandling:
+
+class TestHandling(unittest.TestCase):
     """Test the exception handling with correct terminal messages"""
 
     def ode_solver_key_error_test(self):
-        """key error in ode"""
-        skip()
+        """Key error with incorrect rates and dcdt in the ode"""
+        C0 = {'C': 1}
+        coef = {'k': 2}
+        rates = {'R': 'k*C'}
+        dcdt = {'C1': '-R'}
+        dt = 0.0001
+        with self.assertRaises(KeyError):
+            PorousMediaLab.ode_integrate(C0, dcdt, rates, coef, dt, solver=0)
 
     def bc_error_test(self):
         """boundary condition error """
         skip()
-
-
