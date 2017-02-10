@@ -3,5 +3,4 @@
 .coverage
 *.sublime-workspace
 /.ipynb_checkpoints/
-/setup.cfg
 /.cache/
