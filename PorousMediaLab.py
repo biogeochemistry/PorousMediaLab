@@ -192,7 +192,7 @@ class PorousMediaLab:
             self.species[element]['AL'][-1, -2] = -s
             self.species[element]['AR'][-1, -1] = self.species[element]['theta'] - s
             self.species[element]['AR'][-1, -2] = s
-        # Robin BC is not tested
+        # NOTE: Robin BC is not implemented yet
         elif self.species[element]['bc_bot_type'] in ['robin']:
             self.species[element]['AL'][-1, -1] = self.species[element]['theta']
             self.species[element]['AL'][-1, -2] = 0
@@ -285,7 +285,7 @@ class PorousMediaLab:
             self.update_matrices_due_to_bc(element, 0)
 
     def adjust_timestep(self):
-        self.adjusted_dt /= 10
+        self.adjusted_dt /= 5
         self.num_adjustments += 1
         print('Time step was reduced to\n\tdt = %.2e.' % (self.adjusted_dt))
 
