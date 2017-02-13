@@ -2,7 +2,7 @@ from PorousMediaLab import PorousMediaLab
 
 D = 368
 w = 0.2
-t = 200
+t = 100
 dx = 0.2
 L = 25
 phi = 0.9
