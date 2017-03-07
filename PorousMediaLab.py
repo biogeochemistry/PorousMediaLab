@@ -6,6 +6,7 @@ import math
 import numexpr as ne
 import time
 import sys
+from scipy import special
 import seaborn as sns
 from matplotlib.colors import ListedColormap
 sns.set_style("whitegrid")
@@ -114,7 +115,7 @@ class PorousMediaLab:
     def __getattr__(self, attr):
         return self.species[attr]
 
-    def add_temperature(self, D, init_temperature):
+    def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
         self.species['Temperature']['is_solute'] = True
         self.species['Temperature']['bc_top'] = init_temperature
@@ -141,10 +142,10 @@ class PorousMediaLab:
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
         self.species[element]['theta'] = self.phi if is_solute else 1 - self.phi
         self.species[element]['D'] = D
-        self.species[element]['init_C'] = init_C
+        self.species[element]['init_C'] = init_C / self.species[element]['theta']
         self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = (init_C * np.ones((self.N)))
+        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         self.template_AL_AR(element)
         self.update_matrices_due_to_bc(element, 0)
@@ -261,7 +262,7 @@ class PorousMediaLab:
 
     def solve(self, do_adjust=True):
         if self.num_adjustments < 1:
-            print('Simulation of sediment core with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' % (self.time[-1], self.adjusted_dt, self.length, self.dx, self.w))
+            print('Simulation starts  with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' % (self.time[-1], self.adjusted_dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
             try:
                 for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.adjusted_dt) + 1))):
@@ -325,6 +326,17 @@ class PorousMediaLab:
 
     def is_solute(self, element):
         return self.species[element]['is_solute']
+
+    def custom_plot(self, x, y, ttl='', y_lbl='', x_lbl=''):
+        plt.figure()
+        ax = plt.subplot(111)
+        plt.plot(x, y, lw=3)
+        plt.title(ttl)
+        plt.xlim(x[0], x[-1])
+        plt.ylabel(y_lbl)
+        plt.xlabel(x_lbl)
+        ax.grid(linestyle='-', linewidth=0.2)
+        plt.show()
 
     def plot_depths(self, element, depths=[0, 1, 2, 3, 4], years_to_plot=10, days=True):
         plt.figure()
@@ -390,22 +402,26 @@ class PorousMediaLab:
         plt.tight_layout()
         plt.show()
 
-    def plot_contourplots(self):
+    def plot_contourplots(self,  **kwargs):
         for element in sorted(self.species):
-            self.contour_plot(element)
+            self.contour_plot(element,  **kwargs)
 
-    def contour_plot(self, element, labels=False, days=True):
+    def contour_plot(self, element, labels=False, days=True, last_year=False):
         plt.figure()
         plt.title('Bulk ' + element + ' concentration')
         resoluion = 100
         n = math.ceil(self.time.size / resoluion)
+        if last_year:
+            k = n-int(1/self.dt)
+        else:
+            k = 1
         if days:
-            X, Y = np.meshgrid(self.time[1::n] * 365, -self.x)
+            X, Y = np.meshgrid(self.time[k::n] * 365, -self.x)
             plt.xlabel('Days, [day]')
         else:
-            X, Y = np.meshgrid(self.time[1::n], -self.x)
+            X, Y = np.meshgrid(self.time[k::n], -self.x)
             plt.xlabel('Years, [year]')
-        z = self.species[element]['theta'] * self.species[element]['concentration'][:, 0:-1:n]
+        z = self.species[element]['theta'] * self.species[element]['concentration'][:, k-1:-1:n]
         CS = plt.contourf(X, Y, z, 51, cmap=ListedColormap(sns.color_palette("Blues", 51)), origin='lower')
         if labels:
             plt.clabel(CS, inline=1, fontsize=10, colors='w')
@@ -419,26 +435,30 @@ class PorousMediaLab:
             cbar.ax.set_ylabel('Temperature, C')
         plt.show()
 
-    def plot_contourplots_of_rates(self):
+    def plot_contourplots_of_rates(self, **kwargs):
         elements = sorted(self.species)
         if 'Temperature' in elements:
             elements.remove('Temperature')
         for element in elements:
-            self.contour_plot_of_rates(element)
+            self.contour_plot_of_rates(element, **kwargs)
 
-    def contour_plot_of_rates(self, element, labels=False, days=True):
+    def contour_plot_of_rates(self, element, labels=False, days=True, last_year=False):
         plt.figure()
         plt.title('Rate of %s consumption/production' % element)
         resoluion = 100
         n = math.ceil(self.time.size / resoluion)
-        z = self.species[element]['rates'][:, 0:-1:n]
+        if last_year:
+            k = n-int(1/self.dt)
+        else:
+            k = 1
+        z = self.species[element]['rates'][:, k-1:-1:n]
         lim = np.max(np.abs(z))
         lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
         if days:
-            X, Y = np.meshgrid(self.time[1::n] * 365, -self.x)
+            X, Y = np.meshgrid(self.time[k::n] * 365, -self.x)
             plt.xlabel('Days, [day]')
         else:
-            X, Y = np.meshgrid(self.time[1::n], -self.x)
+            X, Y = np.meshgrid(self.time[k::n], -self.x)
             plt.xlabel('Years, [year]')
         CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette("RdBu_r", 101)), origin='lower', levels=lim, extend='both')
         if labels:
@@ -449,3 +469,58 @@ class PorousMediaLab:
         ax.ticklabel_format(useOffset=False)
         cbar.ax.set_ylabel('Rate %s [mmol/L/yr]' % element)
         plt.show()
+
+
+def transport_equation_plot():
+    '''Check the transport equation integrator'''
+    w = 5
+    tend = 5
+    dx = 0.1
+    length = 100
+    phi = 1
+    dt = 0.001
+    lab = PorousMediaLab(length, dx, tend, dt, phi, w)
+    D = 5
+    lab.add_solute_species('O2', D, 0.0, 1)
+    lab.solve()
+    x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+    sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) + np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+
+    plt.figure()
+    plt.plot(x, sol, 'k', label='Analytical solution')
+    plt.scatter(lab.x[::10], lab.species['O2'].concentration[:, -1][::10], marker = 'x',  label='Numerical')
+    plt.xlim([x[0], x[-1]])
+    ax = plt.gca()
+    ax.ticklabel_format(useOffset=False)
+    ax.grid(linestyle='-', linewidth=0.2)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def reaction_equation_plot():
+    '''Check the reaction equation integrator'''
+    C0 = {'C': 1}
+    coef = {'k': 2}
+    rates = {'R': 'k*C'}
+    dcdt = {'C': '-R'}
+    dt = 0.001
+    T = 10
+    time = np.linspace(0, T, T / dt + 1)
+    num_sol = np.array(C0['C'])
+    for i in range(1, len(time)):
+        C_new, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver=1)
+        C0['C'] = C_new['C']
+        num_sol = np.append(num_sol, C_new['C'])
+    assert max(num_sol - np.exp(-coef['k'] * time)) < 1e-5
+
+    plt.figure()
+    plt.plot(time, np.exp(-coef['k'] * time), 'k', label='Analytical solution')
+    plt.scatter(time[::100], num_sol[::100], marker = 'x',  label='Numerical')
+    plt.xlim([time[0], time[-1]])
+    ax = plt.gca()
+    ax.ticklabel_format(useOffset=False)
+    ax.grid(linestyle='-', linewidth=0.2)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
