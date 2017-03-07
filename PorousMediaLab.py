@@ -12,12 +12,12 @@ from matplotlib.colors import ListedColormap
 sns.set_style("whitegrid")
 
 
-def ode_integrate(C0, dcdt, rates, coef, dt, solver=1):
+def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
     """Integrates the reactions according to 4th Order Runge-Kutta method or Butcher 5th
     where the variables, rates, coef are passed as dictionaries
     """
 
-    def k_loop(conc):
+    def k_loop(conc, dt=dt):
         rates_num = {}
         for element, rate in rates.items():
             rates_num[element] = ne.evaluate(rate, {**coef, **conc})
@@ -27,6 +27,22 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver=1):
             Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
 
         return Kn
+
+    def implicit_method():
+
+        class Derivative:
+            def __init__(self, f, h=1E-5):
+                self.f = f
+                self.h = float(h)
+
+            def __call__(self, x):
+                f, h = self.f, self.h
+                return (f(x + h) - f(x - h)) / (2 * h)
+
+        def F(w):
+            return w - k_loop(w) - C0
+
+        raise NotImplemented
 
     def sum_k(A, B, b):
         C_new = {}
@@ -76,7 +92,7 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver=1):
             C_new[element] = C_0[element] + num_rates[element]
         return C_new, num_rates
 
-    if solver == 0:
+    if solver == 'butcher5':
         return butcher5(C0)
 
     return rk4(C0)
@@ -310,7 +326,7 @@ class PorousMediaLab:
             self.species[element]['concentration'][:, j] = self.profiles[element]
 
     def reactions_integrate(self, i):
-        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver=1)
+        C_new, rates = ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver='rk4')
 
         for element in C_new:
             if element is not 'Temperature':
@@ -402,9 +418,9 @@ class PorousMediaLab:
         plt.tight_layout()
         plt.show()
 
-    def plot_contourplots(self,  **kwargs):
+    def plot_contourplots(self, **kwargs):
         for element in sorted(self.species):
-            self.contour_plot(element,  **kwargs)
+            self.contour_plot(element, **kwargs)
 
     def contour_plot(self, element, labels=False, days=True, last_year=False):
         plt.figure()
@@ -412,7 +428,7 @@ class PorousMediaLab:
         resoluion = 100
         n = math.ceil(self.time.size / resoluion)
         if last_year:
-            k = n-int(1/self.dt)
+            k = n - int(1 / self.dt)
         else:
             k = 1
         if days:
@@ -421,7 +437,7 @@ class PorousMediaLab:
         else:
             X, Y = np.meshgrid(self.time[k::n], -self.x)
             plt.xlabel('Years, [year]')
-        z = self.species[element]['theta'] * self.species[element]['concentration'][:, k-1:-1:n]
+        z = self.species[element]['theta'] * self.species[element]['concentration'][:, k - 1:-1:n]
         CS = plt.contourf(X, Y, z, 51, cmap=ListedColormap(sns.color_palette("Blues", 51)), origin='lower')
         if labels:
             plt.clabel(CS, inline=1, fontsize=10, colors='w')
@@ -448,10 +464,10 @@ class PorousMediaLab:
         resoluion = 100
         n = math.ceil(self.time.size / resoluion)
         if last_year:
-            k = n-int(1/self.dt)
+            k = n - int(1 / self.dt)
         else:
             k = 1
-        z = self.species[element]['rates'][:, k-1:-1:n]
+        z = self.species[element]['rates'][:, k - 1:-1:n]
         lim = np.max(np.abs(z))
         lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
         if days:
@@ -488,7 +504,7 @@ def transport_equation_plot():
 
     plt.figure()
     plt.plot(x, sol, 'k', label='Analytical solution')
-    plt.scatter(lab.x[::10], lab.species['O2'].concentration[:, -1][::10], marker = 'x',  label='Numerical')
+    plt.scatter(lab.x[::10], lab.species['O2'].concentration[:, -1][::10], marker='x', label='Numerical')
     plt.xlim([x[0], x[-1]])
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
@@ -496,6 +512,7 @@ def transport_equation_plot():
     plt.legend()
     plt.tight_layout()
     plt.show()
+
 
 def reaction_equation_plot():
     '''Check the reaction equation integrator'''
@@ -508,14 +525,14 @@ def reaction_equation_plot():
     time = np.linspace(0, T, T / dt + 1)
     num_sol = np.array(C0['C'])
     for i in range(1, len(time)):
-        C_new, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver=1)
+        C_new, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4')
         C0['C'] = C_new['C']
         num_sol = np.append(num_sol, C_new['C'])
     assert max(num_sol - np.exp(-coef['k'] * time)) < 1e-5
 
     plt.figure()
     plt.plot(time, np.exp(-coef['k'] * time), 'k', label='Analytical solution')
-    plt.scatter(time[::100], num_sol[::100], marker = 'x',  label='Numerical')
+    plt.scatter(time[::100], num_sol[::100], marker='x', label='Numerical')
     plt.xlim([time[0], time[-1]])
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
@@ -523,4 +540,3 @@ def reaction_equation_plot():
     plt.legend()
     plt.tight_layout()
     plt.show()
-
