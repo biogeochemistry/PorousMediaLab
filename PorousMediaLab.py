@@ -28,7 +28,7 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
         return Kn
 
-    def implicit_method():
+    def implicit_solver(C_0):
 
         class Derivative:
             def __init__(self, f, h=1E-5):
@@ -39,8 +39,36 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
                 f, h = self.f, self.h
                 return (f(x + h) - f(x - h)) / (2 * h)
 
+        def Newton(f, x, dfdx, epsilon=1.0E-7, N=100, store=False):
+            f_value = f(x)
+            n = 0
+            if store:
+                info = [(x, f_value)]
+            while abs(f_value) > epsilon and n <= N:
+                dfdx_value = float(dfdx(x))
+                if abs(dfdx_value) < 1E-14:
+                    raise ValueError("Newton: f’(%g)=%g" % (x, dfdx_value))
+
+                x = x - f_value / dfdx_value
+                n += 1
+                f_value = f(x)
+                if store:
+                    info.append((x, f_value))
+            if store:
+                return x, info
+            else:
+                return x, n, f_value
+
         def F(w):
             return w - k_loop(w) - C0
+
+        dFdw = Derivative(F)
+
+        C_new = {}
+        k1 = k_loop(C_0)
+        for element in C_0:
+            w_start = C_0[element] + k1[element]
+            C_new[element], _ = Newton(F, w_start, dFdw, N=30)
 
         raise NotImplemented
 
@@ -52,11 +80,11 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
     def rk4(C_0):
         """Integrates the reactions according to 4th Order Runge-Kutta method
-         k_1 = dt*dcdt(C0, dt)
-         k_2 = dt*dcdt(C0+0.5*k_1, dt)
-         k_3 = dt*dcdt(C0+0.5*k_2, dt)
-         k_4 = dt*dcdt(C0+k_3, dt)
-         C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6
+            k_1 = dt*dcdt(C0, dt)
+            k_2 = dt*dcdt(C0+0.5*k_1, dt)
+            k_3 = dt*dcdt(C0+0.5*k_2, dt)
+            k_4 = dt*dcdt(C0+k_3, dt)
+            C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6
         """
         k1 = k_loop(C_0)
         k2 = k_loop(sum_k(C_0, k1, 0.5))
@@ -94,6 +122,8 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
     if solver == 'butcher5':
         return butcher5(C0)
+    if solver == 'implicit':
+        return implicit_solver(C0)
 
     return rk4(C0)
 
