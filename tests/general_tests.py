@@ -1,17 +1,41 @@
-# import nose.tools as test
-
-from spec import Spec, skip
-import PorousMediaLab
+import unittest
+from spec import skip
+import PorousMediaLab.PorousMediaLab as PorousMediaLab
 import numpy as np
 from scipy import special
+import matplotlib.pyplot as plt
 # from unittest import TestCase
 
 
+def create_lab():
+    w = 0.2
+    tend = 0.1
+    dx = 0.1
+    length = 100
+    phi = 1
+    dt = 0.001
+    lab = PorousMediaLab.PorousMediaLab(length, dx, tend, dt, phi, w)
+    return lab
+
+
 class TestIntialization:
-    """Test the initialization of the PorousMediaLab class with correct bc and init concentrations"""
+    """Test the initialization of the PorousMediaLab class with correct boundary conditions  and initial concentrations"""
 
     def initial_concentrations_test(self):
-        skip()
+        """ Scalar initial condition assigned to the whole vector"""
+        init_C = 12.32
+        lab = create_lab()
+        lab.add_solute_species('O2', 40, init_C, init_C)
+        assert np.array_equal(lab.O2.concentration[:, 0], init_C * np.ones((lab.length / lab.dx + 1)))
+
+    def boundary_conditions_test(self):
+        """ Dirichlet BC at the interface always assigned"""
+        lab = create_lab()
+        init_C = 12.32
+        bc = 0.2
+        lab.add_solute_species('O2', 40, init_C, bc)
+        lab.solve()
+        assert np.array_equal(lab.O2.concentration[0, :], bc * np.ones((lab.tend / lab.dt + 1)))
 
 
 class TestMathModel:
@@ -19,21 +43,15 @@ class TestMathModel:
 
     def transport_equation_test(self):
         '''Check the transport equation integrator'''
+        lab = create_lab()
         D = 40
-        w = 0.2
-        t = 0.1
-        dx = 0.1
-        L = 100
-        phi = 1
-        dt = 0.001
-        C = PorousMediaLab.PorousMediaLab(L, dx, t, dt, phi, w)
-        C.add_solute_species('O2', D, 0.0, 1)
-        C.dcdt.O2 = '0'
-        C.solve()
-        x = np.linspace(0, L, L / dx + 1)
-        sol = 1 / 2 * (special.erfc((x - w * t) / 2 / np.sqrt(D * t)) + np.exp(w * x / D) * special.erfc((x + w * t) / 2 / np.sqrt(D * t)))
+        lab.add_solute_species('O2', D, 0.0, 1)
+        lab.dcdt.O2 = '0'
+        lab.solve()
+        x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+        sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) + np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
-        assert max(C.O2.concentration[:, -1] - sol) < 1e-4
+        assert max(lab.O2.concentration[:, -1] - sol) < 1e-4
 
     def rk4_ode_solver_test(self):
         """Testing 4th order Runge-Kutta ode solver"""
@@ -77,15 +95,20 @@ class TestMathModel:
         """adjusting time step"""
         skip()
 
-class TestHandling:
+
+class TestHandling(unittest.TestCase):
     """Test the exception handling with correct terminal messages"""
 
     def ode_solver_key_error_test(self):
-        """key error in ode"""
-        skip()
+        """Key error with incorrect rates and dcdt in the ode"""
+        C0 = {'C': 1}
+        coef = {'k': 2}
+        rates = {'R': 'k*C'}
+        dcdt = {'C1': '-R'}
+        dt = 0.0001
+        with self.assertRaises(KeyError):
+            PorousMediaLab.ode_integrate(C0, dcdt, rates, coef, dt, solver=0)
 
     def bc_error_test(self):
         """boundary condition error """
         skip()
-
-

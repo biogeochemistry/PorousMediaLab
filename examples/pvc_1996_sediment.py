@@ -2,7 +2,7 @@ from PorousMediaLab import PorousMediaLab
 
 D = 368
 w = 0.2
-t = 200
+t = 300
 dx = 0.2
 L = 25
 phi = 0.9
@@ -50,7 +50,7 @@ sediment.constants['Km_FeOH3'] = 100
 sediment.constants['xMn'] = 1
 sediment.constants['xFe'] = 1
 sediment.constants['k7'] = 5e+6 * 1e-3
-sediment.constants['k8'] = 1.4e+8 * 1e-3
+sediment.constants['k8'] = 1.4e+5 * 1e-3
 sediment.constants['k9'] = 5e+7 * 1e-3
 sediment.constants['k10'] = 3e+6 * 1e-3
 sediment.constants['k11'] = 5e+6 * 1e-3
@@ -82,7 +82,6 @@ sediment.rates['R5a'] = 'k_OM1 * OM1 * SO4 / (Km_SO4 + SO4 ) * Km_FeOH3 / (Km_Fe
 sediment.rates['R5b'] = 'k_OM2 * OM2 * SO4 / (Km_SO4 + SO4 ) * Km_FeOH3 / (Km_FeOH3 + FeOH3) * Km_MnO2 / (Km_MnO2 + MnO2) * Km_NO3 / (Km_NO3 + NO3) * Km_O2 / (Km_O2 + O2)'
 sediment.rates['R6a'] = 'k_OM1 * OM1 * Km_SO4 / (Km_SO4 + SO4 ) * Km_FeOH3 / (Km_FeOH3 + FeOH3) * Km_MnO2 / (Km_MnO2 + MnO2) * Km_NO3 / (Km_NO3 + NO3) * Km_O2 / (Km_O2 + O2)'
 sediment.rates['R6b'] = 'k_OM2 * OM2 * Km_SO4 / (Km_SO4 + SO4 ) * Km_FeOH3 / (Km_FeOH3 + FeOH3) * Km_MnO2 / (Km_MnO2 + MnO2) * Km_NO3 / (Km_NO3 + NO3) * Km_O2 / (Km_O2 + O2)'
-
 sediment.rates['R7'] = 'k7 * O2 * adsMn'
 sediment.rates['R8'] = 'k8 * O2 * Fe2'
 sediment.rates['R9'] = 'k9 * O2 * adsFe'
