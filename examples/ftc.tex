@@ -1,0 +1,154 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[a4paper,margin=2cm,footskip=1cm]{geometry}
+\usepackage[utf8]{inputenc}  % slow down compilation?
+\usepackage[T1]{fontenc} % slow down compilation?
+\usepackage{lmodern}
+\usepackage{authblk}
+\usepackage[version=3]{mhchem} % Formula subscripts using \ce{}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage[demo]{graphicx} % remove "demo" it if the images are not shown
+\usepackage{dcolumn}
+\usepackage{pdflscape}
+\usepackage[toc,page]{appendix}
+\usepackage{afterpage}
+\usepackage{multirow}
+\usepackage{capt-of}% or use the larger `caption` package
+\usepackage{natbib}
+% \usepackage[LGRgreek]{mathastext}
+\usepackage[strict]{changepage}
+\usepackage{color}
+\usepackage{lscape}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{wrapfig}
+\usepackage{siunitx}
+\usepackage{marvosym}
+\usepackage{indentfirst}
+\usepackage[tiny]{titlesec}
+\usepackage{cleveref}
+\usepackage{subcaption}
+\usepackage{lineno}
+\usepackage{tabularx}
+\usepackage{rotating}
+\usepackage{tikz}
+\usepackage{adjustbox}
+% \usepackage[nomarkers,lists]{endfloat} %% tabs and figs in the end of file
+\usepackage{subfiles}
+\usepackage{setspace}
+\doublespacing
+\usepackage{mathptmx}
+
+\crefformat{equation}{eq.~\textup{#2#1#3}}
+\Crefformat{equation}{Eq.~\textup{#2#1#3}}
+
+\renewcommand\autoref[1]{\cref{#1}}
+% \linenumbers %uncomment for line numbers
+
+\hypersetup{
+    % bookmarks=true,         % show bookmarks bar?
+    % unicode=false,          % non-Latin characters in AcrobatвЂ™s bookmarks
+    % pdftoolbar=true,        % show AcrobatвЂ™s toolbar?
+    % pdfmenubar=true,        % show AcrobatвЂ™s menu?
+    % pdffitwindow=false,     % window fit to page when opened
+    % pdfstartview={FitH},    % fits the width of the page to the window
+    % pdftitle={My title},    % title
+    % pdfauthor={Author},     % author
+    % pdfsubject={Subject},   % subject of the document
+    % pdfcreator={Creator},   % creator of the document
+    % pdfproducer={Producer}, % producer of the document
+    % pdfkeywords={keyword1} {key2} {key3}, % list of keywords
+    % pdfnewwindow=true,      % links in new PDF window
+    colorlinks=false,       % false: boxed links; true: colored links
+    % linkcolor=red,          % color of internal links (change box color with linkbordercolor)
+    citecolor=blue,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=blue,           % color of external links
+    linkcolor=blue
+}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  frame=single,                    % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=Matlab,                 % the language of the code
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=2,                       % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with % \lstinputlisting; also try caption instead of title
+}
+
+% \setcounter{secnumdepth}{4}
+
+\graphicspath{ {./img/} }
+\date {}
+
+\usepackage{titling}
+
+\setlength{\droptitle}{-7em}   % This is your set screw
+
+
+\begin{document}
+
+Reactions:
+
+\ce{^'CH2O^' + O2 ->[R1] CO2 + H2O }
+
+\ce{^'CH2O^' + 4Fe(OH)3 ->[R2] 4Fe^2+ + CO2 + H2O }
+
+\ce{4Fe^2+ + O2 + 10H2O ->[R8] 4Fe(OH)3 + 8H+}
+
+
+Rates:
+
+\begin{equation}
+  R_1 = k_{OM} \cdot [\ce{OM}] \cdot \frac{[\ce{O2}]}{K^{\ce{O2}}_m + [\ce{O2}]}
+\end{equation}
+
+\begin{equation}
+  R_2 = k_{OM} \cdot [\ce{OM}] \cdot \frac{[\ce{Fe(OH)3}]}{K^{\ce{Fe(OH)3}}_m + [\ce{Fe(OH)3}]} \cdot \frac{K^{\ce{O2}}_m}{K^{\ce{O2}}_m + [\ce{O2}]}
+\end{equation}
+
+\begin{equation}
+  R_8 = k_8 \cdot [\ce{Fe^{2+}}]\cdot [\ce{O2}]
+\end{equation}
+
+
+Rates with Temperature dependence:
+\begin{equation}
+  R_1 = Q_{10}^{(T-T_0)/10} \cdot k_{OM} \cdot [\ce{OM}] \cdot \frac{[\ce{O2}]}{K^{\ce{O2}}_m + [\ce{O2}]}
+\end{equation}
+
+\begin{equation}
+  R_2 = Q_{10}^{(T-T_0)/10} \cdot k_{OM} \cdot [\ce{OM}] \cdot \frac{[\ce{Fe(OH)3}]}{K^{\ce{Fe(OH)3}}_m + [\ce{Fe(OH)3}]} \cdot \frac{K^{\ce{O2}}_m}{K^{\ce{O2}}_m + [\ce{O2}]}
+\end{equation}
+
+\begin{equation}
+  R_8 = k_8 \cdot [\ce{Fe^{2+}}]\cdot [\ce{O2}]
+\end{equation}
+
+% section assignment_6 (end)
+\bibliographystyle{chicago}
+\bibliography{bibliography}
+\end{document}
