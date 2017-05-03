@@ -1,37 +1,37 @@
 from PorousMediaLab import PorousMediaLab
 
-D = 368
 w = 0.2
-t = 300
+t = 10
 dx = 0.2
 L = 25
 phi = 0.9
 dt = 1e-1
-rho = 2
-Init_C = 0.231
-bc = 0.231
 
 sediment = PorousMediaLab(L, dx, t, dt, phi, w)
-sediment.add_solute_species('O2', D, 0, bc)
-sediment.add_solute_species('NO3', 359, 0, 1.5e-3)
-sediment.add_solute_species('Mn2', 220, 2e-3, 2e-3)
-sediment.add_solute_species('Fe2', 127, 0, 0)
-sediment.add_solute_species('SO4', 189, 15, 28)
-sediment.add_solute_species('NH4', 363, 22e-3, 22e-3)
-sediment.add_solute_species('CH4', 220, 0, 0)
-sediment.add_solute_species('TIC', 220, 0, 0)
-sediment.add_solute_species('TRS', 284, 0, 0)
 
-sediment.add_solid_species('OM1', 20, 15, 180)
-sediment.add_solid_species('OM2', 20, 5, 40)
-sediment.add_solid_species('MnO2', 20, 0, 40)
-sediment.add_solid_species('FeOH3', 20, 0, 75)
-sediment.add_solid_species('MnCO3', 20, 0, 0)
-sediment.add_solid_species('FeCO3', 20, 0, 0)
-sediment.add_solid_species('adsFe', 20, 0, 0)
-sediment.add_solid_species('adsMn', 20, 0, 0)
-sediment.add_solute_species('adsNH4', 20, 0, 0)
-sediment.add_solid_species('FeS', 20, 0, 0)
+sediment.add_species(is_solute=True, element='O2', D=368, init_C=0, bc_top=0.231, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='NO3', D=359, init_C=0, bc_top=1.5e-3, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='Mn2', D=220, init_C=2e-3, bc_top=2e-3, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='Fe2', D=127, init_C=0, bc_top=0, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='SO4', D=189, init_C=15, bc_top=28, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='NH4', D=363, init_C=22e-3, bc_top=22e-3, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='CH4', D=220, init_C=0, bc_top=0, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='TIC', D=220, init_C=0, bc_top=0, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='TIC', D=220, init_C=0, bc_top=0, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=True, element='TRS', D=284, init_C=0, bc_top=0, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+
+
+sediment.add_species(is_solute=False, element='OM1', D=20, init_C=15, bc_top=180, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='OM2', D=20, init_C=5, bc_top=40, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='MnO2', D=20, init_C=0, bc_top=40, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='FeOH3', D=20, init_C=0, bc_top=75, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='MnCO3', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='FeCO3', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='adsFe', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='adsMn', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='adsNH4', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+sediment.add_species(is_solute=False, element='FeS', D=20, init_C=0, bc_top=0, bc_top_type='flux', bc_bot=0, bc_bot_type='flux')
+
 
 sediment.constants['x1'] = 112
 sediment.constants['y1'] = 16
