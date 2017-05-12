@@ -6,6 +6,7 @@ import math
 import numexpr as ne
 import time
 import sys
+from scipy.integrate import odeint
 from scipy import special
 import seaborn as sns
 from matplotlib.colors import ListedColormap
@@ -134,6 +135,101 @@ class DotDict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+class RichardsModel:
+    """Unsaturated transport model"""
+
+    def __init__(self, z, t, psi0, qTop=-0.01, qBot=[], psiTop=[], psiBot=[]):
+        # Boundary conditions
+        self.qTop = -0.01
+        self.qBot = []
+        self.psiTop = []
+        self.psiBot = []
+
+        # Grid in space
+        self.dz = 0.1
+        self.ProfileDepth = 5
+        self.z = np.arange(self.dz / 2.0, self.ProfileDepth, self.dz)
+        self.n = z.size
+
+        # Grid in time
+        self.t = np.linspace(0, 10, 101)
+
+        # Initial conditions
+        self.psi0 = -z
+
+    def solve(self):
+        self.psi = odeint(self.RichardsEquation, self.psi0, self.t, args=(self.dz, self.n, self.p, self.vg, self.qTop, self.qBot, self.psiTop, self.psiBot), mxstep=5000)
+
+    def RichardsEquation(self, psi, t, dz, n, p, vg, qTop, qBot, psiTop, psiBot):
+
+        # Basic properties:
+        C = self.CFun(psi, p)
+
+        # initialize vectors:
+        q = np.zeros(n + 1)
+
+        # Upper boundary
+        if qTop == []:
+            KTop = self.KFun(np.zeros(1) + psiTop, p)
+            q[n] = -KTop * ((psiTop - psi[n - 1]) / dz * 2 + 1)
+        else:
+            q[n] = qTop
+
+        # Lower boundary
+        if qBot == []:
+            if psiBot == []:
+                # Free drainage
+                KBot = self.KFun(np.zeros(1) + psi[0], p)
+                q[0] = -KBot
+            else:
+                # Type 1 boundary
+                KBot = self.KFun(np.zeros(1) + psiBot, p)
+                q[0] = -KBot * ((psi[0] - psiBot) / dz * 2 + 1.0)
+        else:
+            # Type 2 boundary
+            q[0] = qBot
+
+        # Internal nodes
+        i = np.arange(0, n - 1)
+        Knodes = self.KFun(psi, p)
+        Kmid = (Knodes[i + 1] + Knodes[i]) / 2.0
+
+        j = np.arange(1, n)
+        q[j] = -Kmid * ((psi[i + 1] - psi[i]) / dz + 1.0)
+
+        # Continuity
+        i = np.arange(0, n)
+        dpsidt = (-(q[i + 1] - q[i]) / dz) / C
+
+        return dpsidt
+
+    def _thetaFun(self, psi, pars):
+        if psi >= 0.:
+            Se = 1.
+        else:
+            Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+        return pars['thetaR'] + (pars['thetaS'] - pars['thetaR']) * Se
+
+    def _CFun(self, psi, pars):
+        if psi >= 0.:
+            Se = 1.
+        else:
+            Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+        dSedh = pars['alpha'] * pars['m'] / (1 - pars['m']) * Se**(1 / pars['m']) * (1 - Se**(1 / pars['m']))**pars['m']
+        return Se * pars['Ss'] + (pars['thetaS'] - pars['thetaR']) * dSedh
+
+    def _KFun(self, psi, pars):
+        if psi >= 0.:
+            Se = 1.
+        else:
+            Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+        return pars['Ks'] * Se**pars['neta'] * (1 - (1 - Se**(1 / pars['m']))**pars['m'])**2
+
+    thetaFun = np.vectorize(_thetaFun)
+    CFun = np.vectorize(_CFun)
+    KFun = np.vectorize(_KFun)
 
 
 class PorousMediaLab:
