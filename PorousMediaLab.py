@@ -245,12 +245,15 @@ class PorousMediaLab:
 
     def __init__(self, length, dx, tend, dt, phi, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
+        self.x = np.linspace(0, length, length / dx + 1)
+        self.time = np.linspace(0, tend, round(tend / dt) + 1)
+        self.N = self.x.size
         self.length = length
         self.dx = dx
         self.tend = tend
         self.dt = dt
         self.adjusted_dt = dt
-        self.phi = phi
+        self.phi = np.ones((self.N)) * phi
         self.w = w
         self.species = DotDict({})
         self.profiles = DotDict({})
@@ -258,9 +261,7 @@ class PorousMediaLab:
         self.rates = DotDict({})
         self.estimated_rates = DotDict({})
         self.constants = DotDict({})
-        self.x = np.linspace(0, length, length / dx + 1)
-        self.time = np.linspace(0, tend, round(tend / dt) + 1)
-        self.N = self.x.size
+        self.constants['phi'] = self.phi
         self.num_adjustments = 0
 
     def __getattr__(self, attr):
@@ -273,7 +274,7 @@ class PorousMediaLab:
         self.species['Temperature']['bc_top_type'] = 'dirichlet'
         self.species['Temperature']['bc_bot'] = 0
         self.species['Temperature']['bc_bot_type'] = 'neumann'
-        self.species['Temperature']['theta'] = 1
+        self.species['Temperature']['theta'] = self.phi  # considering diffusion of temperature through pores (ie assumption is that solid soil is not conducting heat)
         self.species['Temperature']['D'] = D
         self.species['Temperature']['init_C'] = init_temperature
         self.species['Temperature']['concentration'] = np.zeros((self.N, self.time.size))
@@ -291,7 +292,7 @@ class PorousMediaLab:
         self.species[element]['bc_top_type'] = bc_top_type.lower()
         self.species[element]['bc_bot'] = bc_bot
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
-        self.species[element]['theta'] = self.phi if is_solute else 1 - self.phi
+        self.species[element]['theta'] = self.phi if is_solute else (1 - self.phi)
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
         self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
@@ -324,50 +325,47 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
-        e1 = np.ones((self.N, 1))
         s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
         q = self.species[element]['theta'] * self.w * self.adjusted_dt / self.dx
-        self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (self.species[element]['theta'] + s), e1 * (-s / 2 + q / 4)),
-                                                             axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags(np.concatenate((e1 * (s / 2 + q / 4), e1 * (self.species[element]['theta'] - s), e1 * (s / 2 - q / 4)),
-                                                             axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AL'] = spdiags(((-s / 2 - q / 4), (self.species[element]['theta'] + s), (-s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AR'] = spdiags(((s / 2 + q / 4), (self.species[element]['theta'] - s), (s / 2 - q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][0, 0] = self.species[element]['theta']
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0]
             self.species[element]['AL'][0, 1] = 0
-            self.species[element]['AR'][0, 0] = self.species[element]['theta']
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0]
             self.species[element]['AR'][0, 1] = 0
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][0, 0] = self.species[element]['theta'] + s
-            self.species[element]['AL'][0, 1] = -s
-            self.species[element]['AR'][0, 0] = self.species[element]['theta'] - s
-            self.species[element]['AR'][0, 1] = s
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0]
+            self.species[element]['AL'][0, 1] = -s[0]
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0]
+            self.species[element]['AR'][0, 1] = s[0]
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
 
         if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta']
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta']
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AR'][-1, -2] = 0
         elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta'] + s
-            self.species[element]['AL'][-1, -2] = -s
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta'] - s
-            self.species[element]['AR'][-1, -2] = s
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]
+            self.species[element]['AL'][-1, -2] = -s[-1]
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]
+            self.species[element]['AR'][-1, -2] = s[-1]
         # NOTE: Robin BC is not implemented yet
         elif self.species[element]['bc_bot_type'] in ['robin']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta']
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta']
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AR'][-1, -2] = 0
-            self.species[element]['AL'][-2, -2] = self.species[element]['theta'] + s
-            self.species[element]['AL'][-2, -3] = -s / 2
-            self.species[element]['AL'][-2, -1] = -s / 2
+            self.species[element]['AL'][-2, -2] = self.species[element]['theta'][-2] + s[-2]
+            self.species[element]['AL'][-2, -3] = -s[-2] / 2
+            self.species[element]['AL'][-2, -1] = -s[-2] / 2
             self.species[element]['AR'][-2, -2] = self.species[element]['theta'] - s
-            self.species[element]['AR'][-2, -3] = s / 2
-            self.species[element]['AR'][-2, -1] = s / 2
+            self.species[element]['AR'][-2, -3] = s[-2] / 2
+            self.species[element]['AR'][-2, -1] = s[-2] / 2
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
             sys.exit()
@@ -385,26 +383,26 @@ class PorousMediaLab:
             self.profiles[element][0] = self.species[element]['bc_top']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s - q) * self.dx / self.species[element]['theta'] / self.species[element]['D']
+                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][-1] = self.species[element]['bc_bot']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s - q) * self.dx / self.species[element]['theta'] / self.species[element]['D']
+                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
             self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s - q) * self.dx / self.species[element]['theta'] / self.species[element]['D']
+                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s - q) * self.dx / self.species[element]['theta'] / self.species[element]['D']
+                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['robin']:
             self.profiles[element][-1] = self.species[element]['bc_bot']
             self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s - q) * self.dx / self.species[element]['theta'] / self.species[element]['D']
+                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['robin']:
             self.profiles[element][0] = self.species[element]['bc_top']
@@ -490,15 +488,16 @@ class PorousMediaLab:
 
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
+        phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * C[1, :] + 48 * C[2, :] - 36 * C[3, :] + 16 * C[4, :] - 3 * C[5, :]) / self.dx / 12
+            flux = D * (-25 * phi[1] * C[1, :] + 48 * phi[2] * C[2, :] - 36 * phi[3] * C[3, :] + 16 * phi[4] * C[4, :] - 3 * phi[5] * C[5, :]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * C[1, :] + 18 * C[2, :] - 9 * C[3, :] + 2 * C[4, :]) / self.dx / 6
+            flux = D * (-11 * phi[1] * C[1, :] + 18 * phi[2] * C[2, :] - 9 * phi[3] * C[3, :] + 2 * phi[4] * C[4, :]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * C[1, :] + 4 * C[2, :] - C[3, :]) / self.dx / 2
+            flux = D * (-3 * phi[1] * C[1, :] + 4 * phi[2] * C[2, :] - phi[3] * C[3, :]) / self.dx / 2
         if order == 1:
-            flux = - D * (C[0, :] - C[2, :]) / 2 / self.dx
+            flux = - D * (phi[0] * C[0, :] - phi[2] * C[2, :]) / 2 / self.dx
 
         return flux
 
@@ -515,15 +514,16 @@ class PorousMediaLab:
 
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
+        phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * C[-2, :] + 48 * C[-3, :] - 36 * C[-4, :] + 16 * C[-5, :] - 3 * C[-6, :]) / self.dx / 12
+            flux = D * (-25 * phi[-2] * C[-2, :] + 48 * phi[-3] * C[-3, :] - 36 * phi[-4] * C[-4, :] + 16 * phi[-5] * C[-5, :] - 3 * phi[-6] * C[-6, :]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * C[-2, :] + 18 * C[-3, :] - 9 * C[-4, :] + 2 * C[-5, :]) / self.dx / 6
+            flux = D * (-11 * phi[-2] * C[-2, :] + 18 * phi[-3] * C[-3, :] - 9 * phi[-4] * C[-4, :] + 2 * phi[-5] * C[-5, :]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * C[-2, :] + 4 * C[-3, :] - C[-4, :]) / self.dx / 2
+            flux = D * (-3 * phi[-2] * C[-2, :] + 4 * phi[-3] * C[-3, :] - phi[-4] * C[-4, :]) / self.dx / 2
         if order == 1:
-            flux = - D * (C[-1, :] - C[-3, :]) / 2 / self.dx
+            flux = - D * phi[-1](* C[-1, :] - phi[-3] * C[-3, :]) / 2 / self.dx
 
         return flux
 
@@ -610,7 +610,7 @@ class PorousMediaLab:
             plt.title('Temperature profile after %.2f days' % (self.tend * 365))
             plt.xlabel('Temperature, C')
         else:
-            plt.title('Bulk %s concentration after %.2f days' % (element, self.tend * 365))
+            plt.title('%s concentration after %.2f days' % (element, self.tend * 365))
             plt.xlabel('mmol/L')
         plt.ylabel('Depth, cm')
         ax = plt.gca()
