@@ -476,16 +476,17 @@ class PorousMediaLab:
             self.species[element]['concentration'][:, j] = self.profiles[element]
 
     def estimate_flux_at_top(self, elem, order=4):
-        # % fourth-order
-        # flux = D * (-25 * C(2) + 48 * C(3) - 36 * C(4) + 16 * C(5) - 3 * C(6)) / dx / 12;  %  [umol/cm^2/y]
-        # % third order
-        # % flux = D * (-11 * C(2) + 18 * C(3) - 9 * C(4) + 2 * C(5)) / dx / 6;  %  [umol/cm^2/y]
-        # % flux = 0;  %  [umol/cm^2/y]
-        # % second order
-        # % flux = D * (-3 * C(2) + 4 * C(3) - C(4)) / dx / 2;  %  [umol/cm^2/y]
-        # % first order
-        # % flux = - D * (C(1) - C(3)) / 2 / dx;  %  [umol/cm^2/y]
+        """
+        Function estimates flux at the top BC
 
+        Args:
+            elem (TYPE): name of the element
+            order (int, optional): order of the Derivative
+
+        Returns:
+            TYPE: estimated flux in time
+
+        """
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
         phi = self.phi
@@ -502,15 +503,17 @@ class PorousMediaLab:
         return flux
 
     def estimate_flux_at_bottom(self, elem, order=4):
-        # % fourth-order
-        # flux = D * (-25 * C(2) + 48 * C(3) - 36 * C(4) + 16 * C(5) - 3 * C(6)) / dx / 12;  %  [umol/cm^2/y]
-        # % third order
-        # % flux = D * (-11 * C(2) + 18 * C(3) - 9 * C(4) + 2 * C(5)) / dx / 6;  %  [umol/cm^2/y]
-        # % flux = 0;  %  [umol/cm^2/y]
-        # % second order
-        # % flux = D * (-3 * C(2) + 4 * C(3) - C(4)) / dx / 2;  %  [umol/cm^2/y]
-        # % first order
-        # % flux = - D * (C(1) - C(3)) / 2 / dx;  %  [umol/cm^2/y]
+        """
+        Function estimates flux at the bottom BC
+
+        Args:
+            elem (TYPE): name of the element
+            order (int, optional): order of the Derivative
+
+        Returns:
+            TYPE: estimated flux in time
+
+        """
 
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
