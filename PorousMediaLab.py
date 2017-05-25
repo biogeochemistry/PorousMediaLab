@@ -325,7 +325,7 @@ class PorousMediaLab:
 
     def template_AL_AR(self, element):
         e1 = np.ones((self.N, 1))
-        s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx  #
+        s = self.species[element]['theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
         q = self.species[element]['theta'] * self.w * self.adjusted_dt / self.dx
         self.species[element]['AL'] = spdiags(np.concatenate((e1 * (-s / 2 - q / 4), e1 * (self.species[element]['theta'] + s), e1 * (-s / 2 + q / 4)),
                                                              axis=1).T, [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
