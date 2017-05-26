@@ -19,17 +19,6 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
     where the variables, rates, coef are passed as dictionaries
     """
 
-    def k_loop(conc, dt=dt):
-        rates_num = {}
-        for element, rate in rates.items():
-            rates_num[element] = ne.evaluate(rate, {**coef, **conc})
-
-        Kn = {}
-        for element in dcdt:
-            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
-
-        return Kn
-
     def implicit_solver(C_0):
 
         class Derivative:
@@ -74,6 +63,17 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
             C_new[element], _ = Newton(F, w_start, dFdw, N=30)
 
         raise NotImplemented
+
+    def k_loop(conc, dt=dt):
+        rates_num = {}
+        for element, rate in rates.items():
+            rates_num[element] = ne.evaluate(rate, {**coef, **conc})
+
+        Kn = {}
+        for element in dcdt:
+            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
+
+        return Kn
 
     def sum_k(A, B, b):
         C_new = {}
