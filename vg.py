@@ -1,7 +1,6 @@
 # These are the van Genuchten (1980) equations
 # The input is matric potential, psi and the hydraulic parameters.
 # psi must be sent in as a numpy array.
-# The pars variable is like a MATLAB structure.
 import numpy as np
 
 
@@ -11,6 +10,7 @@ def thetaFun(psi, pars):
     else:
         Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
     return pars['thetaR'] + (pars['thetaS'] - pars['thetaR']) * Se
+
 
 thetaFun = np.vectorize(thetaFun)
 
@@ -23,6 +23,7 @@ def CFun(psi, pars):
     dSedh = pars['alpha'] * pars['m'] / (1 - pars['m']) * Se**(1 / pars['m']) * (1 - Se**(1 / pars['m']))**pars['m']
     return Se * pars['Ss'] + (pars['thetaS'] - pars['thetaR']) * dSedh
 
+
 CFun = np.vectorize(CFun)
 
 
@@ -32,6 +33,7 @@ def KFun(psi, pars):
     else:
         Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
     return pars['Ks'] * Se**pars['neta'] * (1 - (1 - Se**(1 / pars['m']))**pars['m'])**2
+
 
 KFun = np.vectorize(KFun)
 
