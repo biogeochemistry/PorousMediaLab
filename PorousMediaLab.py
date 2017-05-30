@@ -119,7 +119,8 @@ class PorousMediaLab:
     def template_AL_AR(self, element):
         s = self.species[element][
             'theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
-        q = self.species[element]['theta'] * self.w * self.adjusted_dt / self.dx
+        q = self.species[element]['theta'] * \
+            self.w * self.adjusted_dt / self.dx
         self.species[element]['AL'] = spdiags(((-s / 2 - q / 4), (self.species[element][
                                               'theta'] + s), (-s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
         self.species[element]['AR'] = spdiags(((s / 2 + q / 4), (self.species[element][
@@ -157,7 +158,6 @@ class PorousMediaLab:
             self.species[element]['AR'][-1, -
                                         1] = self.species[element]['theta'][-1] - s[-1]
             self.species[element]['AR'][-1, -2] = s[-1]
-
         # NOTE: Robin BC is not implemented yet
         elif self.species[element]['bc_bot_type'] in ['robin']:
             self.species[element]['AL'][-1, -
@@ -181,7 +181,8 @@ class PorousMediaLab:
     def update_matrices_due_to_bc(self, element, i):
         s = self.species[element][
             'theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
-        q = self.species[element]['theta'] * self.w * self.adjusted_dt / self.dx
+        q = self.species[element]['theta'] * \
+            self.w * self.adjusted_dt / self.dx
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][0] = self.species[element]['bc_top']
@@ -455,7 +456,8 @@ class PorousMediaLab:
         plt.plot(self.profiles[element], -self.x,
                  sns.xkcd_rgb["denim blue"], lw=3, label=element)
         if element == 'Temperature':
-            plt.title('Temperature profile after %.2f days' % (self.tend * 365))
+            plt.title('Temperature profile after %.2f days' %
+                      (self.tend * 365))
             plt.xlabel('Temperature, C')
         else:
             plt.title('%s concentration after %.2f days' %

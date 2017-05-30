@@ -3,7 +3,6 @@ from spec import skip
 import PorousMediaLab.PorousMediaLab as PorousMediaLab
 import numpy as np
 from scipy import special
-import matplotlib.pyplot as plt
 # from unittest import TestCase
 
 
