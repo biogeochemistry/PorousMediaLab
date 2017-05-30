@@ -26,7 +26,8 @@ class TestIntialization:
         init_C = 12.32
         lab = create_lab()
         lab.add_solute_species('O2', 40, init_C, init_C)
-        assert np.array_equal(lab.O2.concentration[:, 0], init_C * np.ones((lab.length / lab.dx + 1)))
+        assert np.array_equal(lab.O2.concentration[
+                              :, 0], init_C * np.ones((lab.length / lab.dx + 1)))
 
     def boundary_conditions_test(self):
         """ Dirichlet BC at the interface always assigned"""
@@ -35,7 +36,8 @@ class TestIntialization:
         bc = 0.2
         lab.add_solute_species('O2', 40, init_C, bc)
         lab.solve()
-        assert np.array_equal(lab.O2.concentration[0, :], bc * np.ones((lab.tend / lab.dt + 1)))
+        assert np.array_equal(lab.O2.concentration[
+                              0, :], bc * np.ones((lab.tend / lab.dt + 1)))
 
 
 class TestMathModel:
@@ -49,7 +51,8 @@ class TestMathModel:
         lab.dcdt.O2 = '0'
         lab.solve()
         x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
-        sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) + np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+        sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) + np.exp(
+            lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
         assert max(lab.O2.concentration[:, -1] - sol) < 1e-4
 
@@ -67,7 +70,8 @@ class TestMathModel:
         time = np.linspace(0, T, T / dt + 1)
         num_sol = np.array(C0['C'])
         for i in range(1, len(time)):
-            C_new, _ = PorousMediaLab.ode_integrate(C0, dcdt, rates, coef, dt, solver=1)
+            C_new, _ = PorousMediaLab.ode_integrate(
+                C0, dcdt, rates, coef, dt, solver=1)
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
         assert max(num_sol - np.exp(-coef['k'] * time)) < 1e-5
@@ -86,7 +90,8 @@ class TestMathModel:
         time = np.linspace(0, T, T / dt + 1)
         num_sol = np.array(C0['C'])
         for i in range(1, len(time)):
-            C_new, _ = PorousMediaLab.ode_integrate(C0, dcdt, rates, coef, dt, solver=0)
+            C_new, _ = PorousMediaLab.ode_integrate(
+                C0, dcdt, rates, coef, dt, solver=0)
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
         assert max(num_sol - np.exp(-coef['k'] * time)) < 1e-5

@@ -20,7 +20,9 @@ def CFun(psi, pars):
         Se = 1.
     else:
         Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
-    dSedh = pars['alpha'] * pars['m'] / (1 - pars['m']) * Se**(1 / pars['m']) * (1 - Se**(1 / pars['m']))**pars['m']
+    dSedh = pars['alpha'] * pars['m'] / \
+        (1 - pars['m']) * Se**(1 / pars['m']) * \
+        (1 - Se**(1 / pars['m']))**pars['m']
     return Se * pars['Ss'] + (pars['thetaS'] - pars['thetaR']) * dSedh
 
 
