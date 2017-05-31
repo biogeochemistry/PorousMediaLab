@@ -255,18 +255,18 @@ class PorousMediaLab:
             print('Simulation starts  with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
                   (self.time[-1], self.adjusted_dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
-            try:
-                for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.adjusted_dt) + 1))):
+            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.adjusted_dt) + 1))):
+                try:
                     self.integrate_one_timestep(i)
                     self.estimate_time_of_computation(i)
-            except FloatingPointError as inst:
-                if do_adjust and self.num_adjustments < 6:
-                    print('\nWarning: Numerical instability. Adjusting dt...')
-                    self.restart_solve()
-                else:
-                    print(
-                        '\nABORT!!!: Numerical instability. Time step was adjusted 5 times with no luck. Please, adjust dt and dx manually...')
-                    sys.exit()
+                except FloatingPointError as inst:
+                    if do_adjust and self.num_adjustments < 6:
+                        print('\nWarning: Numerical instability. Adjusting dt...')
+                        self.restart_solve()
+                    else:
+                        print(
+                            '\nABORT!!!: Numerical instability. Time step was adjusted 5 times with no luck. Please, adjust dt and dx manually...')
+                        sys.exit()
 
     def reset_concentration_matrices(self):
         for element in self.species:
@@ -293,6 +293,25 @@ class PorousMediaLab:
     def integrate_one_timestep(self, i):
         self.transport_integrate(i)
         self.reactions_integrate(i)
+
+    def reactions_integrate(self, i):
+        C_new, rates = OdeSolver.ode_integrate(
+            self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver='rk4')
+
+        for element in C_new:
+            if element is not 'Temperature':
+                # the concentration should be positive
+                C_new[element][C_new[element] < 0] = 0
+            self.profiles[element] = C_new[element]
+            self.update_matrices_due_to_bc(element, i)
+            if self.num_adjustments > 0:
+                j = int(round(i * self.adjusted_dt / self.dt))
+            else:
+                j = i
+            self.species[element]['concentration'][
+                :, j] = self.profiles[element]
+            self.species[element]['rates'][
+                :, j] = rates[element] / self.adjusted_dt
 
     def transport_integrate(self, i):
         """ The possible place to parallel execution
@@ -331,8 +350,8 @@ class PorousMediaLab:
             flux = D * (-11 * phi[1] * C[1, :] + 18 * phi[2] * C[2, :] -
                         9 * phi[3] * C[3, :] + 2 * phi[4] * C[4, :]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[1] * C[1, :] + 4 * phi[2]
-                        * C[2, :] - phi[3] * C[3, :]) / self.dx / 2
+            flux = D * (-3 * phi[1] * C[1, :] + 4 * phi[2] *
+                        C[2, :] - phi[3] * C[3, :]) / self.dx / 2
         if order == 1:
             flux = - D * (phi[0] * C[0, :] - phi[2] * C[2, :]) / 2 / self.dx
 
@@ -356,37 +375,18 @@ class PorousMediaLab:
         phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * phi[-2] * C[-2, :] + 48 * phi[-3] * C[-3, :] - 36 * phi[-4]
-                        * C[-4, :] + 16 * phi[-5] * C[-5, :] - 3 * phi[-6] * C[-6, :]) / self.dx / 12
+            flux = D * (-25 * phi[-2] * C[-2, :] + 48 * phi[-3] * C[-3, :] - 36 * phi[-4] *
+                        C[-4, :] + 16 * phi[-5] * C[-5, :] - 3 * phi[-6] * C[-6, :]) / self.dx / 12
         if order == 3:
             flux = D * (-11 * phi[-2] * C[-2, :] + 18 * phi[-3] * C[-3, :] -
                         9 * phi[-4] * C[-4, :] + 2 * phi[-5] * C[-5, :]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[-2] * C[-2, :] + 4 * phi[-3]
-                        * C[-3, :] - phi[-4] * C[-4, :]) / self.dx / 2
+            flux = D * (-3 * phi[-2] * C[-2, :] + 4 * phi[-3] *
+                        C[-3, :] - phi[-4] * C[-4, :]) / self.dx / 2
         if order == 1:
             flux = - D * phi[-1](* C[-1, :] - phi[-3] * C[-3, :]) / 2 / self.dx
 
         return flux
-
-    def reactions_integrate(self, i):
-        C_new, rates = OdeSolver.ode_integrate(
-            self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver='rk4')
-
-        for element in C_new:
-            if element is not 'Temperature':
-                # the concentration should be positive
-                C_new[element][C_new[element] < 0] = 0
-            self.profiles[element] = C_new[element]
-            self.update_matrices_due_to_bc(element, i)
-            if self.num_adjustments > 0:
-                j = int(round(i * self.adjusted_dt / self.dt))
-            else:
-                j = i
-            self.species[element]['concentration'][
-                :, j] = self.profiles[element]
-            self.species[element]['rates'][
-                :, j] = rates[element] / self.adjusted_dt
 
     def is_solute(self, element):
         return self.species[element]['is_solute']

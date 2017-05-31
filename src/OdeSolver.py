@@ -83,7 +83,8 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         C_new = {}
         num_rates = {}
         for element in C_0:
-            num_rates[element] = (k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
+            num_rates[element] = (
+                k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
             C_new[element] = C_0[element] + num_rates[element]
         return C_new, num_rates
 
@@ -102,11 +103,13 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         k3 = k_loop(sum_k(sum_k(C_0, k1, 1 / 8), k2, 1 / 8))
         k4 = k_loop(sum_k(sum_k(C_0, k2, -0.5), k3, 1))
         k5 = k_loop(sum_k(sum_k(C_0, k1, 3 / 16), k4, 9 / 16))
-        k6 = k_loop(sum_k(sum_k(sum_k(sum_k(sum_k(C_0, k1, -3 / 7), k2, 2 / 7), k3, 12 / 7), k4, -12 / 7), k5, 8 / 7))
+        k6 = k_loop(sum_k(sum_k(sum_k(sum_k(sum_k(C_0, k1, -3 / 7),
+                                            k2, 2 / 7), k3, 12 / 7), k4, -12 / 7), k5, 8 / 7))
         C_new = {}
         num_rates = {}
         for element in C_0:
-            num_rates[element] = (7 * k1[element] + 32 * k3[element] + 12 * k4[element] + 32 * k5[element] + 7 * k6[element]) / 90
+            num_rates[element] = (7 * k1[element] + 32 * k3[element] +
+                                  12 * k4[element] + 32 * k5[element] + 7 * k6[element]) / 90
             C_new[element] = C_0[element] + num_rates[element]
         return C_new, num_rates
 
