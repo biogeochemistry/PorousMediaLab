@@ -284,7 +284,7 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
-    def estimate_flux_at_top(self, elem, order=4):
+    def estimate_flux_at_top(self, elem, idx=slice(None, None, None), order=4):
         """
         Function estimates flux at the top BC
 
@@ -301,20 +301,20 @@ class PorousMediaLab:
         phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * phi[1] * C[1, :] + 48 * phi[2] * C[2, :] - 36 * phi[3] * C[
-                        3, :] + 16 * phi[4] * C[4, :] - 3 * phi[5] * C[5, :]) / self.dx / 12
+            flux = D * (-25 * phi[1] * C[1, idx] + 48 * phi[2] * C[2, idx] - 36 * phi[3] * C[
+                        3, idx] + 16 * phi[4] * C[4, idx] - 3 * phi[5] * C[5, idx]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * phi[1] * C[1, :] + 18 * phi[2] * C[2, :] -
-                        9 * phi[3] * C[3, :] + 2 * phi[4] * C[4, :]) / self.dx / 6
+            flux = D * (-11 * phi[1] * C[1, idx] + 18 * phi[2] * C[2, idx] -
+                        9 * phi[3] * C[3, idx] + 2 * phi[4] * C[4, idx]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[1] * C[1, :] + 4 * phi[2] *
-                        C[2, :] - phi[3] * C[3, :]) / self.dx / 2
+            flux = D * (-3 * phi[1] * C[1, idx] + 4 * phi[2] *
+                        C[2, idx] - phi[3] * C[3, idx]) / self.dx / 2
         if order == 1:
-            flux = - D * (phi[0] * C[0, :] - phi[2] * C[2, :]) / 2 / self.dx
+            flux = - D * (phi[0] * C[0, idx] - phi[2] * C[2, idx]) / 2 / self.dx
 
         return flux
 
-    def estimate_flux_at_bottom(self, elem, order=4):
+    def estimate_flux_at_bottom(self, elem, idx=slice(None, None, None), order=4):
         """
         Function estimates flux at the bottom BC
 
@@ -332,16 +332,16 @@ class PorousMediaLab:
         phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * phi[-2] * C[-2, :] + 48 * phi[-3] * C[-3, :] - 36 * phi[-4] *
-                        C[-4, :] + 16 * phi[-5] * C[-5, :] - 3 * phi[-6] * C[-6, :]) / self.dx / 12
+            flux = D * (-25 * phi[-2] * C[-2, idx] + 48 * phi[-3] * C[-3, idx] - 36 * phi[-4] *
+                        C[-4, idx] + 16 * phi[-5] * C[-5, idx] - 3 * phi[-6] * C[-6, idx]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * phi[-2] * C[-2, :] + 18 * phi[-3] * C[-3, :] -
-                        9 * phi[-4] * C[-4, :] + 2 * phi[-5] * C[-5, :]) / self.dx / 6
+            flux = D * (-11 * phi[-2] * C[-2, idx] + 18 * phi[-3] * C[-3, idx] -
+                        9 * phi[-4] * C[-4, idx] + 2 * phi[-5] * C[-5, idx]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[-2] * C[-2, :] + 4 * phi[-3] *
-                        C[-3, :] - phi[-4] * C[-4, :]) / self.dx / 2
+            flux = D * (-3 * phi[-2] * C[-2, idx] + 4 * phi[-3] *
+                        C[-3, idx] - phi[-4] * C[-4, idx]) / self.dx / 2
         if order == 1:
-            flux = - D * phi[-1](* C[-1, :] - phi[-3] * C[-3, :]) / 2 / self.dx
+            flux = - D * phi[-1](* C[-1, idx] - phi[-3] * C[-3, :]) / 2 / self.dx
 
         return flux
 
