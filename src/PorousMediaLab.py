@@ -1,17 +1,12 @@
 import numpy as np
 from scipy.sparse import spdiags
-import matplotlib.pyplot as plt
-import math
 import time
 import sys
 from scipy import special
-import seaborn as sns
-from matplotlib.colors import ListedColormap
 from joblib import Parallel, delayed
+import Ploter
 
 import OdeSolver
-
-sns.set_style("whitegrid")
 
 
 class DotDict(dict):
@@ -45,8 +40,32 @@ class PorousMediaLab:
         self.num_adjustments = 0
         self.parallel = Parallel(n_jobs=4)
 
-    # def __getattr__(self, attr):
-        # return self.species[attr]
+    def plot_depths(self, **kwargs):
+        Ploter.plot_depths(self, **kwargs)
+
+    def plot_times(self, **kwargs):
+        Ploter.plot_times(self, **kwargs)
+
+    def plot_profiles(self, **kwargs):
+        Ploter.plot_profiles(self, **kwargs)
+
+    def plot_profile(self, **kwargs):
+        Ploter.plot_profile(self, **kwargs)
+
+    def plot_contourplots(self, **kwargs):
+        Ploter.plot_contourplots(self, **kwargs)
+
+    def contour_plot(self, **kwargs):
+        Ploter.contour_plot(self, **kwargs)
+
+    def plot_contourplots_of_rates(self, **kwargs):
+        Ploter.plot_contourplots_of_rates(self, **kwargs)
+
+    def contour_plot_of_rates(self, **kwargs):
+        Ploter.contour_plot_of_rates(self, **kwargs)
+
+    def __getattr__(self, attr):
+        return self.species[attr]
 
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
@@ -353,156 +372,6 @@ class PorousMediaLab:
 
     def is_solute(self, element):
         return self.species[element]['is_solute']
-
-    def custom_plot(self, x, y, ttl='', y_lbl='', x_lbl=''):
-        plt.figure()
-        ax = plt.subplot(111)
-        plt.plot(x, y, lw=3)
-        plt.title(ttl)
-        plt.xlim(x[0], x[-1])
-        plt.ylabel(y_lbl)
-        plt.xlabel(x_lbl)
-        ax.grid(linestyle='-', linewidth=0.2)
-        plt.show()
-
-    def plot_depths(self, element, depths=[0, 1, 2, 3, 4], years_to_plot=10, days=True):
-        plt.figure()
-        ax = plt.subplot(111)
-        if element == 'Temperature':
-            plt.title('Temperature at specific depths')
-            plt.ylabel('Temperature, C')
-        else:
-            plt.title(element + ' concentration at specific depths')
-            plt.ylabel('mmol/L')
-        if self.tend > years_to_plot:
-            num_of_elem = int(years_to_plot / self.dt)
-        else:
-            num_of_elem = len(self.time)
-        if days:
-            t = self.time[-num_of_elem:] * 365
-            plt.xlabel('Days, [day]')
-        else:
-            t = self.time[-num_of_elem:]
-            plt.xlabel('Years, [year]')
-        for depth in depths:
-            lbl = str(depth) + ' cm'
-            plt.plot(t, self.species[element]['concentration'][
-                     int(depth / self.dx)][-num_of_elem:], lw=3, label=lbl)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.grid(linestyle='-', linewidth=0.2)
-        plt.show()
-
-    def plot_times(self, element, time_slices=[0, 1, 2, 3, 4]):
-        plt.figure()
-        ax = plt.subplot(111)
-        if element == 'Temperature':
-            plt.title('Temperature profile')
-            plt.xlabel('Temperature, C')
-        else:
-            plt.title(element + ' concentration')
-            plt.xlabel('mmol/L')
-        plt.ylabel('Depth, cm')
-        for tms in time_slices:
-            lbl = '%.2f day' % (tms * 365)
-            plt.plot(self.species[element]['concentration'][
-                     :, int(tms / self.dt)], -self.x, lw=3, label=lbl)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
-        ax.grid(linestyle='-', linewidth=0.2)
-        plt.show()
-
-    def plot_profiles(self):
-        for element in sorted(self.species):
-            self.plot_profile(element)
-
-    def plot_profile(self, element):
-        plt.figure()
-        plt.plot(self.profiles[element], -self.x,
-                 sns.xkcd_rgb["denim blue"], lw=3, label=element)
-        if element == 'Temperature':
-            plt.title('Temperature profile after %.2f days' %
-                      (self.tend * 365))
-            plt.xlabel('Temperature, C')
-        else:
-            plt.title('%s concentration after %.2f days' %
-                      (element, self.tend * 365))
-            plt.xlabel('mmol/L')
-        plt.ylabel('Depth, cm')
-        ax = plt.gca()
-        ax.ticklabel_format(useOffset=False)
-        ax.grid(linestyle='-', linewidth=0.2)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
-
-    def plot_contourplots(self, **kwargs):
-        for element in sorted(self.species):
-            self.contour_plot(element, **kwargs)
-
-    def contour_plot(self, element, labels=False, days=True, last_year=False):
-        plt.figure()
-        plt.title(element + ' concentration')
-        resoluion = 100
-        n = math.ceil(self.time.size / resoluion)
-        if last_year:
-            k = n - int(1 / self.dt)
-        else:
-            k = 1
-        if days:
-            X, Y = np.meshgrid(self.time[k::n] * 365, -self.x)
-            plt.xlabel('Days, [day]')
-        else:
-            X, Y = np.meshgrid(self.time[k::n], -self.x)
-            plt.xlabel('Years, [year]')
-        z = self.species[element]['concentration'][:, k - 1:-1:n]
-        CS = plt.contourf(X, Y, z, 51, cmap=ListedColormap(
-            sns.color_palette("Blues", 51)), origin='lower')
-        if labels:
-            plt.clabel(CS, inline=1, fontsize=10, colors='w')
-        cbar = plt.colorbar(CS)
-        plt.ylabel('Depth, [cm]')
-        ax = plt.gca()
-        ax.ticklabel_format(useOffset=False)
-        cbar.ax.set_ylabel('%s [mmol/L]' % element)
-        if element == 'Temperature':
-            plt.title('Temperature contour plot')
-            cbar.ax.set_ylabel('Temperature, C')
-        plt.show()
-
-    def plot_contourplots_of_rates(self, **kwargs):
-        elements = sorted(self.species)
-        if 'Temperature' in elements:
-            elements.remove('Temperature')
-        for element in elements:
-            self.contour_plot_of_rates(element, **kwargs)
-
-    def contour_plot_of_rates(self, element, labels=False, days=True, last_year=False):
-        plt.figure()
-        plt.title('Rate of %s consumption/production' % element)
-        resoluion = 100
-        n = math.ceil(self.time.size / resoluion)
-        if last_year:
-            k = n - int(1 / self.dt)
-        else:
-            k = 1
-        z = self.species[element]['rates'][:, k - 1:-1:n]
-        lim = np.max(np.abs(z))
-        lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
-        if days:
-            X, Y = np.meshgrid(self.time[k::n] * 365, -self.x)
-            plt.xlabel('Days, [day]')
-        else:
-            X, Y = np.meshgrid(self.time[k::n], -self.x)
-            plt.xlabel('Years, [year]')
-        CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette(
-            "RdBu_r", 101)), origin='lower', levels=lim, extend='both')
-        if labels:
-            plt.clabel(CS, inline=1, fontsize=10, colors='w')
-        cbar = plt.colorbar(CS)
-        plt.ylabel('Depth, [cm]')
-        ax = plt.gca()
-        ax.ticklabel_format(useOffset=False)
-        cbar.ax.set_ylabel('Rate %s [mmol/L/yr]' % element)
-        plt.show()
 
 
 def transport_equation_plot():
