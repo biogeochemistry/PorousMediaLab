@@ -1,4 +1,9 @@
 import numexpr as ne
+from scipy.sparse import linalg
+
+
+def linear_alg_solver(A, B):
+    return linalg.spsolve(A, B, use_umfpack=True)
 
 
 def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):

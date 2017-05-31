@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.sparse import spdiags
-from scipy.sparse import linalg
 import matplotlib.pyplot as plt
 import math
 import time
@@ -8,6 +7,7 @@ import sys
 from scipy import special
 import seaborn as sns
 from matplotlib.colors import ListedColormap
+from joblib import Parallel, delayed
 
 import OdeSolver
 
@@ -33,7 +33,6 @@ class PorousMediaLab:
         self.dx = dx
         self.tend = tend
         self.dt = dt
-        self.adjusted_dt = dt
         self.phi = np.ones((self.N)) * phi
         self.w = w
         self.species = DotDict({})
@@ -44,9 +43,10 @@ class PorousMediaLab:
         self.constants = DotDict({})
         self.constants['phi'] = self.phi
         self.num_adjustments = 0
+        self.parallel = Parallel(n_jobs=4)
 
-    def __getattr__(self, attr):
-        return self.species[attr]
+    # def __getattr__(self, attr):
+        # return self.species[attr]
 
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
@@ -118,9 +118,9 @@ class PorousMediaLab:
 
     def template_AL_AR(self, element):
         s = self.species[element][
-            'theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
+            'theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
         q = self.species[element]['theta'] * \
-            self.w * self.adjusted_dt / self.dx
+            self.w * self.dt / self.dx
         self.species[element]['AL'] = spdiags(((-s / 2 - q / 4), (self.species[element][
                                               'theta'] + s), (-s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
         self.species[element]['AR'] = spdiags(((s / 2 + q / 4), (self.species[element][
@@ -180,9 +180,9 @@ class PorousMediaLab:
 
     def update_matrices_due_to_bc(self, element, i):
         s = self.species[element][
-            'theta'] * self.species[element]['D'] * self.adjusted_dt / self.dx / self.dx
+            'theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
         q = self.species[element]['theta'] * \
-            self.w * self.adjusted_dt / self.dx
+            self.w * self.dt / self.dx
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][0] = self.species[element]['bc_top']
@@ -218,8 +218,7 @@ class PorousMediaLab:
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['robin']:
             self.profiles[element][-1] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
+            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
                 (2 * s[0] - q[0]) * self.dx / \
                 self.species[element]['theta'][0] / self.species[element]['D']
@@ -237,58 +236,26 @@ class PorousMediaLab:
     def estimate_time_of_computation(self, i):
         if i == 1:
             self.tstart = time.time()
-            if self.num_adjustments < 1:
-                print("Simulation started:\n\t", time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime()))
+            print("Simulation started:\n\t", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
-            total_t = len(self.time) * (time.time() - self.tstart) / \
-                100 * self.dt / self.adjusted_dt
+            total_t = len(self.time) * (time.time() - self.tstart) / 100 * self.dt / self.dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
-            print(
-                "\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
+            print("\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
             print("Will finish approx.:\n\t", time.strftime(
                 "%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
 
     def solve(self, do_adjust=True):
-        if self.num_adjustments < 1:
-            print('Simulation starts  with following params:\n\ttend = %.1f years,\n\tdt = %.2e years,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
-                  (self.time[-1], self.adjusted_dt, self.length, self.dx, self.w))
+        print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
+              (self.time[-1], self.dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
-            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.adjusted_dt) + 1))):
+            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
                 try:
                     self.integrate_one_timestep(i)
                     self.estimate_time_of_computation(i)
                 except FloatingPointError as inst:
-                    if do_adjust and self.num_adjustments < 6:
-                        print('\nWarning: Numerical instability. Adjusting dt...')
-                        self.restart_solve()
-                    else:
-                        print(
-                            '\nABORT!!!: Numerical instability. Time step was adjusted 5 times with no luck. Please, adjust dt and dx manually...')
-                        sys.exit()
-
-    def reset_concentration_matrices(self):
-        for element in self.species:
-            self.species[element]['concentration'] = np.zeros(
-                (self.N, self.time.size))
-            self.species[element]['concentration'][:, 0] = (
-                self.species[element]['init_C'] * np.ones((self.N)))
-            self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-            self.profiles[element] = self.species[
-                element]['concentration'][:, 0]
-            self.template_AL_AR(element)
-            self.update_matrices_due_to_bc(element, 0)
-
-    def adjust_timestep(self):
-        self.adjusted_dt /= 10
-        self.num_adjustments += 1
-        print('Time step was reduced to\n\tdt = %.2e.' % (self.adjusted_dt))
-
-    def restart_solve(self):
-        self.adjust_timestep()
-        self.reset_concentration_matrices()
-        self.solve()
+                    print('\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
+                    sys.exit()
 
     def integrate_one_timestep(self, i):
         self.transport_integrate(i)
@@ -296,7 +263,7 @@ class PorousMediaLab:
 
     def reactions_integrate(self, i):
         C_new, rates = OdeSolver.ode_integrate(
-            self.profiles, self.dcdt, self.rates, self.constants, self.adjusted_dt, solver='rk4')
+            self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
 
         for element in C_new:
             if element is not 'Temperature':
@@ -304,28 +271,24 @@ class PorousMediaLab:
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
             self.update_matrices_due_to_bc(element, i)
-            if self.num_adjustments > 0:
-                j = int(round(i * self.adjusted_dt / self.dt))
-            else:
-                j = i
-            self.species[element]['concentration'][
-                :, j] = self.profiles[element]
-            self.species[element]['rates'][
-                :, j] = rates[element] / self.adjusted_dt
+            self.species[element]['concentration'][:, i] = self.profiles[element]
+            self.species[element]['rates'][:, i] = rates[element] / self.dt
 
     def transport_integrate(self, i):
         """ The possible place to parallel execution
         """
-        for element in self.species:
-            self.profiles[element] = linalg.spsolve(
-                self.species[element]['AL'], self.species[element]['B'], use_umfpack=True)
-            self.update_matrices_due_to_bc(element, i)
-            if self.num_adjustments > 0:
-                j = int(round(i * self.adjusted_dt / self.dt))
-            else:
-                j = i
-            self.species[element]['concentration'][
-                :, j] = self.profiles[element]
+        if False:
+            species = [e for e in self.species]
+            self.parallel(delayed(self.transport_integrate_one_element)(
+                e, i) for e in species)
+        else:
+            for element in self.species:
+                self.transport_integrate_one_element(element, i)
+
+    def transport_integrate_one_element(self, element, i):
+        self.profiles[element] = OdeSolver.linear_alg_solver(self.species[element]['AL'], self.species[element]['B'])
+        self.update_matrices_due_to_bc(element, i)
+        self.species[element]['concentration'][:, i] = self.profiles[element]
 
     def estimate_flux_at_top(self, elem, order=4):
         """
