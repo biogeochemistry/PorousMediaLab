@@ -1,6 +1,9 @@
 import unittest
 from spec import skip
-import PorousMediaLab.PorousMediaLab as PorousMediaLab
+import sys
+sys.path.append('../src')
+import PorousMediaLab
+import OdeSolver
 import numpy as np
 from scipy import special
 # from unittest import TestCase
@@ -24,7 +27,7 @@ class TestIntialization:
         """ Scalar initial condition assigned to the whole vector"""
         init_C = 12.32
         lab = create_lab()
-        lab.add_solute_species('O2', 40, init_C, init_C)
+        lab.add_species(True, 'O2', 40, init_C, bc_top=init_C, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='neumann')
         assert np.array_equal(lab.O2.concentration[
                               :, 0], init_C * np.ones((lab.length / lab.dx + 1)))
 
@@ -33,7 +36,7 @@ class TestIntialization:
         lab = create_lab()
         init_C = 12.32
         bc = 0.2
-        lab.add_solute_species('O2', 40, init_C, bc)
+        lab.add_species(True, 'O2', 40, init_C, bc_top=bc, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='neumann')
         lab.solve()
         assert np.array_equal(lab.O2.concentration[
                               0, :], bc * np.ones((lab.tend / lab.dt + 1)))
@@ -46,7 +49,7 @@ class TestMathModel:
         '''Check the transport equation integrator'''
         lab = create_lab()
         D = 40
-        lab.add_solute_species('O2', D, 0.0, 1)
+        lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='neumann')
         lab.dcdt.O2 = '0'
         lab.solve()
         x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
@@ -69,7 +72,7 @@ class TestMathModel:
         time = np.linspace(0, T, T / dt + 1)
         num_sol = np.array(C0['C'])
         for i in range(1, len(time)):
-            C_new, _ = PorousMediaLab.ode_integrate(
+            C_new, _ = OdeSolver.ode_integrate(
                 C0, dcdt, rates, coef, dt, solver=1)
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
@@ -89,7 +92,7 @@ class TestMathModel:
         time = np.linspace(0, T, T / dt + 1)
         num_sol = np.array(C0['C'])
         for i in range(1, len(time)):
-            C_new, _ = PorousMediaLab.ode_integrate(
+            C_new, _ = OdeSolver.ode_integrate(
                 C0, dcdt, rates, coef, dt, solver=0)
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
@@ -111,7 +114,7 @@ class TestHandling(unittest.TestCase):
         dcdt = {'C1': '-R'}
         dt = 0.0001
         with self.assertRaises(KeyError):
-            PorousMediaLab.ode_integrate(C0, dcdt, rates, coef, dt, solver=0)
+            OdeSolver.ode_integrate(C0, dcdt, rates, coef, dt, solver=0)
 
     def bc_error_test(self):
         """boundary condition error """
