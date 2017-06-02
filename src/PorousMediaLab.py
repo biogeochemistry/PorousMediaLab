@@ -2,7 +2,6 @@ import numpy as np
 from scipy.sparse import spdiags
 import time
 import sys
-from joblib import Parallel, delayed
 import Ploter
 
 import OdeSolver
@@ -37,7 +36,6 @@ class PorousMediaLab:
         self.constants = DotDict({})
         self.constants['phi'] = self.phi
         self.num_adjustments = 0
-        self.parallel = Parallel(n_jobs=4)
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -272,9 +270,10 @@ class PorousMediaLab:
         """ The possible place to parallel execution
         """
         if False:
-            species = [e for e in self.species]
-            self.parallel(delayed(self.transport_integrate_one_element)(
-                e, i) for e in species)
+            pass
+            # species = [e for e in self.species]
+            # self.parallel(delayed(self.transport_integrate_one_element)(
+            # e, i) for e in species)
         else:
             for element in self.species:
                 self.transport_integrate_one_element(element, i)
