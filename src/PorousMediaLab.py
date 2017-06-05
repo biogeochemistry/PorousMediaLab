@@ -3,7 +3,6 @@ from scipy.sparse import spdiags
 import time
 import sys
 import Ploter
-from multiprocessing import Pool, cpu_count
 
 import OdeSolver
 
@@ -36,10 +35,10 @@ class PorousMediaLab:
         self.estimated_rates = DotDict({})
         self.constants = DotDict({})
         self.constants['phi'] = self.phi
-        self.pool = Pool(processes=cpu_count())
+        self.num_adjustments = 0
 
-    # def __getattr__(self, attr):
-    #     return self.species[attr]
+    def __getattr__(self, attr):
+        return self.species[attr]
 
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
@@ -271,8 +270,10 @@ class PorousMediaLab:
         """ The possible place to parallel execution
         """
         if False:
-            self.pool.map(self.transport_integrate_one_element, (self.species, i * np.ones((len(self.species)))))
-            self.pool.apply(self.transport_integrate_one_element)
+            pass
+            # species = [e for e in self.species]
+            # self.parallel(delayed(self.transport_integrate_one_element)(
+            # e, i) for e in species)
         else:
             for element in self.species:
                 self.transport_integrate_one_element(element, i)
