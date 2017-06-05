@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import spdiags
 import time
 import sys
-import Ploter
+import Plotter
 
 import OdeSolver
 
@@ -269,14 +269,14 @@ class PorousMediaLab:
     def transport_integrate(self, i):
         """ The possible place to parallel execution
         """
-        if False:
-            pass
-            # species = [e for e in self.species]
-            # self.parallel(delayed(self.transport_integrate_one_element)(
-            # e, i) for e in species)
-        else:
-            for element in self.species:
-                self.transport_integrate_one_element(element, i)
+        # if False:
+        #     pass
+        #     # species = [e for e in self.species]
+        #     # self.parallel(delayed(self.transport_integrate_one_element)(
+        #     # e, i) for e in species)
+        # else:
+        for element in self.species:
+            self.transport_integrate_one_element(element, i)
 
     def transport_integrate_one_element(self, element, i):
         self.profiles[element] = OdeSolver.linear_alg_solver(self.species[element]['AL'], self.species[element]['B'])
@@ -347,14 +347,14 @@ class PorousMediaLab:
     def is_solute(self, element):
         return self.species[element]['is_solute']
 
-    """Mapping of ploting methods from Ploter module"""
+    """Mapping of plotting methods from Plotter module"""
 
-    custom_plot = Ploter.custom_plot
-    plot_depths = Ploter.plot_depths
-    plot_times = Ploter.plot_times
-    plot_profiles = Ploter.plot_profiles
-    plot_profile = Ploter.plot_profile
-    plot_contourplots = Ploter.plot_contourplots
-    contour_plot = Ploter.contour_plot
-    plot_contourplots_of_rates = Ploter.plot_contourplots_of_rates
-    contour_plot_of_rates = Ploter.contour_plot_of_rates
+    custom_plot = Plotter.custom_plot
+    plot_depths = Plotter.plot_depths
+    plot_times = Plotter.plot_times
+    plot_profiles = Plotter.plot_profiles
+    plot_profile = Plotter.plot_profile
+    plot_contourplots = Plotter.plot_contourplots
+    contour_plot = Plotter.contour_plot
+    plot_contourplots_of_rates = Plotter.plot_contourplots_of_rates
+    contour_plot_of_rates = Plotter.contour_plot_of_rates
