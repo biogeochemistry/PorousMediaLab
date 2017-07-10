@@ -5,6 +5,7 @@ import sys
 import Plotter
 
 import OdeSolver
+import EquilibriumSolver
 
 
 class DotDict(dict):
@@ -36,6 +37,7 @@ class PorousMediaLab:
         self.constants = DotDict({})
         self.constants['phi'] = self.phi
         self.num_adjustments = 0
+        self.henry_law_equations = []
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -225,6 +227,16 @@ class PorousMediaLab:
             print('\nABORT!!!: Not correct boundary condition...')
             sys.exit()
 
+    def add_henry_law_equilibrium(self, aq, gas, Hcc):
+        """Summary
+
+        Args:
+            aq (string): name of aquatic species
+            gas (string): name of gaseous species
+            Hcc (double): Henry Law Constant
+        """
+        self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
+
     def estimate_time_of_computation(self, i):
         if i == 1:
             self.tstart = time.time()
@@ -252,6 +264,16 @@ class PorousMediaLab:
     def integrate_one_timestep(self, i):
         self.transport_integrate(i)
         self.reactions_integrate(i)
+        if self.henry_law_equations:
+            self.equilibrium_integrate(i)
+
+    def equilibrium_integrate(self, i):
+        for eq in self.henry_law_equations:
+            self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = EquilibriumSolver.solve_henry_law(
+                self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
+            for elem in [eq['gas'], eq['aq']]:
+                self.update_matrices_due_to_bc(elem, i)
+                self.profiles[elem] = self.species[elem]['concentration'][:, i]
 
     def reactions_integrate(self, i):
         C_new, rates = OdeSolver.ode_integrate(
@@ -301,7 +323,7 @@ class PorousMediaLab:
 
         if order == 4:
             flux = D * (-25 * phi[1] * C[1, idx] + 48 * phi[2] * C[2, idx] - 36 * phi[3] * C[
-                        3, idx] + 16 * phi[4] * C[4, idx] - 3 * phi[5] * C[5, idx]) / self.dx / 12
+                3, idx] + 16 * phi[4] * C[4, idx] - 3 * phi[5] * C[5, idx]) / self.dx / 12
         if order == 3:
             flux = D * (-11 * phi[1] * C[1, idx] + 18 * phi[2] * C[2, idx] -
                         9 * phi[3] * C[3, idx] + 2 * phi[4] * C[4, idx]) / self.dx / 6
