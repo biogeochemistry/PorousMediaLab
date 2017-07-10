@@ -77,12 +77,10 @@ def plot_profile(lab, element):
     plt.plot(lab.profiles[element], -lab.x,
              sns.xkcd_rgb["denim blue"], lw=3, label=element)
     if element == 'Temperature':
-        plt.title('Temperature profile after %.2f days' %
-                  (lab.tend * 365))
+        plt.title('Temperature profile after %.2f days')
         plt.xlabel('Temperature, C')
     else:
-        plt.title('%s concentration after %.2f days' %
-                  (element, lab.tend * 365))
+        plt.title('%s concentration' % (element, ))
         plt.xlabel('mmol/L')
     plt.ylabel('Depth, cm')
     ax = plt.gca()
@@ -98,7 +96,7 @@ def plot_contourplots(lab, **kwargs):
         contour_plot(lab, element, **kwargs)
 
 
-def contour_plot(lab, element, labels=False, days=True, last_year=False):
+def contour_plot(lab, element, labels=False, days=False, last_year=False):
     plt.figure()
     plt.title(element + ' concentration')
     resoluion = 100
@@ -112,7 +110,7 @@ def contour_plot(lab, element, labels=False, days=True, last_year=False):
         plt.xlabel('Days, [day]')
     else:
         X, Y = np.meshgrid(lab.time[k::n], -lab.x)
-        plt.xlabel('Years, [year]')
+        plt.xlabel('Time')
     z = lab.species[element]['concentration'][:, k - 1:-1:n]
     CS = plt.contourf(X, Y, z, 51, cmap=ListedColormap(
         sns.color_palette("Blues", 51)), origin='lower')
