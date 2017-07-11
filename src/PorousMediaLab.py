@@ -66,23 +66,24 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
 
-    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type):
+    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, v=False):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
         self.species[element]['bc_top'] = bc_top
         self.species[element]['bc_top_type'] = bc_top_type.lower()
         self.species[element]['bc_bot'] = bc_bot
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
-        self.species[element][
-            'theta'] = self.phi if is_solute else (1 - self.phi)
+        self.species[element]['theta'] = self.phi if is_solute else (1 - self.phi)
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
-        self.species[element]['concentration'] = np.zeros(
-            (self.N, self.time.size))
+        self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][
-            :, 0] = self.species[element]['init_C']
+        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
+        if v:
+            self.species[element]['w'] = v
+        else:
+            self.species[element]['w'] = self.w
         self.template_AL_AR(element)
         self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
@@ -111,72 +112,42 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
-        s = self.species[element][
-            'theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
-        q = self.species[element]['theta'] * \
-            self.w * self.dt / self.dx
-        self.species[element]['AL'] = spdiags(((-s / 2 - q / 4), (self.species[element][
-                                              'theta'] + s), (-s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags(((s / 2 + q / 4), (self.species[element][
-                                              'theta'] - s), (s / 2 - q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+        q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
+        self.species[element]['AL'] = spdiags(((-s / 2 + q / 4), (self.species[element]['theta'] + s), (-s / 2 - q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AR'] = spdiags(((s / 2 - q / 4), (self.species[element]['theta'] - s), (s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][
-                0, 0] = self.species[element]['theta'][0]
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0]
             self.species[element]['AL'][0, 1] = 0
-            self.species[element]['AR'][
-                0, 0] = self.species[element]['theta'][0]
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0]
             self.species[element]['AR'][0, 1] = 0
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][0, 0] = self.species[
-                element]['theta'][0] + s[0]
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0]
             self.species[element]['AL'][0, 1] = -s[0]
-            self.species[element]['AR'][0, 0] = self.species[
-                element]['theta'][0] - s[0]
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0]
             self.species[element]['AR'][0, 1] = s[0]
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
 
         if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][-1, -
-                                        1] = self.species[element]['theta'][-1]
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -
-                                        1] = self.species[element]['theta'][-1]
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AR'][-1, -2] = 0
         elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -
-                                        1] = self.species[element]['theta'][-1] + s[-1]
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]
             self.species[element]['AL'][-1, -2] = -s[-1]
-            self.species[element]['AR'][-1, -
-                                        1] = self.species[element]['theta'][-1] - s[-1]
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]
             self.species[element]['AR'][-1, -2] = s[-1]
-        # NOTE: Robin BC is not implemented yet
-        elif self.species[element]['bc_bot_type'] in ['robin']:
-            self.species[element]['AL'][-1, -
-                                        1] = self.species[element]['theta'][-1]
-            self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -
-                                        1] = self.species[element]['theta'][-1]
-            self.species[element]['AR'][-1, -2] = 0
-            self.species[element]['AL'][-2, -
-                                        2] = self.species[element]['theta'][-2] + s[-2]
-            self.species[element]['AL'][-2, -3] = -s[-2] / 2
-            self.species[element]['AL'][-2, -1] = -s[-2] / 2
-            self.species[element]['AR'][-2, -
-                                        2] = self.species[element]['theta'] - s
-            self.species[element]['AR'][-2, -3] = s[-2] / 2
-            self.species[element]['AR'][-2, -1] = s[-2] / 2
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
             sys.exit()
 
     def update_matrices_due_to_bc(self, element, i):
-        s = self.species[element][
-            'theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
-        q = self.species[element]['theta'] * \
-            self.w * self.dt / self.dx
+        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
+        q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][0] = self.species[element]['bc_top']
@@ -189,40 +160,22 @@ class PorousMediaLab:
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s[-1] - q[-1]) * self.dx / \
-                self.species[element]['theta'][-1] / self.species[element]['D']
+                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][-1] = self.species[element]['bc_bot']
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s[0] - q[0]) * self.dx / \
-                self.species[element]['theta'][0] / self.species[element]['D']
+                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
             self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s[0] - q[0]) * self.dx / \
-                self.species[element]['theta'][0] / self.species[element]['D']
+                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
             self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s[-1] - q[-1]) * self.dx / \
-                self.species[element]['theta'][-1] / self.species[element]['D']
-
-        elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['robin']:
-            self.profiles[element][-1] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s[0] - q[0]) * self.dx / \
-                self.species[element]['theta'][0] / self.species[element]['D']
-
-        elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['robin']:
-            self.profiles[element][0] = self.species[element]['bc_top']
-            self.profiles[element][-1] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
-
+                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
         else:
             print('\nABORT!!!: Not correct boundary condition...')
             sys.exit()
@@ -272,8 +225,8 @@ class PorousMediaLab:
             self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = EquilibriumSolver.solve_henry_law(
                 self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
             for elem in [eq['gas'], eq['aq']]:
-                self.update_matrices_due_to_bc(elem, i)
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
+                self.update_matrices_due_to_bc(elem, i)
 
     def reactions_integrate(self, i):
         C_new, rates = OdeSolver.ode_integrate(
@@ -284,9 +237,9 @@ class PorousMediaLab:
                 # the concentration should be positive
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
-            self.update_matrices_due_to_bc(element, i)
             self.species[element]['concentration'][:, i] = self.profiles[element]
             self.species[element]['rates'][:, i] = rates[element] / self.dt
+            self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
         """ The possible place to parallel execution
@@ -302,8 +255,8 @@ class PorousMediaLab:
 
     def transport_integrate_one_element(self, element, i):
         self.profiles[element] = OdeSolver.linear_alg_solver(self.species[element]['AL'], self.species[element]['B'])
-        self.update_matrices_due_to_bc(element, i)
         self.species[element]['concentration'][:, i] = self.profiles[element]
+        self.update_matrices_due_to_bc(element, i)
 
     def estimate_flux_at_top(self, elem, idx=slice(None, None, None), order=4):
         """
