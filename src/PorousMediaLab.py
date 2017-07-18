@@ -66,7 +66,7 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
 
-    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, v=False):
+    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, rising_velocity=False):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
         self.species[element]['bc_top'] = bc_top
@@ -80,8 +80,8 @@ class PorousMediaLab:
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
         self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
-        if v:
-            self.species[element]['w'] = v
+        if rising_velocity:
+            self.species[element]['w'] = rising_velocity
         else:
             self.species[element]['w'] = self.w
         self.template_AL_AR(element)
@@ -109,6 +109,10 @@ class PorousMediaLab:
         if bc_bot is not False:
             self.species[element].bc_bot = bc_bot
         self.template_AL_AR(element)
+        self.update_matrices_due_to_bc(element, i)
+
+    def change_concentration_profile(self, element, i, new_profile):
+        self.profiles[element] = new_profile
         self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
@@ -272,19 +276,18 @@ class PorousMediaLab:
         """
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
-        phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * phi[1] * C[1, idx] + 48 * phi[2] * C[2, idx] - 36 * phi[3] * C[
-                3, idx] + 16 * phi[4] * C[4, idx] - 3 * phi[5] * C[5, idx]) / self.dx / 12
+            flux = D * (-25 * C[1, idx] + 48 * C[2, idx] - 36 * C[
+                3, idx] + 16 * C[4, idx] - 3 * C[5, idx]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * phi[1] * C[1, idx] + 18 * phi[2] * C[2, idx] -
-                        9 * phi[3] * C[3, idx] + 2 * phi[4] * C[4, idx]) / self.dx / 6
+            flux = D * (-11 * C[1, idx] + 18 * C[2, idx] -
+                        9 * C[3, idx] + 2 * C[4, idx]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[1] * C[1, idx] + 4 * phi[2] *
-                        C[2, idx] - phi[3] * C[3, idx]) / self.dx / 2
+            flux = D * (-3 * C[1, idx] + 4 *
+                        C[2, idx] * C[3, idx]) / self.dx / 2
         if order == 1:
-            flux = - D * (phi[0] * C[0, idx] - phi[2] * C[2, idx]) / 2 / self.dx
+            flux = - D * (C[0, idx] * C[2, idx]) / 2 / self.dx
 
         return flux
 
@@ -303,19 +306,18 @@ class PorousMediaLab:
 
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
-        phi = self.phi
 
         if order == 4:
-            flux = D * (-25 * phi[-2] * C[-2, idx] + 48 * phi[-3] * C[-3, idx] - 36 * phi[-4] *
-                        C[-4, idx] + 16 * phi[-5] * C[-5, idx] - 3 * phi[-6] * C[-6, idx]) / self.dx / 12
+            flux = D * (-25 * C[-2, idx] + 48 * C[-3, idx] - 36 *
+                        C[-4, idx] + 16 * C[-5, idx] - 3 * C[-6, idx]) / self.dx / 12
         if order == 3:
-            flux = D * (-11 * phi[-2] * C[-2, idx] + 18 * phi[-3] * C[-3, idx] -
-                        9 * phi[-4] * C[-4, idx] + 2 * phi[-5] * C[-5, idx]) / self.dx / 6
+            flux = D * (-11 * C[-2, idx] + 18 * C[-3, idx] -
+                        9 * C[-4, idx] + 2 * C[-5, idx]) / self.dx / 6
         if order == 2:
-            flux = D * (-3 * phi[-2] * C[-2, idx] + 4 * phi[-3] *
-                        C[-3, idx] - phi[-4] * C[-4, idx]) / self.dx / 2
+            flux = D * (-3 * C[-2, idx] + 4 *
+                        C[-3, idx] * C[-4, idx]) / self.dx / 2
         if order == 1:
-            flux = - D * phi[-1](* C[-1, idx] - phi[-3] * C[-3, :]) / 2 / self.dx
+            flux = - D * (C[-1, idx] * C[-3, :]) / 2 / self.dx
 
         return flux
 
