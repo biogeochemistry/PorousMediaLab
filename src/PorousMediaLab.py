@@ -6,6 +6,7 @@ import Plotter
 
 import OdeSolver
 import EquilibriumSolver
+from pHcalc.pHcalc import Acid, Neutral, System
 
 
 class DotDict(dict):
@@ -38,6 +39,7 @@ class PorousMediaLab:
         self.constants['phi'] = self.phi
         self.num_adjustments = 0
         self.henry_law_equations = []
+        self.acid_base_equations = []
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -66,7 +68,7 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
 
-    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, rising_velocity=False):
+    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, rising_velocity=False, int_transport=True):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
         self.species[element]['bc_top'] = bc_top
@@ -84,8 +86,10 @@ class PorousMediaLab:
             self.species[element]['w'] = rising_velocity
         else:
             self.species[element]['w'] = self.w
-        self.template_AL_AR(element)
-        self.update_matrices_due_to_bc(element, 0)
+        self.species[element]['int_transport'] = int_transport
+        if int_transport:
+            self.template_AL_AR(element)
+            self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
     def add_solute_species(self, element, D, init_C):
@@ -194,6 +198,37 @@ class PorousMediaLab:
         """
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
+    def add_acid_base_equilibrium(self, species, pKa):
+        self.acid_base_equations.append({'species': species, 'pKa': pKa})
+        if len(self.acid_base_equations) == 1:
+            self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
+                             bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
+
+    def acid_base_equilibrium_integrate(self, i):
+        # pass
+        g = 7
+        acids = []
+        for idx_j in range(self.N):
+            for eq in self.acid_base_equations:
+                init_conc = 0
+                for element in eq['species']:
+                    init_conc += self.species[element]['concentration'][idx_j, i]
+                a = Acid(pKa=eq['pKa'], charge=0, conc=init_conc)
+                acids.append(a)
+            system = System(*acids)
+            system.pHsolve(guess=g, tol=1e-2)
+            g = system.pH
+            self.species['pH']['concentration'][idx_j, i] = g
+            self.profiles['pH'][idx_j] = g
+
+        init_C = 0
+        for a, eq in zip(acids, self.acid_base_equations):
+            alphas = a.alpha(self.species['pH']['concentration'][:, i])
+            for idx in range(len(eq['species'])):
+                init_C += self.species[eq['species'][idx]]['concentration'][:, i]
+            for idx in range(len(eq['species'])):
+                self.species[eq['species'][idx]]['concentration'][:, i] = init_C * alphas[:, idx]
+
     def estimate_time_of_computation(self, i):
         if i == 1:
             self.tstart = time.time()
@@ -222,15 +257,18 @@ class PorousMediaLab:
         self.transport_integrate(i)
         self.reactions_integrate(i)
         if self.henry_law_equations:
-            self.equilibrium_integrate(i)
+            self.henry_equilibrium_integrate(i)
+        if self.acid_base_equations:
+            self.acid_base_equilibrium_integrate(i)
 
-    def equilibrium_integrate(self, i):
+    def henry_equilibrium_integrate(self, i):
         for eq in self.henry_law_equations:
             self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = EquilibriumSolver.solve_henry_law(
                 self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
             for elem in [eq['gas'], eq['aq']]:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
-                self.update_matrices_due_to_bc(elem, i)
+                if self.species[elem]['int_transport']:
+                    self.update_matrices_due_to_bc(elem, i)
 
     def reactions_integrate(self, i):
         C_new, rates = OdeSolver.ode_integrate(
@@ -243,7 +281,8 @@ class PorousMediaLab:
             self.profiles[element] = C_new[element]
             self.species[element]['concentration'][:, i] = self.profiles[element]
             self.species[element]['rates'][:, i] = rates[element] / self.dt
-            self.update_matrices_due_to_bc(element, i)
+            if self.species[element]['int_transport']:
+                self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
         """ The possible place to parallel execution
@@ -255,7 +294,8 @@ class PorousMediaLab:
         #     # e, i) for e in species)
         # else:
         for element in self.species:
-            self.transport_integrate_one_element(element, i)
+            if self.species[element]['int_transport']:
+                self.transport_integrate_one_element(element, i)
 
     def transport_integrate_one_element(self, element, i):
         self.profiles[element] = OdeSolver.linear_alg_solver(self.species[element]['AL'], self.species[element]['B'])
