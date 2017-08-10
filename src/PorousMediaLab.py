@@ -62,8 +62,9 @@ class PorousMediaLab:
             (self.N, self.time.size))
         self.species['Temperature']['concentration'][
             :, 0] = (init_temperature * np.ones((self.N)))
-        self.profiles['Temperature'] = self.species[
-            'Temperature']['concentration'][:, 0]
+        self.profiles['Temperature'] = self.species['Temperature']['concentration'][:, 0]
+        self.species['Temperature']['w'] = 0
+        self.species['Temperature']['int_transport'] = True
         self.template_AL_AR('Temperature')
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
