@@ -222,8 +222,8 @@ class PorousMediaLab:
             self.species['pH']['concentration'][idx_j, i] = g
             self.profiles['pH'][idx_j] = g
 
-        init_C = 0
         for a, eq in zip(acids, self.acid_base_equations):
+            init_C = 0
             alphas = a.alpha(self.species['pH']['concentration'][:, i])
             for idx in range(len(eq['species'])):
                 init_C += self.species[eq['species'][idx]]['concentration'][:, i]
