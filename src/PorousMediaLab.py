@@ -6,7 +6,7 @@ import Plotter
 
 import OdeSolver
 import EquilibriumSolver
-from pHcalc.pHcalc import Acid, Neutral, System
+from pHcalc import Acid, Neutral, System
 
 
 class DotDict(dict):
