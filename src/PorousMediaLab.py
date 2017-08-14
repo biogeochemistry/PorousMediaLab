@@ -39,7 +39,7 @@ class PorousMediaLab:
         self.constants['phi'] = self.phi
         self.num_adjustments = 0
         self.henry_law_equations = []
-        self.acid_base_equations = []
+        self.acid_base_components = []
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -200,35 +200,34 @@ class PorousMediaLab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def add_acid_base_equilibrium(self, species, pKa):
-        self.acid_base_equations.append({'species': species, 'pKa': pKa})
-        if len(self.acid_base_equations) == 1:
-            self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
-                             bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
+        acid = Acid(pKa=pKa, charge=0, conc=np.nan)
+        self.acid_base_components.append({'species': species, 'component': acid})
 
     def acid_base_equilibrium_integrate(self, i):
-        # pass
-        g = 7
-        acids = []
-        for idx_j in range(self.N):
-            for eq in self.acid_base_equations:
-                init_conc = 0
-                for element in eq['species']:
-                    init_conc += self.species[element]['concentration'][idx_j, i]
-                a = Acid(pKa=eq['pKa'], charge=0, conc=init_conc)
-                acids.append(a)
-            system = System(*acids)
-            system.pHsolve(guess=g, tol=1e-2)
-            g = system.pH
-            self.species['pH']['concentration'][idx_j, i] = g
-            self.profiles['pH'][idx_j] = g
 
-        for a, eq in zip(acids, self.acid_base_equations):
+        for idx_j in range(self.N):
+            for c in self.acid_base_components:
+                init_conc = 0
+                for element in c['species']:
+                    init_conc += self.species[element]['concentration'][idx_j, i]
+                c['component'].conc = init_conc
+            if idx_j == 0:
+                self.acid_base_system.pHsolve(guess=7, tol=1e-5)
+                res = self.acid_base_system.pH
+            else:
+                phs = np.linspace(res - 0.5, res + 0.5, 201)
+                idx = self.acid_base_system._diff_pos_neg(phs).argmin()
+                res = phs[idx]
+            self.species['pH']['concentration'][idx_j, i] = res
+            self.profiles['pH'][idx_j] = res
+
+        for c in self.acid_base_components:
             init_C = 0
-            alphas = a.alpha(self.species['pH']['concentration'][:, i])
-            for idx in range(len(eq['species'])):
-                init_C += self.species[eq['species'][idx]]['concentration'][:, i]
-            for idx in range(len(eq['species'])):
-                self.species[eq['species'][idx]]['concentration'][:, i] = init_C * alphas[:, idx]
+            alphas = c['component'].alpha(self.species['pH']['concentration'][:, i])
+            for idx in range(len(c['species'])):
+                init_C += self.species[c['species'][idx]]['concentration'][:, i]
+            for idx in range(len(c['species'])):
+                self.species[c['species'][idx]]['concentration'][:, i] = init_C * alphas[:, idx]
 
     def estimate_time_of_computation(self, i):
         if i == 1:
@@ -242,7 +241,17 @@ class PorousMediaLab:
             print("Will finish approx.:\n\t", time.strftime(
                 "%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
 
+    def create_acid_base_system(self):
+        self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
+                         bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
+        self.acid_base_system = System(*[c['component'] for c in self.acid_base_components])
+
+    def pre_run_methods(self):
+        if len(self.acid_base_components) > 0:
+            self.create_acid_base_system()
+
     def solve(self, do_adjust=True):
+        self.pre_run_methods()
         print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
               (self.time[-1], self.dt, self.length, self.dx, self.w))
         with np.errstate(invalid='raise'):
@@ -255,11 +264,13 @@ class PorousMediaLab:
                     sys.exit()
 
     def integrate_one_timestep(self, i):
+        if i == 1:
+            self.pre_run_methods()
         self.transport_integrate(i)
         self.reactions_integrate(i)
         if self.henry_law_equations:
             self.henry_equilibrium_integrate(i)
-        if self.acid_base_equations:
+        if self.acid_base_components:
             self.acid_base_equilibrium_integrate(i)
 
     def henry_equilibrium_integrate(self, i):
