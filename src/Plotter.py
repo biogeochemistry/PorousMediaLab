@@ -121,6 +121,9 @@ def contour_plot(lab, element, labels=False, days=False, last_year=False):
     if element == 'Temperature':
         plt.title('Temperature contour plot')
         cbar.ax.set_ylabel('Temperature, C')
+    if element == 'pH':
+        plt.title('pH contour plot')
+        cbar.ax.set_ylabel('pH')
     return ax
 
 
