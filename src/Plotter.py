@@ -71,8 +71,11 @@ def plot_profile(lab, element):
     plt.figure()
     plt.plot(lab.profiles[element], -lab.x, sns.xkcd_rgb["denim blue"], lw=3, label=element)
     if element == 'Temperature':
-        plt.title('Temperature profile after %.2f units of time')
+        plt.title('Temperature profile')
         plt.xlabel('Temperature, C')
+    elif element == 'pH':
+        plt.title('pH profile')
+        plt.xlabel('pH')
     else:
         plt.title('%s concentration' % (element, ))
         plt.xlabel('Concentration')
@@ -118,6 +121,9 @@ def contour_plot(lab, element, labels=False, days=False, last_year=False):
     if element == 'Temperature':
         plt.title('Temperature contour plot')
         cbar.ax.set_ylabel('Temperature, C')
+    if element == 'pH':
+        plt.title('pH contour plot')
+        cbar.ax.set_ylabel('pH')
     return ax
 
 
