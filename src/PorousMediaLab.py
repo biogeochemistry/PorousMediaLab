@@ -217,7 +217,7 @@ class PorousMediaLab:
         self.acid_base_components.append({'species': species, 'pH_object': acid})
 
     def acid_base_equilibrium_solve(self, i):
-        self.acid_base_estimate_ph(i)
+        self.acid_base_solve_ph(i)
         self.acid_base_update_concentrations(i)
 
     def acid_base_update_concentrations(self, i):
@@ -229,7 +229,7 @@ class PorousMediaLab:
             for idx in range(len(component['species'])):
                 self.species[component['species'][idx]]['concentration'][:, i] = init_conc * alphas[:, idx]
 
-    def acid_base_estimate_ph(self, i):
+    def acid_base_solve_ph(self, i):
         res = self.species['pH']['concentration'][0, i - 1]  # initial guess from previous time-step
         for idx_j in range(self.N):
             for c in self.acid_base_components:
@@ -267,6 +267,7 @@ class PorousMediaLab:
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
+            self.acid_base_equilibrium_solve(0)
 
     def solve(self, do_adjust=True):
         print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
@@ -307,8 +308,6 @@ class PorousMediaLab:
         for element in C_new:
             if element is not 'Temperature':
                 # the concentration should be positive
-                # print(element)
-                # print(C_new[element])
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
             self.species[element]['concentration'][:, i] = self.profiles[element]
