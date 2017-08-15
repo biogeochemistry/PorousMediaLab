@@ -7,7 +7,7 @@ import Plotter
 
 import OdeSolver
 import EquilibriumSolver
-from pHcalc import Acid, Neutral, System
+import pHcalc
 
 
 class DotDict(dict):
@@ -41,6 +41,7 @@ class PorousMediaLab:
         self.num_adjustments = 0
         self.henry_law_equations = []
         self.acid_base_components = []
+        self.acid_base_system = pHcalc.System()
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -85,7 +86,7 @@ class PorousMediaLab:
         self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         if rising_velocity:
-            self.species[element]['w'] = self.w + rising_velocity
+            self.species[element]['w'] = self.w - rising_velocity
         else:
             self.species[element]['w'] = self.w
         self.species[element]['int_transport'] = int_transport
@@ -125,8 +126,8 @@ class PorousMediaLab:
         # TODO: error source somewhere in non constant porosity profile. Maybe we also need d phi/dx
         s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
         q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
-        self.species[element]['AL'] = spdiags(((-s / 2 + q / 4), (self.species[element]['theta'] + s), (-s / 2 - q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags(((s / 2 - q / 4), (self.species[element]['theta'] - s), (s / 2 + q / 4)), [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AL'] = spdiags([-s / 2 + q / 4, self.species[element]['theta'] + s, -s / 2 - q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AR'] = spdiags([s / 2 - q / 4, self.species[element]['theta'] - s, s / 2 + q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
             self.species[element]['AL'][0, 0] = self.species[element]['theta'][0]
@@ -134,10 +135,12 @@ class PorousMediaLab:
             self.species[element]['AR'][0, 0] = self.species[element]['theta'][0]
             self.species[element]['AR'][0, 1] = 0
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0]
-            self.species[element]['AL'][0, 1] = -s[1]
-            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0]
-            self.species[element]['AR'][0, 1] = s[1]
+            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0] + self.species[element]['w'] * s[0] * \
+                self.dx / self.species[element]['D'] - q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AL'][0, 1] = -s[1]  # / 2 - s[0] / 2
+            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0] - self.species[element]['w'] * s[0] * \
+                self.dx / self.species[element]['D'] + q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AR'][0, 1] = s[1]  # / 2 + s[0] / 2
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
@@ -148,10 +151,12 @@ class PorousMediaLab:
             self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AR'][-1, -2] = 0
         elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]
-            self.species[element]['AL'][-1, -2] = -s[-2]
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]
-            self.species[element]['AR'][-1, -2] = s[-2]
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1] + self.species[element]['w'] * s[-1] * \
+                self.dx / self.species[element]['D'] - q[-1] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AL'][-1, -2] = -s[-2]  # / 2 - s[-1] / 2
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1] - self.species[element]['w'] * s[-1] * \
+                self.dx / self.species[element]['D'] + q[-1] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AR'][-1, -2] = s[-2]  # / 2 + s[-1] / 2
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
             sys.exit()
@@ -170,26 +175,28 @@ class PorousMediaLab:
             self.profiles[element][0] = self.species[element]['bc_top']
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
+            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * 2 * self.species[element]['bc_bot'] * \
+                (s[-1] / 2 - q[-1] / 4) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
             self.profiles[element][-1] = self.species[element]['bc_bot']
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
+            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * 2 * self.species[element]['bc_top'] * \
+                (s[0] / 2 - q[0] / 4) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
 
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
             self.species[element]['B'] = self.species[
                 element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * self.species[element]['bc_top'] * \
-                (2 * s[0] - q[0]) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * self.species[element]['bc_bot'] * \
-                (2 * s[-1] - q[-1]) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
+            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * 2 * self.species[element]['bc_top'] * \
+                (s[0] / 2 - q[0] / 4) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
+            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * 2 * self.species[element]['bc_bot'] * \
+                (s[-1] / 2 - q[-1] / 4) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
         else:
             print('\nABORT!!!: Not correct boundary condition in the species...')
             sys.exit()
+
+        self.species[element]['concentration'][:, i] = self.profiles[element]
 
     def add_henry_law_equilibrium(self, aq, gas, Hcc):
         """Summary
@@ -202,25 +209,25 @@ class PorousMediaLab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def add_ion(self, element, charge):
-        ion = Neutral(charge=charge, conc=np.nan)
+        ion = pHcalc.Neutral(charge=charge, conc=np.nan)
         self.acid_base_components.append({'species': [element], 'pH_object': ion})
 
     def add_acid(self, species, pKa, charge=0):
-        acid = Acid(pKa=pKa, charge=charge, conc=np.nan)
+        acid = pHcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
         self.acid_base_components.append({'species': species, 'pH_object': acid})
 
     def acid_base_equilibrium_solve(self, i):
         self.acid_base_estimate_ph(i)
-        self.acid_base_update_conc_of_components(i)
+        self.acid_base_update_concentrations(i)
 
-    def acid_base_update_conc_of_components(self, i):
-        for c in self.acid_base_components:
-            init_C = 0
-            alphas = c['pH_object'].alpha(self.species['pH']['concentration'][:, i])
-            for idx in range(len(c['species'])):
-                init_C += self.species[c['species'][idx]]['concentration'][:, i]
-            for idx in range(len(c['species'])):
-                self.species[c['species'][idx]]['concentration'][:, i] = init_C * alphas[:, idx]
+    def acid_base_update_concentrations(self, i):
+        for component in self.acid_base_components:
+            init_conc = 0
+            alphas = component['pH_object'].alpha(self.species['pH']['concentration'][:, i])
+            for idx in range(len(component['species'])):
+                init_conc += self.species[component['species'][idx]]['concentration'][:, i]
+            for idx in range(len(component['species'])):
+                self.species[component['species'][idx]]['concentration'][:, i] = init_conc * alphas[:, idx]
 
     def acid_base_estimate_ph(self, i):
         res = self.species['pH']['concentration'][0, i - 1]  # initial guess from previous time-step
@@ -255,7 +262,7 @@ class PorousMediaLab:
     def create_acid_base_system(self):
         self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
                          bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
-        self.acid_base_system = System(*[c['pH_object'] for c in self.acid_base_components])
+        self.acid_base_system = pHcalc.System(*[c['pH_object'] for c in self.acid_base_components])
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
@@ -310,14 +317,8 @@ class PorousMediaLab:
                 self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
-        """ The possible place to parallel execution
+        """ Integrates transport equations
         """
-        # if False:
-        #     pass
-        #     # species = [e for e in self.species]
-        #     # self.parallel(delayed(self.transport_integrate_one_element)(
-        #     # e, i) for e in species)
-        # else:
         for element in self.species:
             if self.species[element]['int_transport']:
                 self.transport_integrate_one_element(element, i)
