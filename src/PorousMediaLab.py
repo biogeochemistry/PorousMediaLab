@@ -126,8 +126,8 @@ class PorousMediaLab:
         # TODO: error source somewhere in non constant porosity profile. Maybe we also need d phi/dx
         s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
         q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
-        self.species[element]['AL'] = spdiags([-s / 2 + q / 4, self.species[element]['theta'] + s, -s / 2 - q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
-        self.species[element]['AR'] = spdiags([s / 2 - q / 4, self.species[element]['theta'] - s, s / 2 + q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AL'] = spdiags([-s / 2 - q / 4, self.species[element]['theta'] + s, -s / 2 + q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
+        self.species[element]['AR'] = spdiags([s / 2 + q / 4, self.species[element]['theta'] - s, s / 2 - q / 4], [-1, 0, 1], self.N, self.N, format='csc')  # .toarray()
 
         if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
             self.species[element]['AL'][0, 0] = self.species[element]['theta'][0]
@@ -137,10 +137,10 @@ class PorousMediaLab:
         elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
             self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0] + self.species[element]['w'] * s[0] * \
                 self.dx / self.species[element]['D'] - q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
-            self.species[element]['AL'][0, 1] = -s[1]  # / 2 - s[0] / 2
+            self.species[element]['AL'][0, 1] = -s[1]
             self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0] - self.species[element]['w'] * s[0] * \
                 self.dx / self.species[element]['D'] + q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
-            self.species[element]['AR'][0, 1] = s[1]  # / 2 + s[0] / 2
+            self.species[element]['AR'][0, 1] = s[1]
         else:
             print('\nABORT!!!: Not correct top boundary condition type...')
             sys.exit()
