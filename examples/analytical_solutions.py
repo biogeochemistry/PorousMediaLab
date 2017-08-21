@@ -13,6 +13,36 @@ import seaborn as sns
 sns.set_style("whitegrid")
 
 
+def transport_equation_boundary_effect():
+    '''Check the transport equation integrator'''
+
+    w = 5
+    tend = 5
+    dx = 0.1
+    length = 30
+    phi = 1
+    dt = 0.001
+    lab = PorousMediaLab(length, dx, tend, dt, phi, w)
+    D = 5
+    lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+    lab.solve()
+    x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+    sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
+                   np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+
+    plt.figure()
+    plt.plot(x, sol, 'k', label='Analytical solution')
+    plt.scatter(lab.x[::10], lab.species['O2'].concentration[
+                :, -1][::10], marker='x', label='Numerical')
+    plt.xlim([x[0], x[-1]])
+    ax = plt.gca()
+    ax.ticklabel_format(useOffset=False)
+    ax.grid(linestyle='-', linewidth=0.2)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 def transport_equation_plot():
     '''Check the transport equation integrator'''
 
