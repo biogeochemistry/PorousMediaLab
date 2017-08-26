@@ -151,11 +151,9 @@ class PorousMediaLab:
             self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
             self.species[element]['AR'][-1, -2] = 0
         elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]  # + self.species[element]['w'] * s[-1] * \
-            # self.dx / self.species[element]['D'] - q[-1] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]
             self.species[element]['AL'][-1, -2] = -s[-1]  # / 2 - s[-1] / 2
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]  # - self.species[element]['w'] * s[-1] * \
-            # self.dx / self.species[element]['D'] + q[-1] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
+            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]
             self.species[element]['AR'][-1, -2] = s[-1]  # / 2 + s[-1] / 2
         else:
             print('\nABORT!!!: Not correct bottom boundary condition type...')
@@ -345,15 +343,19 @@ class PorousMediaLab:
 
         if order == 4:
             flux = D * (-25 * self.phi[1] * C[1, idx] + 48 * self.phi[2] * C[2, idx] - 36 * self.phi[3] * C[
-                3, idx] + 16 * self.phi[4] * C[4, idx] - 3 * self.phi[5] * C[5, idx]) / self.dx / 12
+                3, idx] + 16 * self.phi[4] * C[4, idx] - 3 * self.phi[5] * C[5, idx]) / self.dx / 12 \
+                - self.phi[0] * self.species[elem]['w'] * C[0]
         if order == 3:
             flux = D * (-11 * self.phi[1] * C[1, idx] + 18 * self.phi[2] * C[2, idx] -
-                        9 * self.phi[3] * C[3, idx] + 2 * self.phi[4] * C[4, idx]) / self.dx / 6
+                        9 * self.phi[3] * C[3, idx] + 2 * self.phi[4] * C[4, idx]) / self.dx / 6 \
+                - self.phi[0] * self.species[elem]['w'] * C[0]
         if order == 2:
             flux = D * (-3 * self.phi[1] * C[1, idx] + 4 *
-                        self.phi[2] * C[2, idx] * self.phi[3] * C[3, idx]) / self.dx / 2
+                        self.phi[2] * C[2, idx] * self.phi[3] * C[3, idx]) / self.dx / 2 \
+                - self.phi[0] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (self.phi[0] * C[0, idx] * self.phi[2] * C[2, idx]) / 2 / self.dx
+            flux = - D * (self.phi[0] * C[0, idx] * self.phi[2] * C[2, idx]) / 2 / self.dx \
+                - self.phi[0] * self.species[elem]['w'] * C[0]
 
         return flux
 
@@ -375,15 +377,19 @@ class PorousMediaLab:
 
         if order == 4:
             flux = D * (-25 * self.phi[-2] * C[-2, idx] + 48 * self.phi[-3] * C[-3, idx] - 36 *
-                        self.phi[-4] * C[-4, idx] + 16 * self.phi[-5] * C[-5, idx] - 3 * self.phi[-6] * C[-6, idx]) / self.dx / 12
+                        self.phi[-4] * C[-4, idx] + 16 * self.phi[-5] * C[-5, idx] - 3 * self.phi[-6] * C[-6, idx]) / self.dx / 12 \
+                + self.phi[-1] * self.species[elem]['w'] * C[0]
         if order == 3:
             flux = D * (-11 * self.phi[-2] * C[-2, idx] + 18 * self.phi[-3] * C[-3, idx] -
-                        9 * self.phi[-4] * C[-4, idx] + 2 * self.phi[-5] * C[-5, idx]) / self.dx / 6
+                        9 * self.phi[-4] * C[-4, idx] + 2 * self.phi[-5] * C[-5, idx]) / self.dx / 6 \
+                + self.phi[-1] * self.species[elem]['w'] * C[0]
         if order == 2:
             flux = D * (-3 * self.phi[-2] * C[-2, idx] + 4 *
-                        self.phi[-3] * C[-3, idx] * self.phi[-4] * C[-4, idx]) / self.dx / 2
+                        self.phi[-3] * C[-3, idx] * self.phi[-4] * C[-4, idx]) / self.dx / 2 \
+                + self.phi[-1] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (self.phi[-1] * C[-1, idx] * self.phi[-3] * C[-3, :]) / 2 / self.dx
+            flux = - D * (self.phi[-1] * C[-1, idx] * self.phi[-3] * C[-3, :]) / 2 / self.dx \
+                + self.phi[-1] * self.species[elem]['w'] * C[0]
 
         return flux
 
