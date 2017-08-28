@@ -5,7 +5,7 @@ import sys
 import traceback
 import Plotter
 
-import OdeSolver
+import DESolver
 import EquilibriumSolver
 import pHcalc
 
@@ -49,9 +49,9 @@ class PorousMediaLab:
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
         self.species['Temperature']['is_solute'] = True
-        self.species['Temperature']['bc_top'] = init_temperature
+        self.species['Temperature']['bc_top_value'] = init_temperature
         self.species['Temperature']['bc_top_type'] = 'dirichlet'
-        self.species['Temperature']['bc_bot'] = 0
+        self.species['Temperature']['bc_bot_value'] = 0
         self.species['Temperature']['bc_bot_type'] = 'neumann'
         # considering diffusion of temperature through pores (ie assumption is
         # that solid soil is not conducting heat)
@@ -74,16 +74,19 @@ class PorousMediaLab:
     def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, rising_velocity=False, int_transport=True):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
-        self.species[element]['bc_top'] = bc_top
+        self.species[element]['bc_top_value'] = bc_top
         self.species[element]['bc_top_type'] = bc_top_type.lower()
-        self.species[element]['bc_bot'] = bc_bot
+        self.species[element]['bc_bot_value'] = bc_bot
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
-        self.species[element]['theta'] = self.phi if is_solute else (1 - self.phi)
+        self.species[element]['theta'] = self.phi if is_solute else (
+            1 - self.phi)
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
-        self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
+        self.species[element]['concentration'] = np.zeros(
+            (self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
+        self.species[element]['concentration'][:,
+                                               0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         if rising_velocity:
             self.species[element]['w'] = self.w - rising_velocity
@@ -104,7 +107,7 @@ class PorousMediaLab:
                          bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
 
     def new_top_boundary_condition(self, element, bc):
-        self.species[element]['bc_top'] = bc
+        self.species[element]['bc_top_value'] = bc
 
     def change_boundary_conditions(self, element, i, bc_top=False, bc_top_type=False, bc_bot=False, bc_bot_type=False):
         if bc_top_type is not False:
@@ -123,76 +126,15 @@ class PorousMediaLab:
         self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
-        # TODO: error source somewhere in non constant porosity profile. Maybe we also need d phi/dx
-        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
-        q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
-        self.species[element]['AL'] = spdiags([-s / 2 - q / 4, self.species[element]['theta'] + s, -s / 2 + q / 4], [-1, 0, 1], self.N, self.N, format='csr')  # .toarray()
-        self.species[element]['AR'] = spdiags([s / 2 + q / 4, self.species[element]['theta'] - s, s / 2 - q / 4], [-1, 0, 1], self.N, self.N, format='csr')  # .toarray()
-
-        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0]
-            self.species[element]['AL'][0, 1] = 0
-            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0]
-            self.species[element]['AR'][0, 1] = 0
-        elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][0, 0] = self.species[element]['theta'][0] + s[0]  # + self.species[element]['w'] * s[0] * \
-            # self.dx / self.species[element]['D'] - q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
-            self.species[element]['AL'][0, 1] = -s[0]
-            self.species[element]['AR'][0, 0] = self.species[element]['theta'][0] - s[0]  # - self.species[element]['w'] * s[0] * \
-            # self.dx / self.species[element]['D'] + q[0] * self.species[element]['w'] * self.dx / self.species[element]['D'] / 2
-            self.species[element]['AR'][0, 1] = s[0]
-        else:
-            print('\nABORT!!!: Not correct top boundary condition type...')
-            sys.exit()
-
-        if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1]
-            self.species[element]['AL'][-1, -2] = 0
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1]
-            self.species[element]['AR'][-1, -2] = 0
-        elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['AL'][-1, -1] = self.species[element]['theta'][-1] + s[-1]
-            self.species[element]['AL'][-1, -2] = -s[-1]  # / 2 - s[-1] / 2
-            self.species[element]['AR'][-1, -1] = self.species[element]['theta'][-1] - s[-1]
-            self.species[element]['AR'][-1, -2] = s[-1]  # / 2 + s[-1] / 2
-        else:
-            print('\nABORT!!!: Not correct bottom boundary condition type...')
-            sys.exit()
+        self.species[element]['AL'], self.species[element]['AR'] = DESolver.create_template_AL_AR(
+            self.species[element]['theta'], self.species[element]['D'], self.species[element]['w'],
+            self.species[element]['bc_top_type'], self.species[element]['bc_bot_type'], self.dt, self.dx, self.N)
 
     def update_matrices_due_to_bc(self, element, i):
-        s = self.species[element]['theta'] * self.species[element]['D'] * self.dt / self.dx / self.dx
-        q = self.species[element]['theta'] * self.species[element]['w'] * self.dt / self.dx
-
-        if self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.profiles[element][0] = self.species[element]['bc_top']
-            self.profiles[element][-1] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
-
-        elif self.species[element]['bc_top_type'] in ['dirichlet', 'constant'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.profiles[element][0] = self.species[element]['bc_top']
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * 2 * self.species[element]['bc_bot'] * \
-                (s[-1] / 2 - q[-1] / 4) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
-
-        elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
-            self.profiles[element][-1] = self.species[element]['bc_bot']
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * 2 * self.species[element]['bc_top'] * \
-                (s[0] / 2 - q[0] / 4) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
-
-        elif self.species[element]['bc_top_type'] in ['neumann', 'flux'] and self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
-            self.species[element]['B'] = self.species[
-                element]['AR'].dot(self.profiles[element])
-            self.species[element]['B'][0] = self.species[element]['B'][0] + 2 * 2 * self.species[element]['bc_top'] * \
-                (s[0] / 2 - q[0] / 4) * self.dx / self.species[element]['theta'][0] / self.species[element]['D']
-            self.species[element]['B'][-1] = self.species[element]['B'][-1] + 2 * 2 * self.species[element]['bc_bot'] * \
-                (s[-1] / 2 - q[-1] / 4) * self.dx / self.species[element]['theta'][-1] / self.species[element]['D']
-        else:
-            print('\nABORT!!!: Not correct boundary condition in the species...')
-            sys.exit()
+        self.profiles[element], self.species[element]['B'] = DESolver.update_matrices_due_to_bc(self.species[
+            element]['AR'], self.profiles[element], self.species[element]['theta'], self.species[element]['D'],
+            self.species[element]['w'], self.species[element]['bc_top_type'], self.species[element]['bc_top_value'],
+            self.species[element]['bc_bot_type'], self.species[element]['bc_bot_value'], self.dt, self.dx, self.N)
 
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
@@ -208,11 +150,13 @@ class PorousMediaLab:
 
     def add_ion(self, element, charge):
         ion = pHcalc.Neutral(charge=charge, conc=np.nan)
-        self.acid_base_components.append({'species': [element], 'pH_object': ion})
+        self.acid_base_components.append(
+            {'species': [element], 'pH_object': ion})
 
     def add_acid(self, species, pKa, charge=0):
         acid = pHcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
-        self.acid_base_components.append({'species': species, 'pH_object': acid})
+        self.acid_base_components.append(
+            {'species': species, 'pH_object': acid})
 
     def acid_base_equilibrium_solve(self, i):
         self.acid_base_solve_ph(i)
@@ -221,14 +165,18 @@ class PorousMediaLab:
     def acid_base_update_concentrations(self, i):
         for component in self.acid_base_components:
             init_conc = 0
-            alphas = component['pH_object'].alpha(self.species['pH']['concentration'][:, i])
+            alphas = component['pH_object'].alpha(
+                self.species['pH']['concentration'][:, i])
             for idx in range(len(component['species'])):
-                init_conc += self.species[component['species'][idx]]['concentration'][:, i]
+                init_conc += self.species[component['species']
+                                          [idx]]['concentration'][:, i]
             for idx in range(len(component['species'])):
-                self.species[component['species'][idx]]['concentration'][:, i] = init_conc * alphas[:, idx]
+                self.species[component['species'][idx]
+                             ]['concentration'][:, i] = init_conc * alphas[:, idx]
 
     def acid_base_solve_ph(self, i):
-        res = self.species['pH']['concentration'][0, i - 1]  # initial guess from previous time-step
+        # initial guess from previous time-step
+        res = self.species['pH']['concentration'][0, i - 1]
         for idx_j in range(self.N):
             for c in self.acid_base_components:
                 init_conc = 0
@@ -248,19 +196,23 @@ class PorousMediaLab:
     def estimate_time_of_computation(self, i):
         if i == 1:
             self.tstart = time.time()
-            print("Simulation started:\n\t", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            print("Simulation started:\n\t", time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
-            total_t = len(self.time) * (time.time() - self.tstart) / 100 * self.dt / self.dt
+            total_t = len(self.time) * (time.time() -
+                                        self.tstart) / 100 * self.dt / self.dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
-            print("\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
+            print(
+                "\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
             print("Will finish approx.:\n\t", time.strftime(
                 "%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
 
     def create_acid_base_system(self):
         self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
                          bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
-        self.acid_base_system = pHcalc.System(*[c['pH_object'] for c in self.acid_base_components])
+        self.acid_base_system = pHcalc.System(
+            *[c['pH_object'] for c in self.acid_base_components])
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
@@ -276,7 +228,8 @@ class PorousMediaLab:
                     self.integrate_one_timestep(i)
                     self.estimate_time_of_computation(i)
                 except FloatingPointError as inst:
-                    print('\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
+                    print(
+                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
                     traceback.print_exc()
                     sys.exit()
 
@@ -301,7 +254,7 @@ class PorousMediaLab:
                     self.update_matrices_due_to_bc(elem, i)
 
     def reactions_integrate(self, i):
-        C_new, rates = OdeSolver.ode_integrate(
+        C_new, rates = DESolver.ode_integrate(
             self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
 
         for element in C_new:
@@ -309,7 +262,8 @@ class PorousMediaLab:
                 # the concentration should be positive
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
-            self.species[element]['concentration'][:, i] = self.profiles[element]
+            self.species[element]['concentration'][:,
+                                                   i] = self.profiles[element]
             self.species[element]['rates'][:, i] = rates[element] / self.dt
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
@@ -322,7 +276,8 @@ class PorousMediaLab:
                 self.transport_integrate_one_element(element, i)
 
     def transport_integrate_one_element(self, element, i):
-        self.profiles[element] = OdeSolver.linear_alg_solver(self.species[element]['AL'], self.species[element]['B'])
+        self.profiles[element] = DESolver.linear_alg_solver(
+            self.species[element]['AL'], self.species[element]['B'])
         self.species[element]['concentration'][:, i] = self.profiles[element]
         self.update_matrices_due_to_bc(element, i)
 
