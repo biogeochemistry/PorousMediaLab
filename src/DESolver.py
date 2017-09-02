@@ -26,23 +26,27 @@ def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, 
     x = np.insert(x, 0, x[0] - (x[1] - x[0]))
     x = np.append(x, x[-1] + (x[-1] - x[-2]))
 
-    hm = x[1:-1] - x[:-2]
-    hp = x[2:] - x[1:-1]
+    # hm = x[1:-1] - x[:-2]
+    # hp = x[2:] - x[1:-1]
 
     z = x[2:] - x[:-2]
     z = np.insert(z, 0, np.nan)
     z = np.append(z, np.nan)
 
-    sm = theta * diff_coef * dt * hm / 2 / hp / hm / (hp + hm)
-    so = - theta * diff_coef * dt * (hp + hm) / 2 / hp / hm / (hp + hm)
-    sp = theta * diff_coef * dt * hp / 2 / hp / hm / (hp + hm)
+    sm = theta * diff_coef * dt * 2 / (x[2:] - x[:-2]) / (x[1:-1] - x[:-2])
+    so = theta * diff_coef * dt * 2 / (x[2:] - x[1:-1]) / (x[1:-1] - x[:-2])
+    sp = theta * diff_coef * dt * 2 / (x[2:] - x[: -2]) / (x[2:] - x[1: -1])
+
+    # sm = theta * diff_coef * dt * hm / 2 / hp / hm / (hp + hm)
+    # so = theta * diff_coef * dt * (hp + hm) / 2 / hp / hm / (hp + hm)
+    # sp = theta * diff_coef * dt * hp / 2 / hp / hm / (hp + hm)
 
     qm = theta * adv_coef * dt / z[2:]
-    qp = theta * adv_coef * dt / z[:-2]
+    qp = theta * adv_coef * dt / z[: -2]
 
-    AL = spdiags([-sm / 2 - qm / 2, theta + so, -sm / 2 + qp / 2],
+    AL = spdiags([-sm / 2 - qm / 2, theta + so / 2, -sm / 2 + qp / 2],
                  [-1, 0, 1], N, N, format='csr')  # .toarray()
-    AR = spdiags([sm / 2 + qm / 2, theta - so, sp / 2 - qp / 2],
+    AR = spdiags([sm / 2 + qm / 2, theta - so / 2, sp / 2 - qp / 2],
                  [-1, 0, 1], N, N, format='csr')  # .toarray()
 
     if bc_top_type in ['dirichlet', 'constant']:
@@ -73,10 +77,45 @@ def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, 
         print('\nABORT!!!: Not correct bottom boundary condition type...')
         sys.exit()
 
-    import pdb
-    pdb.set_trace()  # breakpoint 29f73e7b //
-
     return AL, AR
+
+
+def update_matrices_due_to_bc(AR, profile, theta, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, x, N):
+    dx = x[1] - x[0]
+    s = theta * diff_coef * dt / dx / dx
+    q = theta * adv_coef * dt / dx
+
+    if (bc_top_type in ['dirichlet', 'constant'] and
+            bc_bot_type in ['dirichlet', 'constant']):
+        profile[0], profile[-1] = bc_top, bc_bot
+        B = AR.dot(profile)
+
+    elif (bc_top_type in ['dirichlet', 'constant'] and
+            bc_bot_type in ['neumann', 'flux']):
+        profile[0] = bc_top
+        B = AR.dot(profile)
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (
+            s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+
+    elif (bc_top_type in ['neumann', 'flux'] and
+            bc_bot_type in ['dirichlet', 'constant']):
+        profile[-1] = bc_bot
+        B = AR.dot(profile)
+        B[0] = B[0] + 2 * 2 * bc_top * (
+            s[0] / 2 - q[0] / 4) * dx / theta / diff_coef
+
+    elif (bc_top_type in ['neumann', 'flux'] and
+          bc_bot_type in ['neumann', 'flux']):
+        B = AR.dot(profile)
+        B[0] = B[0] + 2 * 2 * bc_top * (
+            s[0] / 2 - q[0] / 4) * dx / theta / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (
+            s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+    else:
+        print('\nABORT!!!: Not correct boundary condition in the species...')
+        sys.exit()
+
+    return profile, B
 
 
 def create_template_AL_AR_uniform(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, x, N):
@@ -135,7 +174,8 @@ def create_template_AL_AR_uniform(theta, diff_coef, adv_coef, bc_top_type, bc_bo
     return AL, AR
 
 
-def update_matrices_due_to_bc(AR, profile, theta, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, dx, N):
+def update_matrices_due_to_bc_uniform(AR, profile, theta, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, x, N):
+    dx = x[1] - x[0]
     s = theta * diff_coef * dt / dx / dx
     q = theta * adv_coef * dt / dx
 

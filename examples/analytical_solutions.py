@@ -46,7 +46,7 @@ def transport_equation_boundary_effect():
 def transport_equation_plot_non_uniform_grid():
     '''Check the transport equation integrator'''
 
-    w = 0
+    w = 5
     tend = 5
     dx = 0.1
     length = 100

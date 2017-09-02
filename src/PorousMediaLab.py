@@ -134,7 +134,7 @@ class PorousMediaLab:
         self.profiles[element], self.species[element]['B'] = DESolver.update_matrices_due_to_bc(self.species[
             element]['AR'], self.profiles[element], self.species[element]['theta'], self.species[element]['D'],
             self.species[element]['w'], self.species[element]['bc_top_type'], self.species[element]['bc_top_value'],
-            self.species[element]['bc_bot_type'], self.species[element]['bc_bot_value'], self.dt, self.dx, self.N)
+            self.species[element]['bc_bot_type'], self.species[element]['bc_bot_value'], self.dt, self.x, self.N)
 
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
