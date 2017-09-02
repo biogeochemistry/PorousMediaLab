@@ -2,9 +2,10 @@ import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
+import numpy as np
 
 
-def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
+def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, x, N):
     """ creates 2 matrices for transport equation AL and AR
 
     Args:
@@ -22,6 +23,81 @@ def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, 
     """
     # TODO: error source somewhere in non constant
     # porosity profile. Maybe we also need d phi/dx
+    x = np.insert(x, 0, x[0] - (x[1] - x[0]))
+    x = np.append(x, x[-1] + (x[-1] - x[-2]))
+
+    hm = x[1:-1] - x[:-2]
+    hp = x[2:] - x[1:-1]
+
+    z = x[2:] - x[:-2]
+    z = np.insert(z, 0, np.nan)
+    z = np.append(z, np.nan)
+
+    sm = theta * diff_coef * dt * hm / 2 / hp / hm / (hp + hm)
+    so = - theta * diff_coef * dt * (hp + hm) / 2 / hp / hm / (hp + hm)
+    sp = theta * diff_coef * dt * hp / 2 / hp / hm / (hp + hm)
+
+    qm = theta * adv_coef * dt / z[2:]
+    qp = theta * adv_coef * dt / z[:-2]
+
+    AL = spdiags([-sm / 2 - qm / 2, theta + so, -sm / 2 + qp / 2],
+                 [-1, 0, 1], N, N, format='csr')  # .toarray()
+    AR = spdiags([sm / 2 + qm / 2, theta - so, sp / 2 - qp / 2],
+                 [-1, 0, 1], N, N, format='csr')  # .toarray()
+
+    if bc_top_type in ['dirichlet', 'constant']:
+        AL[0, 0] = theta[0]
+        AL[0, 1] = 0
+        AR[0, 0] = theta[0]
+        AR[0, 1] = 0
+    elif bc_top_type in ['neumann', 'flux']:
+        AL[0, 0] = theta[0] + so[0]
+        AL[0, 1] = -so[0]
+        AR[0, 0] = theta[0] - so[0]
+        AR[0, 1] = so[0]
+    else:
+        print('\nABORT!!!: Not correct top boundary condition type...')
+        sys.exit()
+
+    if bc_bot_type in ['dirichlet', 'constant']:
+        AL[-1, -1] = theta[-1]
+        AL[-1, -2] = 0
+        AR[-1, -1] = theta[-1]
+        AR[-1, -2] = 0
+    elif bc_bot_type in ['neumann', 'flux']:
+        AL[-1, -1] = theta[-1] + so[-1]
+        AL[-1, -2] = -so[-1]
+        AR[-1, -1] = theta[-1] - so[-1]
+        AR[-1, -2] = so[-1]
+    else:
+        print('\nABORT!!!: Not correct bottom boundary condition type...')
+        sys.exit()
+
+    import pdb
+    pdb.set_trace()  # breakpoint 29f73e7b //
+
+    return AL, AR
+
+
+def create_template_AL_AR_uniform(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, x, N):
+    """ creates 2 matrices for transport equation AL and AR
+
+    Args:
+        theta (TYPE): vector of porosity(phi) or 1-phi
+        diff_coef (float): diffusion coefficient
+        adv_coef (float): advection coefficient
+        bc_top_type (string): type of boundary condition
+        bc_bot_type (string): type of boundary condition
+        dt (float): time step
+        dx (float): spatial step
+        N (int): size of mesh
+
+    Returns:
+        array: AL and AR matrices
+    """
+    # TODO: error source somewhere in non constant
+    # porosity profile. Maybe we also need d phi/dx
+    dx = x[1] - x[0]
     s = theta * diff_coef * dt / dx / dx
     q = theta * adv_coef * dt / dx
     AL = spdiags([-s / 2 - q / 4, theta + s, -s / 2 + q / 4],
