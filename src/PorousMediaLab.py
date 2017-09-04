@@ -20,13 +20,19 @@ class DotDict(dict):
 class PorousMediaLab:
     """PorousMediaLab module solves Advection-Diffusion-Reaction Equation in porous media"""
 
-    def __init__(self, length, dx, tend, dt, phi, w=0):
+    def __init__(self, tend, dt, phi, x=None, length=None, dx=None, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
-        self.x = np.linspace(0, length, length / dx + 1)
+        if x is not None:
+            self.x = x
+        elif length is not None and dx is not None:
+            self.x = np.linspace(0, length, length / dx + 1)
+        else:
+            print('Please, provide either x or dx and length of the domain')
+            sys.exit()
+
         self.time = np.linspace(0, tend, round(tend / dt) + 1)
         self.N = self.x.size
-        self.length = length
-        self.dx = dx
+        self.length = self.x[-1]
         self.tend = tend
         self.dt = dt
         self.phi = np.ones((self.N)) * phi
@@ -220,8 +226,8 @@ class PorousMediaLab:
             self.acid_base_equilibrium_solve(0)
 
     def solve(self, do_adjust=True):
-        print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
-              (self.time[-1], self.dt, self.length, self.dx, self.w))
+        print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tw = %.2f' %
+              (self.time[-1], self.dt, self.length, self.w))
         with np.errstate(invalid='raise'):
             for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
                 try:
