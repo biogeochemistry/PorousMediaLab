@@ -1,12 +1,9 @@
-from scipy import special
-import numpy as np
-
 import sys
 sys.path.append('../src')
-
+from scipy import special
+import numpy as np
 from PorousMediaLab import PorousMediaLab
-import OdeSolver
-
+import DESolver
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -24,11 +21,14 @@ def transport_equation_boundary_effect():
     dt = 0.001
     lab = PorousMediaLab(length, dx, tend, dt, phi, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+    lab.add_species(True, 'O2', D, 0, bc_top=1,
+                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
-    sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
-                   np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+    sol = 1 / 2 * (special.erfc((
+        x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
+        np.exp(lab.w * x / D) * special.erfc((
+            x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
     plt.figure()
     plt.plot(x, sol, 'k', label='Analytical solution')
@@ -54,11 +54,14 @@ def transport_equation_plot():
     dt = 0.001
     lab = PorousMediaLab(length, dx, tend, dt, phi, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
+    lab.add_species(True, 'O2', D, 0, bc_top=1,
+                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
-    sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
-                   np.exp(lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+    sol = 1 / 2 * (special.erfc((
+        x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
+        np.exp(lab.w * x / D) * special.erfc((
+            x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
     plt.figure()
     plt.plot(x, sol, 'k', label='Analytical solution')
@@ -85,7 +88,7 @@ def reaction_equation_plot():
     time = np.linspace(0, T, T / dt + 1)
     num_sol = np.array(C0['C'])
     for i in range(1, len(time)):
-        C_new, _ = OdeSolver.ode_integrate(
+        C_new, _ = DESolver.ode_integrate(
             C0, dcdt, rates, coef, dt, solver='rk4')
         C0['C'] = C_new['C']
         num_sol = np.append(num_sol, C_new['C'])
