@@ -72,23 +72,20 @@ def update_matrices_due_to_bc(AR, profile, theta, diff_coef, adv_coef, bc_top_ty
             bc_bot_type in ['neumann', 'flux']):
         profile[0] = bc_top
         B = AR.dot(profile)
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (
-            s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
 
     elif (bc_top_type in ['neumann', 'flux'] and
             bc_bot_type in ['dirichlet', 'constant']):
         profile[-1] = bc_bot
         B = AR.dot(profile)
-        B[0] = B[0] + 2 * 2 * bc_top * (
-            s[0] / 2 - q[0] / 4) * dx / theta / diff_coef
+        B[0] = B[0] + 2 * 2 * bc_top * (s[0] / 2 - q[0] / 4) * dx / theta[0] / diff_coef
 
     elif (bc_top_type in ['neumann', 'flux'] and
           bc_bot_type in ['neumann', 'flux']):
         B = AR.dot(profile)
         B[0] = B[0] + 2 * 2 * bc_top * (
-            s[0] / 2 - q[0] / 4) * dx / theta / diff_coef
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (
-            s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+            s[0] / 2 - q[0] / 4) * dx / theta[0] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
     else:
         print('\nABORT!!!: Not correct boundary condition in the species...')
         sys.exit()

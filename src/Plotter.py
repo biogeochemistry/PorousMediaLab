@@ -20,6 +20,36 @@ def custom_plot(lab, x, y, ttl='', y_lbl='', x_lbl=''):
     return ax
 
 
+def all_plot_depth_index(lab, idx=0, time_to_plot=False):
+    for element in sorted(lab.species):
+        plt.figure()
+        plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None)
+
+
+def plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None):
+    if ax is None:
+        ax = plt.subplot(111)
+    if element == 'Temperature':
+        ax.set_title('Temperature')
+        ax.set_ylabel('Temperature, C')
+    elif element == 'pH':
+        ax.set_title('pH')
+        ax.set_ylabel('pH')
+    else:
+        ax.set_title(element + ' concentration')
+        ax.set_ylabel('Concentration')
+    if time_to_plot:
+        num_of_elem = int(time_to_plot / lab.dt)
+    else:
+        num_of_elem = len(lab.time)
+    t = lab.time[-num_of_elem:]
+    ax.set_xlabel('Time')
+    ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.grid(linestyle='-', linewidth=0.2)
+    return ax
+
+
 def plot_depths(lab, element, depths=[0, 1, 2, 3, 4], time_to_plot=False):
     plt.figure()
     ax = plt.subplot(111)
