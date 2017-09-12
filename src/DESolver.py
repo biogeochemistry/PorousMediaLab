@@ -147,16 +147,18 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
         raise NotImplemented
 
-    def k_loop(conc, dt=dt):
+    def k_loop(conc, dt=dt, non_negative_rates=True):
         rates_num = {}
-        for element, rate in rates.items():
-            rates_num[element] = ne.evaluate(rate, {**coef, **conc})
+        for rate_name, rate in rates.items():
+            rates_num[rate_name] = ne.evaluate(rate, {**coef, **conc})
+            if non_negative_rates:
+                rates_num[rate_name] = rates_num[rate_name] * (rates_num[rate_name] > 0)
 
         Kn = {}
         for element in dcdt:
             Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
 
-        return Kn
+        return Kn, rates_num
 
     def sum_k(A, B, b):
         C_new = {}
@@ -172,17 +174,19 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
             k_4 = dt*dcdt(C0+k_3, dt)
             C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6
         """
-        k1 = k_loop(C_0)
-        k2 = k_loop(sum_k(C_0, k1, 0.5))
-        k3 = k_loop(sum_k(C_0, k2, 0.5))
-        k4 = k_loop(sum_k(C_0, k3, 1))
+        k1, num_rates_rate1 = k_loop(C_0)
+        k2, num_rates_rate2 = k_loop(sum_k(C_0, k1, 0.5))
+        k3, num_rates_rate3 = k_loop(sum_k(C_0, k2, 0.5))
+        k4, num_rates_rate4 = k_loop(sum_k(C_0, k3, 1))
         C_new = {}
-        num_rates = {}
+        num_rates_element = {}
         for element in C_0:
-            num_rates[element] = (
-                k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
-            C_new[element] = C_0[element] + num_rates[element]
-        return C_new, num_rates
+            num_rates_element[element] = (k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
+            C_new[element] = C_0[element] + num_rates_element[element]
+        num_rates_rate = {}
+        for rate_name, rate in num_rates_rate1.items():
+            num_rates_rate[rate_name] = (num_rates_rate1[rate_name] + 2 * num_rates_rate2[rate_name] + 2 * num_rates_rate3[rate_name] + num_rates_rate4[rate_name]) / 6
+        return C_new, num_rates_element, num_rates_rate
 
     def butcher5(C_0):
         """

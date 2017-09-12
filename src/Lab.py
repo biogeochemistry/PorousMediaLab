@@ -65,8 +65,11 @@ class Lab:
                     self.update_matrices_due_to_bc(elem, i)
 
     def reactions_integrate(self, i):
-        C_new, rates = DESolver.ode_integrate(
+        C_new, rates_elem, rates_rate = DESolver.ode_integrate(
             self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+
+        for rate_name, rate in rates_rate.items():
+            self.estimated_rates[rate_name][:, i - 1] = rates_rate[rate_name]
 
         for element in C_new:
             if element is not 'Temperature':
@@ -74,7 +77,7 @@ class Lab:
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
             self.species[element]['concentration'][:, i] = self.profiles[element]
-            self.species[element]['rates'][:, i] = rates[element] / self.dt
+            self.species[element]['rates'][:, i] = rates_elem[element] / self.dt
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 
@@ -121,7 +124,12 @@ class Lab:
         self.acid_base_solve_ph(i)
         self.acid_base_update_concentrations(i)
 
+    def init_rates_arrays(self):
+        for rate in self.rates:
+            self.estimated_rates[rate] = np.zeros((self.N, self.time.size - 1))
+
     def pre_run_methods(self):
+        self.init_rates_arrays()
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)

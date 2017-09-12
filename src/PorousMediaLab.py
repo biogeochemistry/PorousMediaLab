@@ -126,6 +126,7 @@ class PorousMediaLab(Lab):
             for idx in range(len(component['species'])):
                 self.species[component['species'][idx]
                              ]['concentration'][:, i] = init_conc * alphas[:, idx]
+                self.profiles[component['species'][idx]] = self.species[component['species'][idx]]['concentration'][:, i]
 
     def integrate_one_timestep(self, i):
         if i == 1:
@@ -232,3 +233,4 @@ class PorousMediaLab(Lab):
     contour_plot = Plotter.contour_plot
     plot_contourplots_of_rates = Plotter.plot_contourplots_of_rates
     contour_plot_of_rates = Plotter.contour_plot_of_rates
+    plot_saturation_index = Plotter.saturation_index_countour
