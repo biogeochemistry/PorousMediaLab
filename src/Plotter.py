@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from pHcalc import Acid
 
 import seaborn as sns
 from matplotlib.colors import ListedColormap
@@ -16,6 +17,84 @@ def custom_plot(lab, x, y, ttl='', y_lbl='', x_lbl=''):
     plt.xlim(x[0], x[-1])
     plt.ylabel(y_lbl)
     plt.xlabel(x_lbl)
+    ax.grid(linestyle='-', linewidth=0.2)
+    return ax
+
+
+def plot_batch_rates(batch):
+    for rate in batch.estimated_rates:
+        plt.figure()
+        plt.plot(batch.time[:-1], batch.estimated_rates[rate][0], label=rate)
+        plt.ylabel('Rate')
+        plt.xlabel('Time')
+        plt.legend(frameon=1)
+        plt.grid(linestyle='-', linewidth=0.2)
+
+
+def saturation_index_countour(lab, elem1, elem2, Ks, labels=False):
+    plt.figure()
+    plt.title('Saturation index %s%s' % (elem1, elem2))
+    resoluion = 100
+    n = math.ceil(lab.time.size / resoluion)
+    plt.xlabel('Time')
+    z = np.log10((lab.species[elem1]['concentration'][:, ::n] + 1e-8) * (lab.species[elem2]['concentration'][:, ::n] + 1e-8) / lab.constants[Ks])
+    lim = np.max(abs(z))
+    lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
+    X, Y = np.meshgrid(lab.time[::n], -lab.x)
+    plt.xlabel('Time')
+    CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette(
+        "RdBu_r", 101)), origin='lower', levels=lim, extend='both')
+    if labels:
+        plt.clabel(CS, inline=1, fontsize=10, colors='w')
+    # cbar = plt.colorbar(CS)
+    if labels:
+        plt.clabel(CS, inline=1, fontsize=10, colors='w')
+    cbar = plt.colorbar(CS)
+    plt.ylabel('Depth')
+    ax = plt.gca()
+    ax.ticklabel_format(useOffset=False)
+    cbar.ax.set_ylabel('Saturation index %s%s' % (elem1, elem2))
+    return ax
+
+
+def plot_fractions(lab):
+    for component in lab.acid_base_components:
+        if isinstance(component['pH_object'], Acid):
+            plt.figure()
+            for idx in range(len(component['species'])):
+                plt.plot(lab.time, lab.species[component['species'][idx]]['alpha'][0, :], label=component['species'][idx])
+            plt.ylabel('Fraction')
+            plt.xlabel('Time')
+            plt.legend(frameon=1)
+            plt.grid(linestyle='-', linewidth=0.2)
+
+
+def all_plot_depth_index(lab, idx=0, time_to_plot=False):
+    for element in sorted(lab.species):
+        plt.figure()
+        plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None)
+
+
+def plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None):
+    if ax is None:
+        ax = plt.subplot(111)
+    if element == 'Temperature':
+        ax.set_title('Temperature')
+        ax.set_ylabel('Temperature, C')
+    elif element == 'pH':
+        ax.set_title('pH')
+        ax.set_ylabel('pH')
+    else:
+        ax.set_title(element + ' concentration')
+        ax.set_ylabel('Concentration')
+    if time_to_plot:
+        num_of_elem = int(time_to_plot / lab.dt)
+    else:
+        num_of_elem = len(lab.time)
+    t = lab.time[-num_of_elem:]
+    ax.set_xlabel('Time')
+    ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.grid(linestyle='-', linewidth=0.2)
     return ax
 

@@ -1,50 +1,26 @@
 import numpy as np
 from scipy.sparse import spdiags
-import time
-import sys
-import traceback
 import Plotter
-
+from Lab import Lab
 import DESolver
 import EquilibriumSolver
 import pHcalc
+from DotDict import DotDict
 
 
-class DotDict(dict):
-    """dot.notation access to dictionary attributes"""
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-
-class PorousMediaLab:
+class PorousMediaLab(Lab):
     """PorousMediaLab module solves Advection-Diffusion-Reaction Equation in porous media"""
 
     def __init__(self, length, dx, tend, dt, phi, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
+        super().__init__(tend, dt)
         self.x = np.linspace(0, length, length / dx + 1)
-        self.time = np.linspace(0, tend, round(tend / dt) + 1)
         self.N = self.x.size
         self.length = length
         self.dx = dx
-        self.tend = tend
-        self.dt = dt
-        self.phi = np.ones((self.N)) * phi
         self.w = w
-        self.species = DotDict({})
-        self.profiles = DotDict({})
-        self.dcdt = DotDict({})
-        self.rates = DotDict({})
-        self.estimated_rates = DotDict({})
-        self.constants = DotDict({})
+        self.phi = np.ones((self.N)) * phi
         self.constants['phi'] = self.phi
-        self.num_adjustments = 0
-        self.henry_law_equations = []
-        self.acid_base_components = []
-        self.acid_base_system = pHcalc.System()
-
-    def __getattr__(self, attr):
-        return self.species[attr]
 
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
@@ -85,8 +61,7 @@ class PorousMediaLab:
         self.species[element]['concentration'] = np.zeros(
             (self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:,
-                                               0] = self.species[element]['init_C']
+        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         if rising_velocity:
             self.species[element]['w'] = self.w - rising_velocity
@@ -121,10 +96,6 @@ class PorousMediaLab:
         self.template_AL_AR(element)
         self.update_matrices_due_to_bc(element, i)
 
-    def change_concentration_profile(self, element, i, new_profile):
-        self.profiles[element] = new_profile
-        self.update_matrices_due_to_bc(element, i)
-
     def template_AL_AR(self, element):
         self.species[element]['AL'], self.species[element]['AR'] = DESolver.create_template_AL_AR(
             self.species[element]['theta'], self.species[element]['D'], self.species[element]['w'],
@@ -138,29 +109,11 @@ class PorousMediaLab:
 
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
-    def add_henry_law_equilibrium(self, aq, gas, Hcc):
-        """Summary
-
-        Args:
-            aq (string): name of aquatic species
-            gas (string): name of gaseous species
-            Hcc (double): Henry Law Constant
-        """
-        self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
-
-    def add_ion(self, element, charge):
-        ion = pHcalc.Neutral(charge=charge, conc=np.nan)
-        self.acid_base_components.append(
-            {'species': [element], 'pH_object': ion})
-
-    def add_acid(self, species, pKa, charge=0):
-        acid = pHcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
-        self.acid_base_components.append(
-            {'species': species, 'pH_object': acid})
-
-    def acid_base_equilibrium_solve(self, i):
-        self.acid_base_solve_ph(i)
-        self.acid_base_update_concentrations(i)
+    def create_acid_base_system(self):
+        self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
+                         bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
+        self.acid_base_system = pHcalc.System(
+            *[c['pH_object'] for c in self.acid_base_components])
 
     def acid_base_update_concentrations(self, i):
         for component in self.acid_base_components:
@@ -173,65 +126,7 @@ class PorousMediaLab:
             for idx in range(len(component['species'])):
                 self.species[component['species'][idx]
                              ]['concentration'][:, i] = init_conc * alphas[:, idx]
-
-    def acid_base_solve_ph(self, i):
-        # initial guess from previous time-step
-        res = self.species['pH']['concentration'][0, i - 1]
-        for idx_j in range(self.N):
-            for c in self.acid_base_components:
-                init_conc = 0
-                for element in c['species']:
-                    init_conc += self.species[element]['concentration'][idx_j, i]
-                c['pH_object'].conc = init_conc
-            if idx_j == 0:
-                self.acid_base_system.pHsolve(guess=7, tol=1e-4)
-                res = self.acid_base_system.pH
-            else:
-                phs = np.linspace(res - 0.1, res + 0.1, 201)
-                idx = self.acid_base_system._diff_pos_neg(phs).argmin()
-                res = phs[idx]
-            self.species['pH']['concentration'][idx_j, i] = res
-            self.profiles['pH'][idx_j] = res
-
-    def estimate_time_of_computation(self, i):
-        if i == 1:
-            self.tstart = time.time()
-            print("Simulation started:\n\t", time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime()))
-        if i == 100:
-            total_t = len(self.time) * (time.time() -
-                                        self.tstart) / 100 * self.dt / self.dt
-            m, s = divmod(total_t, 60)
-            h, m = divmod(m, 60)
-            print(
-                "\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
-            print("Will finish approx.:\n\t", time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
-
-    def create_acid_base_system(self):
-        self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
-                         bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
-        self.acid_base_system = pHcalc.System(
-            *[c['pH_object'] for c in self.acid_base_components])
-
-    def pre_run_methods(self):
-        if len(self.acid_base_components) > 0:
-            self.create_acid_base_system()
-            self.acid_base_equilibrium_solve(0)
-
-    def solve(self, do_adjust=True):
-        print('Simulation starts  with following params:\n\ttend = %.1f,\n\tdt = %.2e,\n\tL = %.1f,\n\tdx = %.2e,\n\tw = %.2f' %
-              (self.time[-1], self.dt, self.length, self.dx, self.w))
-        with np.errstate(invalid='raise'):
-            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
-                try:
-                    self.integrate_one_timestep(i)
-                    self.estimate_time_of_computation(i)
-                except FloatingPointError as inst:
-                    print(
-                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
-                    traceback.print_exc()
-                    sys.exit()
+                self.profiles[component['species'][idx]] = self.species[component['species'][idx]]['concentration'][:, i]
 
     def integrate_one_timestep(self, i):
         if i == 1:
@@ -243,30 +138,6 @@ class PorousMediaLab:
             self.henry_equilibrium_integrate(i)
         if self.acid_base_components:
             self.acid_base_equilibrium_solve(i)
-
-    def henry_equilibrium_integrate(self, i):
-        for eq in self.henry_law_equations:
-            self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = EquilibriumSolver.solve_henry_law(
-                self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
-            for elem in [eq['gas'], eq['aq']]:
-                self.profiles[elem] = self.species[elem]['concentration'][:, i]
-                if self.species[elem]['int_transport']:
-                    self.update_matrices_due_to_bc(elem, i)
-
-    def reactions_integrate(self, i):
-        C_new, rates = DESolver.ode_integrate(
-            self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-
-        for element in C_new:
-            if element is not 'Temperature':
-                # the concentration should be positive
-                C_new[element][C_new[element] < 0] = 0
-            self.profiles[element] = C_new[element]
-            self.species[element]['concentration'][:,
-                                                   i] = self.profiles[element]
-            self.species[element]['rates'][:, i] = rates[element] / self.dt
-            if self.species[element]['int_transport']:
-                self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
         """ Integrates transport equations
@@ -362,3 +233,4 @@ class PorousMediaLab:
     contour_plot = Plotter.contour_plot
     plot_contourplots_of_rates = Plotter.plot_contourplots_of_rates
     contour_plot_of_rates = Plotter.contour_plot_of_rates
+    plot_saturation_index = Plotter.saturation_index_countour

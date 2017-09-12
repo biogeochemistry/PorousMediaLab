@@ -54,8 +54,7 @@ def transport_equation_plot():
     dt = 0.001
     lab = PorousMediaLab(length, dx, tend, dt, phi, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1,
-                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
+    lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
     sol = 1 / 2 * (special.erfc((
@@ -88,7 +87,7 @@ def reaction_equation_plot():
     time = np.linspace(0, T, T / dt + 1)
     num_sol = np.array(C0['C'])
     for i in range(1, len(time)):
-        C_new, _ = DESolver.ode_integrate(
+        C_new, _, _ = DESolver.ode_integrate(
             C0, dcdt, rates, coef, dt, solver='rk4')
         C0['C'] = C_new['C']
         num_sol = np.append(num_sol, C_new['C'])
