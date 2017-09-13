@@ -65,11 +65,14 @@ class Lab:
                     self.update_matrices_due_to_bc(elem, i)
 
     def reactions_integrate(self, i):
-        C_new, rates_elem, rates_rate = DESolver.ode_integrate(
-            self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
 
-        for rate_name, rate in rates_rate.items():
-            self.estimated_rates[rate_name][:, i - 1] = rates_rate[rate_name]
+        try:
+            for rate_name, rate in rates_per_rate.items():
+                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
+        except:
+            pass
 
         for element in C_new:
             if element is not 'Temperature':
@@ -77,7 +80,7 @@ class Lab:
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
             self.species[element]['concentration'][:, i] = self.profiles[element]
-            self.species[element]['rates'][:, i] = rates_elem[element] / self.dt
+            self.species[element]['rates'][:, i] = rates_per_elem[element] / self.dt
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 

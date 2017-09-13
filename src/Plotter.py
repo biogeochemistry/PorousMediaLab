@@ -21,14 +21,18 @@ def custom_plot(lab, x, y, ttl='', y_lbl='', x_lbl=''):
     return ax
 
 
-def plot_batch_rates(batch):
-    for rate in batch.estimated_rates:
+def plot_batch_rates(batch, *args, **kwargs):
+    for rate in sorted(batch.estimated_rates):
         plt.figure()
-        plt.plot(batch.time[:-1], batch.estimated_rates[rate][0], label=rate)
-        plt.ylabel('Rate')
-        plt.xlabel('Time')
-        plt.legend(frameon=1)
-        plt.grid(linestyle='-', linewidth=0.2)
+        plot_batch_rate(batch, rate, *args, **kwargs)
+
+
+def plot_batch_rate(batch, rate, time_factor=1):
+    plt.plot(batch.time[:-1] * time_factor, batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
+    plt.ylabel('Rate, [M/T]')
+    plt.xlabel('Time, [T]')
+    plt.legend(frameon=1)
+    plt.grid(linestyle='-', linewidth=0.2)
 
 
 def saturation_index_countour(lab, elem1, elem2, Ks, labels=False):
@@ -69,13 +73,13 @@ def plot_fractions(lab):
             plt.grid(linestyle='-', linewidth=0.2)
 
 
-def all_plot_depth_index(lab, idx=0, time_to_plot=False):
+def all_plot_depth_index(lab, *args, **kwargs):
     for element in sorted(lab.species):
         plt.figure()
-        plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None)
+        plot_depth_index(lab, element, *args, **kwargs, ax=None)
 
 
-def plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None):
+def plot_depth_index(lab, element, idx=0, time_to_plot=False, time_factor=1, ax=None):
     if ax is None:
         ax = plt.subplot(111)
     if element == 'Temperature':
@@ -91,7 +95,7 @@ def plot_depth_index(lab, element, idx=0, time_to_plot=False, ax=None):
         num_of_elem = int(time_to_plot / lab.dt)
     else:
         num_of_elem = len(lab.time)
-    t = lab.time[-num_of_elem:]
+    t = lab.time[-num_of_elem:] * time_factor
     ax.set_xlabel('Time')
     ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))

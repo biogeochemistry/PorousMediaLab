@@ -3,7 +3,6 @@ from DotDict import DotDict
 import numpy as np
 import Plotter
 import pHcalc
-import matplotlib.pyplot as plt
 
 
 class BatchLab(Lab):
@@ -51,11 +50,7 @@ class BatchLab(Lab):
                 self.profiles[component['species'][idx]] = self.species[component['species'][idx]]['concentration'][:, i]
                 self.species[component['species'][idx]]['alpha'][:, i] = alphas[idx]
 
-    def plot(self, element):
-        Plotter.plot_depth_index(self, element, idx=0, time_to_plot=False)
-
-    def plot_profiles(self):
-        Plotter.all_plot_depth_index(self)
-
+    plot = Plotter.plot_depth_index
+    plot_profiles = Plotter.all_plot_depth_index
     plot_fractions = Plotter.plot_fractions
     plot_rates = Plotter.plot_batch_rates
