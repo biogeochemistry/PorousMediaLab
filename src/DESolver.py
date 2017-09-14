@@ -147,10 +147,12 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
         raise NotImplemented
 
-    def k_loop(conc, dt=dt):
+    def k_loop(conc, dt=dt, non_negative_rates=True):
         rates_per_rate = {}
         for element, rate in rates.items():
             rates_per_rate[element] = ne.evaluate(rate, {**coef, **conc})
+            if non_negative_rates:
+                rates_per_rate[element] = rates_per_rate[element] * (rates_per_rate[element] > 0)
 
         Kn = {}
         for element in dcdt:
