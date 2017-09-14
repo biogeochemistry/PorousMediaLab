@@ -20,7 +20,7 @@ class PorousMediaLab(Lab):
         self.dx = dx
         self.w = w
         self.phi = np.ones((self.N)) * phi
-        self.constants['phi'] = self.phi
+        # self.constants['phi'] = self.phi
 
     def add_temperature(self, init_temperature, D=281000):
         self.species['Temperature'] = DotDict({})
@@ -133,11 +133,31 @@ class PorousMediaLab(Lab):
             self.pre_run_methods()
         self.transport_integrate(i)
         if self.rates:
-            self.reactions_integrate(i)
+            self.reactions_integrate_scipy(i)
         if self.henry_law_equations:
             self.henry_equilibrium_integrate(i)
         if self.acid_base_components:
             self.acid_base_equilibrium_solve(i)
+
+    def reactions_integrate(self, i):
+        C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+
+        try:
+            for rate_name, rate in rates_per_rate.items():
+                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
+        except:
+            pass
+
+        for element in C_new:
+            if element is not 'Temperature':
+                # the concentration should be positive
+                C_new[element][C_new[element] < 0] = 0
+            self.profiles[element] = C_new[element]
+            self.species[element]['concentration'][:, i] = self.profiles[element]
+            self.species[element]['rates'][:, i] = rates_per_elem[element] / self.dt
+            if self.species[element]['int_transport']:
+                self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
         """ Integrates transport equations

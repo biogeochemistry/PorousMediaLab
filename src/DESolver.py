@@ -2,6 +2,7 @@ import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
+from scipy.integrate import ode
 
 
 def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
@@ -148,17 +149,17 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         raise NotImplemented
 
     def k_loop(conc, dt=dt, non_negative_rates=True):
-        rates_num = {}
-        for rate_name, rate in rates.items():
-            rates_num[rate_name] = ne.evaluate(rate, {**coef, **conc})
+        rates_per_rate = {}
+        for element, rate in rates.items():
+            rates_per_rate[element] = ne.evaluate(rate, {**coef, **conc})
             if non_negative_rates:
-                rates_num[rate_name] = rates_num[rate_name] * (rates_num[rate_name] > 0)
+                rates_per_rate[element] = rates_per_rate[element] * (rates_per_rate[element] > 0)
 
         Kn = {}
         for element in dcdt:
-            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_num})
+            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_per_rate})
 
-        return Kn, rates_num
+        return Kn, rates_per_rate
 
     def sum_k(A, B, b):
         C_new = {}
@@ -174,19 +175,22 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
             k_4 = dt*dcdt(C0+k_3, dt)
             C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6
         """
-        k1, num_rates_rate1 = k_loop(C_0)
-        k2, num_rates_rate2 = k_loop(sum_k(C_0, k1, 0.5))
-        k3, num_rates_rate3 = k_loop(sum_k(C_0, k2, 0.5))
-        k4, num_rates_rate4 = k_loop(sum_k(C_0, k3, 1))
+        k1, rates_per_rate1 = k_loop(C_0)
+        k2, rates_per_rate2 = k_loop(sum_k(C_0, k1, 0.5))
+        k3, rates_per_rate3 = k_loop(sum_k(C_0, k2, 0.5))
+        k4, rates_per_rate4 = k_loop(sum_k(C_0, k3, 1))
+
+        rates_per_rate = {}
+        for rate_name, rate in rates_per_rate1.items():
+            rates_per_rate[rate_name] = (rates_per_rate1[rate_name] + 2 * rates_per_rate2[rate_name] + 2 * rates_per_rate3[rate_name] + rates_per_rate4[rate_name]) / 6
+
         C_new = {}
-        num_rates_element = {}
+        rates_per_element = {}
         for element in C_0:
-            num_rates_element[element] = (k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
-            C_new[element] = C_0[element] + num_rates_element[element]
-        num_rates_rate = {}
-        for rate_name, rate in num_rates_rate1.items():
-            num_rates_rate[rate_name] = (num_rates_rate1[rate_name] + 2 * num_rates_rate2[rate_name] + 2 * num_rates_rate3[rate_name] + num_rates_rate4[rate_name]) / 6
-        return C_new, num_rates_element, num_rates_rate
+            rates_per_element[element] = (
+                k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
+            C_new[element] = C_0[element] + rates_per_element[element]
+        return C_new, rates_per_element, rates_per_rate
 
     def butcher5(C_0):
         """
@@ -206,12 +210,12 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         k6 = k_loop(sum_k(sum_k(sum_k(sum_k(sum_k(C_0, k1, -3 / 7),
                                             k2, 2 / 7), k3, 12 / 7), k4, -12 / 7), k5, 8 / 7))
         C_new = {}
-        num_rates = {}
+        rates_per_element = {}
         for element in C_0:
-            num_rates[element] = (7 * k1[element] + 32 * k3[element] +
-                                  12 * k4[element] + 32 * k5[element] + 7 * k6[element]) / 90
-            C_new[element] = C_0[element] + num_rates[element]
-        return C_new, num_rates
+            rates_per_element[element] = (7 * k1[element] + 32 * k3[element] +
+                                          12 * k4[element] + 32 * k5[element] + 7 * k6[element]) / 90
+            C_new[element] = C_0[element] + rates_per_element[element]
+        return C_new, rates_per_element
 
     if solver == 'butcher5':
         return butcher5(C0)
@@ -219,3 +223,34 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         return implicit_solver(C0)
 
     return rk4(C0)
+
+
+def create_ode_function(species, constants, rates, dcdt, non_negative_rates=True):
+    body_of_function = "def f(t, y):\n"
+    body_of_function += "\t dydt = np.zeros((len(y), 1))"
+    for i, s in enumerate(species):
+        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(s, i, i)
+    for k, v in constants.items():
+        body_of_function += '\n\t {} = {:.2e}'.format(k, v)
+    for k, v in rates.items():
+        body_of_function += '\n\t {} = {}'.format(k, v, v)
+        if non_negative_rates:
+            body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
+    for i, s in enumerate(dcdt):
+        body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(i, dcdt[s], s)
+    body_of_function += "\n\t return dydt"
+
+    return body_of_function
+
+
+def create_solver(dydt):
+    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-2)
+    return solver
+
+
+def integrate_one_timestep(solver, yinit, timestep):
+    t_start = 0.0
+    solver.set_initial_value(yinit, t_start)
+    while solver.successful() and solver.t < timestep:
+        solver.integrate(solver.t + timestep)
+    return solver.y
