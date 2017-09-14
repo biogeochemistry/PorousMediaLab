@@ -1,6 +1,7 @@
 from Lab import Lab
 from DotDict import DotDict
 import numpy as np
+import DESolver
 import Plotter
 import pHcalc
 
@@ -26,7 +27,7 @@ class BatchLab(Lab):
     def integrate_one_timestep(self, i):
         if i == 1:
             self.pre_run_methods()
-        self.reactions_integrate(i)
+        self.reactions_integrate_scipy(i)
         if self.henry_law_equations:
             self.henry_equilibrium_integrate(i)
         if self.acid_base_components:
