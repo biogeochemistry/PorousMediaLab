@@ -16,6 +16,7 @@ class Lab:
         self.dt = dt
         self.time = np.linspace(0, tend, round(tend / dt) + 1)
         self.species = DotDict({})
+        self.dynamic_functions = DotDict({})
         self.profiles = DotDict({})
         self.dcdt = DotDict({})
         self.rates = DotDict({})
@@ -31,14 +32,14 @@ class Lab:
     def solve(self):
         with np.errstate(invalid='raise'):
             for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
-                try:
-                    self.integrate_one_timestep(i)
-                    self.estimate_time_of_computation(i)
-                except FloatingPointError as inst:
-                    print(
-                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
-                    traceback.print_exc()
-                    sys.exit()
+                # try:
+                self.integrate_one_timestep(i)
+                self.estimate_time_of_computation(i)
+                # except FloatingPointError as inst:
+                #     print(
+                #         '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
+                #     traceback.print_exc()
+                #     sys.exit()
 
     def estimate_time_of_computation(self, i):
         if i == 1:
@@ -63,26 +64,6 @@ class Lab:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
                 if self.species[elem]['int_transport']:
                     self.update_matrices_due_to_bc(elem, i)
-
-    def reactions_integrate(self, i):
-        C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-
-        try:
-            for rate_name, rate in rates_per_rate.items():
-                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
-        except:
-            pass
-
-        for element in C_new:
-            if element is not 'Temperature':
-                # the concentration should be positive
-                C_new[element][C_new[element] < 0] = 0
-            self.profiles[element] = C_new[element]
-            self.species[element]['concentration'][:, i] = self.profiles[element]
-            self.species[element]['rates'][:, i] = rates_per_elem[element] / self.dt
-            if self.species[element]['int_transport']:
-                self.update_matrices_due_to_bc(element, i)
 
     def acid_base_solve_ph(self, i):
         # initial guess from previous time-step
@@ -131,12 +112,39 @@ class Lab:
         for rate in self.rates:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size - 1))
 
+    def create_dynamic_functions(self):
+        fun_str = DESolver.create_ode_function(self.species, self.constants, self.rates, self.dcdt)
+        exec(fun_str)
+        self.dynamic_functions['dydt_str'] = fun_str
+        self.dynamic_functions['dydt'] = locals()['f']
+        self.dynamic_functions['solver'] = DESolver.create_solver(locals()['f'])
+
     def pre_run_methods(self):
-        self.init_rates_arrays()
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
+        self.create_dynamic_functions()
+        self.init_rates_arrays()
 
     def change_concentration_profile(self, element, i, new_profile):
         self.profiles[element] = new_profile
         self.update_matrices_due_to_bc(element, i)
+
+    def reactions_integrate_scipy(self, i):
+        # C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # for idx_j in range(self.N):
+        for idx_j in range(self.N):
+            yinit = np.zeros(len(self.species))
+            for idx, s in enumerate(self.species):
+                yinit[idx] = self.profiles[s][idx_j]
+
+            ynew = DESolver.integrate_one_timestep(self.dynamic_functions['solver'], yinit, self.dt)
+
+            for idx, s in enumerate(self.species):
+                self.species[s]['concentration'][idx_j, i] = ynew[idx]
+
+        for element in self.species:
+            self.profiles[element] = self.species[element]['concentration'][:, i]
+            if self.species[element]['int_transport']:
+                self.update_matrices_due_to_bc(element, i)
