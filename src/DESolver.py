@@ -2,6 +2,7 @@ import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
+from scipy.integrate import ode
 
 
 def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
@@ -222,3 +223,34 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         return implicit_solver(C0)
 
     return rk4(C0)
+
+
+def create_ode_function(species, constants, rates, dcdt, non_negative_rates=True):
+    body_of_function = "def f(t, y):\n"
+    body_of_function += "\t dydt = np.zeros((len(y), 1))"
+    for i, s in enumerate(species):
+        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(s, i, i)
+    for k, v in constants.items():
+        body_of_function += '\n\t {} = {:.2e}'.format(k, v)
+    for k, v in rates.items():
+        body_of_function += '\n\t {} = {}'.format(k, v, v)
+        if non_negative_rates:
+            body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
+    for i, s in enumerate(dcdt):
+        body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(i, dcdt[s], s)
+    body_of_function += "\n\t return dydt"
+
+    return body_of_function
+
+
+def create_solver(dydt):
+    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-2)
+    return solver
+
+
+def integrate_one_timestep(solver, yinit, timestep):
+    t_start = 0.0
+    solver.set_initial_value(yinit, t_start)
+    while solver.successful() and solver.t < timestep:
+        solver.integrate(solver.t + timestep)
+    return solver.y
