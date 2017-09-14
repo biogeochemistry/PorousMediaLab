@@ -2,6 +2,7 @@ import time
 import sys
 import traceback
 import numpy as np
+import numexpr as ne
 from DotDict import DotDict
 import pHcalc
 import DESolver
@@ -84,8 +85,8 @@ class Lab:
             self.species['pH']['concentration'][idx_j, i] = res
             self.profiles['pH'][idx_j] = res
 
-    def add_henry_law_equilibrium(self, aq, gas, Hcc):
-        """Summary
+    def add_partition_equilibrium(self, aq, gas, Hcc):
+        """ For partition reactions between 2 species
 
         Args:
             aq (string): name of aquatic species
@@ -110,7 +111,7 @@ class Lab:
 
     def init_rates_arrays(self):
         for rate in self.rates:
-            self.estimated_rates[rate] = np.zeros((self.N, self.time.size - 1))
+            self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
         fun_str = DESolver.create_ode_function(self.species, self.constants, self.rates, self.dcdt)
@@ -148,3 +149,15 @@ class Lab:
             self.profiles[element] = self.species[element]['concentration'][:, i]
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
+
+    def reconstruct_rates(self):
+        for idx_t in range(len(self.time)):
+            for name, rate in self.rates.items():
+                conc = {}
+                for s in self.species:
+                    conc[s] = self.species[s]['concentration'][:, idx_t]
+                r = ne.evaluate(rate, {**self.constants, **conc})
+                self.estimated_rates[name][:, idx_t] = r * (r > 0)
+
+        for s in self.species:
+            self.species[s]['rates'] = (self.species[s]['concentration'][:, 1:] - self.species[s]['concentration'][:, :-1]) / self.dt

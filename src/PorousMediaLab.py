@@ -253,4 +253,6 @@ class PorousMediaLab(Lab):
     contour_plot = Plotter.contour_plot
     plot_contourplots_of_rates = Plotter.plot_contourplots_of_rates
     contour_plot_of_rates = Plotter.contour_plot_of_rates
+    plot_contourplots_of_deltas = Plotter.plot_contourplots_of_deltas
+    contour_plot_of_delta = Plotter.contour_plot_of_delta
     plot_saturation_index = Plotter.saturation_index_countour

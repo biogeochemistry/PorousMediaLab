@@ -244,7 +244,7 @@ def create_ode_function(species, constants, rates, dcdt, non_negative_rates=True
 
 
 def create_solver(dydt):
-    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-2)
+    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-4)
     return solver
 
 
