@@ -47,7 +47,7 @@ class PorousMediaLab(Lab):
         self.update_matrices_due_to_bc('Temperature', 0)
         self.dcdt['Temperature'] = '0'
 
-    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, rising_velocity=False, int_transport=True):
+    def add_species(self, is_solute, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, w=False, int_transport=True):
         self.species[element] = DotDict({})
         self.species[element]['is_solute'] = is_solute
         self.species[element]['bc_top_value'] = bc_top
@@ -63,8 +63,8 @@ class PorousMediaLab(Lab):
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
         self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
-        if rising_velocity:
-            self.species[element]['w'] = self.w - rising_velocity
+        if w:
+            self.species[element]['w'] = w
         else:
             self.species[element]['w'] = self.w
         self.species[element]['int_transport'] = int_transport
@@ -111,7 +111,7 @@ class PorousMediaLab(Lab):
 
     def create_acid_base_system(self):
         self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
-                         bc_bot=7, bc_bot_type='dirichlet', rising_velocity=False, int_transport=False)
+                         bc_bot=7, bc_bot_type='dirichlet', w=False, int_transport=False)
         self.acid_base_system = pHcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
@@ -132,12 +132,12 @@ class PorousMediaLab(Lab):
         if i == 1:
             self.pre_run_methods()
         self.transport_integrate(i)
-        if self.rates:
-            self.reactions_integrate_scipy(i)
         if self.henry_law_equations:
             self.henry_equilibrium_integrate(i)
         if self.acid_base_components:
             self.acid_base_equilibrium_solve(i)
+        if self.rates:
+            self.reactions_integrate_scipy(i)
 
     def reactions_integrate(self, i):
         C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')

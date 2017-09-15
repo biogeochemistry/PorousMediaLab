@@ -29,7 +29,7 @@ def plot_batch_rates(batch, *args, **kwargs):
 
 def plot_batch_rate(batch, rate, time_factor=1):
     plt.plot(batch.time * time_factor, batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
-    plt.ylabel('Rate, [M/T]')
+    plt.ylabel('Rate, $[\Delta C/\Delta T]$')
     plt.xlabel('Time, [T]')
     plt.legend(frameon=1)
     plt.grid(linestyle='-', linewidth=0.2)
@@ -43,7 +43,7 @@ def plot_batch_deltas(batch, *args, **kwargs):
 
 def plot_batch_delta(batch, element, time_factor=1):
     plt.plot(batch.time[1:] * time_factor, batch.species[element]['rates'][0] / time_factor, label=element, lw=3)
-    plt.ylabel('Rate of change, $[\Delta/T]$')
+    plt.ylabel('Rate of change, $[\Delta C/ \Delta T]$')
     plt.xlabel('Time, [T]')
     plt.legend(frameon=1)
     plt.grid(linestyle='-', linewidth=0.2)

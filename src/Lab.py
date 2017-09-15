@@ -140,7 +140,7 @@ class Lab:
             for idx, s in enumerate(self.species):
                 yinit[idx] = self.profiles[s][idx_j]
 
-            ynew = DESolver.integrate_one_timestep(self.dynamic_functions['solver'], yinit, self.dt)
+            ynew = DESolver.ode_integrate_scipy(self.dynamic_functions['solver'], yinit, self.dt)
 
             for idx, s in enumerate(self.species):
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]

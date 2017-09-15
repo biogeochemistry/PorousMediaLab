@@ -244,11 +244,11 @@ def create_ode_function(species, constants, rates, dcdt, non_negative_rates=True
 
 
 def create_solver(dydt):
-    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-4)
+    solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-2)
     return solver
 
 
-def integrate_one_timestep(solver, yinit, timestep):
+def ode_integrate_scipy(solver, yinit, timestep):
     t_start = 0.0
     solver.set_initial_value(yinit, t_start)
     while solver.successful() and solver.t < timestep:
