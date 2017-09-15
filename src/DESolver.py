@@ -248,7 +248,7 @@ def create_solver(dydt):
     return solver
 
 
-def integrate_one_timestep(solver, yinit, timestep):
+def ode_integrate_scipy(solver, yinit, timestep):
     t_start = 0.0
     solver.set_initial_value(yinit, t_start)
     while solver.successful() and solver.t < timestep:

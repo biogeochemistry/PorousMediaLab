@@ -55,3 +55,6 @@ class BatchLab(Lab):
     plot_profiles = Plotter.all_plot_depth_index
     plot_fractions = Plotter.plot_fractions
     plot_rates = Plotter.plot_batch_rates
+    plot_rate = Plotter.plot_batch_rate
+    plot_deltas = Plotter.plot_batch_deltas
+    plot_delta = Plotter.plot_batch_delta

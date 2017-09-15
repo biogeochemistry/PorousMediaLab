@@ -28,8 +28,22 @@ def plot_batch_rates(batch, *args, **kwargs):
 
 
 def plot_batch_rate(batch, rate, time_factor=1):
-    plt.plot(batch.time[:-1] * time_factor, batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
-    plt.ylabel('Rate, [M/T]')
+    plt.plot(batch.time * time_factor, batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
+    plt.ylabel('Rate, $[\Delta C/\Delta T]$')
+    plt.xlabel('Time, [T]')
+    plt.legend(frameon=1)
+    plt.grid(linestyle='-', linewidth=0.2)
+
+
+def plot_batch_deltas(batch, *args, **kwargs):
+    for element in sorted(batch.species):
+        plt.figure()
+        plot_batch_delta(batch, element, *args, **kwargs)
+
+
+def plot_batch_delta(batch, element, time_factor=1):
+    plt.plot(batch.time[1:] * time_factor, batch.species[element]['rates'][0] / time_factor, label=element, lw=3)
+    plt.ylabel('Rate of change, $[\Delta C/ \Delta T]$')
     plt.xlabel('Time, [T]')
     plt.legend(frameon=1)
     plt.grid(linestyle='-', linewidth=0.2)
@@ -89,7 +103,6 @@ def plot_depth_index(lab, element, idx=0, time_to_plot=False, time_factor=1, ax=
         ax.set_title('pH')
         ax.set_ylabel('pH')
     else:
-        ax.set_title(element + ' concentration')
         ax.set_ylabel('Concentration')
     if time_to_plot:
         num_of_elem = int(time_to_plot / lab.dt)
@@ -97,8 +110,13 @@ def plot_depth_index(lab, element, idx=0, time_to_plot=False, time_factor=1, ax=
         num_of_elem = len(lab.time)
     t = lab.time[-num_of_elem:] * time_factor
     ax.set_xlabel('Time')
-    ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if isinstance(element, str):
+        ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
+        ax.set_title(element + ' concentration')
+    elif isinstance(element, (list, tuple)):
+        for e in element:
+            ax.plot(t, lab.species[e]['concentration'][idx][-num_of_elem:], lw=3, label=e)
+    ax.legend(frameon=1)
     ax.grid(linestyle='-', linewidth=0.2)
     return ax
 
@@ -200,7 +218,7 @@ def contour_plot(lab, element, labels=False, days=False, last_year=False):
     plt.ylabel('Depth')
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
-    cbar.ax.set_ylabel('%s concentration' % element)
+    cbar.ax.set_ylabel('%s [M/V]' % element)
     if element == 'Temperature':
         plt.title('Temperature contour plot')
         cbar.ax.set_ylabel('Temperature, C')
@@ -211,14 +229,45 @@ def contour_plot(lab, element, labels=False, days=False, last_year=False):
 
 
 def plot_contourplots_of_rates(lab, **kwargs):
+    rate = sorted(lab.estimated_rates)
+    for r in rate:
+        contour_plot_of_rates(lab, r, **kwargs)
+
+
+def contour_plot_of_rates(lab, r, labels=False, last_year=False):
+    plt.figure()
+    plt.title('{}'.format(r))
+    resoluion = 100
+    n = math.ceil(lab.time.size / resoluion)
+    if last_year:
+        k = n - int(1 / lab.dt)
+    else:
+        k = 1
+    z = lab.estimated_rates[r][:, k - 1:-1:n]
+    # lim = np.max(np.abs(z))
+    # lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
+    X, Y = np.meshgrid(lab.time[k::n], -lab.x)
+    plt.xlabel('Time')
+    CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette("Blues", 51)))
+    if labels:
+        plt.clabel(CS, inline=1, fontsize=10, colors='w')
+    cbar = plt.colorbar(CS)
+    plt.ylabel('Depth')
+    ax = plt.gca()
+    ax.ticklabel_format(useOffset=False)
+    cbar.ax.set_ylabel('Rate %s [M/V/T]' % r)
+    return ax
+
+
+def plot_contourplots_of_deltas(lab, **kwargs):
     elements = sorted(lab.species)
     if 'Temperature' in elements:
         elements.remove('Temperature')
     for element in elements:
-        contour_plot_of_rates(lab, element, **kwargs)
+        contour_plot_of_delta(lab, element, **kwargs)
 
 
-def contour_plot_of_rates(lab, element, labels=False, last_year=False):
+def contour_plot_of_delta(lab, element, labels=False, last_year=False):
     plt.figure()
     plt.title('Rate of %s consumption/production' % element)
     resoluion = 100
@@ -230,7 +279,7 @@ def contour_plot_of_rates(lab, element, labels=False, last_year=False):
     z = lab.species[element]['rates'][:, k - 1:-1:n]
     lim = np.max(np.abs(z))
     lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
-    X, Y = np.meshgrid(lab.time[k::n], -lab.x)
+    X, Y = np.meshgrid(lab.time[k:-1:n], -lab.x)
     plt.xlabel('Time')
     CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette(
         "RdBu_r", 101)), origin='lower', levels=lim, extend='both')
@@ -240,5 +289,5 @@ def contour_plot_of_rates(lab, element, labels=False, last_year=False):
     plt.ylabel('Depth')
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
-    cbar.ax.set_ylabel('Rate %s [Concentration/Time]' % element)
+    cbar.ax.set_ylabel('Rate of %s change $[\Delta/T]$' % element)
     return ax
