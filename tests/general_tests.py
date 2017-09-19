@@ -1,7 +1,7 @@
 import unittest
 from spec import skip
 import sys
-sys.path.append('../src')
+sys.path.append('../porousmedialab')
 import PorousMediaLab
 import OdeSolver
 import numpy as np
