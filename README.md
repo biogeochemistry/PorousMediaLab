@@ -1,3 +1,5 @@
+[![Latest Version](https://pypip.in/version/porousmedialab/badge.svg)](https://pypi.python.org/pypi/porousmedialab/)
+
 # PorousMediaLab
 
 Toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for user without computational background.
