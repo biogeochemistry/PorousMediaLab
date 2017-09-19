@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import odeint
-import vg
+import porousmedialab.vg as vg
 
 
 def thetaFun(psi, pars):

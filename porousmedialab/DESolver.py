@@ -1,4 +1,3 @@
-import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags

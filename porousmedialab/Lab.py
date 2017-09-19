@@ -1,12 +1,11 @@
 import time
-import sys
 import traceback
 import numpy as np
 import numexpr as ne
-from DotDict import DotDict
-import pHcalc
-import DESolver
-import EquilibriumSolver
+from porousmedialab.dotdict import DotDict
+import porousmedialab.phcalc as phcalc
+import porousmedialab.desolver as desolver
+import porousmedialab.equilibriumsolver as equilibriumsolver
 
 
 class Lab:
@@ -25,7 +24,7 @@ class Lab:
         self.constants = DotDict({})
         self.henry_law_equations = []
         self.acid_base_components = []
-        self.acid_base_system = pHcalc.System()
+        self.acid_base_system = phcalc.System()
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -59,7 +58,7 @@ class Lab:
 
     def henry_equilibrium_integrate(self, i):
         for eq in self.henry_law_equations:
-            self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = EquilibriumSolver.solve_henry_law(
+            self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = equilibriumsolver.solve_henry_law(
                 self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
             for elem in [eq['gas'], eq['aq']]:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
@@ -96,12 +95,12 @@ class Lab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def add_ion(self, element, charge):
-        ion = pHcalc.Neutral(charge=charge, conc=np.nan)
+        ion = phcalc.Neutral(charge=charge, conc=np.nan)
         self.acid_base_components.append(
             {'species': [element], 'pH_object': ion})
 
     def add_acid(self, species, pKa, charge=0):
-        acid = pHcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
+        acid = phcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
         self.acid_base_components.append(
             {'species': species, 'pH_object': acid})
 
@@ -114,11 +113,11 @@ class Lab:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
-        fun_str = DESolver.create_ode_function(self.species, self.constants, self.rates, self.dcdt)
+        fun_str = desolver.create_ode_function(self.species, self.constants, self.rates, self.dcdt)
         exec(fun_str)
         self.dynamic_functions['dydt_str'] = fun_str
         self.dynamic_functions['dydt'] = locals()['f']
-        self.dynamic_functions['solver'] = DESolver.create_solver(locals()['f'])
+        self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
@@ -132,15 +131,15 @@ class Lab:
         self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
-        # C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # for idx_j in range(self.N):
         for idx_j in range(self.N):
             yinit = np.zeros(len(self.species))
             for idx, s in enumerate(self.species):
                 yinit[idx] = self.profiles[s][idx_j]
 
-            ynew = DESolver.ode_integrate_scipy(self.dynamic_functions['solver'], yinit, self.dt)
+            ynew = desolver.ode_integrate_scipy(self.dynamic_functions['solver'], yinit, self.dt)
 
             for idx, s in enumerate(self.species):
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]

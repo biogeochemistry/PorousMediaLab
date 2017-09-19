@@ -1,0 +1,23 @@
+# porousmedialab changelog
+
+
+## 1.1.1
+
+2017-09-19
+
+### FIXED
+
+- clashed method names
+
+
+## 1.1
+
+2017-09-19
+
+### FIXED
+
+- clashed method names
+
+
+
+
