@@ -1,15 +1,15 @@
 import numpy as np
 from scipy.sparse import spdiags
-import Plotter
-from Lab import Lab
-import DESolver
-import EquilibriumSolver
-import pHcalc
-from DotDict import DotDict
+import plotter
+from lab import Lab
+import desolver
+import equilibriumsolver
+import phcalc
+from dotdict import DotDict
 
 
-class PorousMediaLab(Lab):
-    """PorousMediaLab module solves Advection-Diffusion-Reaction Equation in porous media"""
+class Column(Lab):
+    """Column module solves Advection-Diffusion-Reaction Equation in porous media"""
 
     def __init__(self, length, dx, tend, dt, phi, w=0):
         # ne.set_num_threads(ne.detect_number_of_cores())
@@ -97,12 +97,12 @@ class PorousMediaLab(Lab):
         self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
-        self.species[element]['AL'], self.species[element]['AR'] = DESolver.create_template_AL_AR(
+        self.species[element]['AL'], self.species[element]['AR'] = desolver.create_template_AL_AR(
             self.species[element]['theta'], self.species[element]['D'], self.species[element]['w'],
             self.species[element]['bc_top_type'], self.species[element]['bc_bot_type'], self.dt, self.dx, self.N)
 
     def update_matrices_due_to_bc(self, element, i):
-        self.profiles[element], self.species[element]['B'] = DESolver.update_matrices_due_to_bc(self.species[
+        self.profiles[element], self.species[element]['B'] = desolver.update_matrices_due_to_bc(self.species[
             element]['AR'], self.profiles[element], self.species[element]['theta'], self.species[element]['D'],
             self.species[element]['w'], self.species[element]['bc_top_type'], self.species[element]['bc_top_value'],
             self.species[element]['bc_bot_type'], self.species[element]['bc_bot_value'], self.dt, self.dx, self.N)
@@ -112,7 +112,7 @@ class PorousMediaLab(Lab):
     def create_acid_base_system(self):
         self.add_species(is_solute=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
                          bc_bot=7, bc_bot_type='dirichlet', w=False, int_transport=False)
-        self.acid_base_system = pHcalc.System(
+        self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
     def acid_base_update_concentrations(self, i):
@@ -140,8 +140,8 @@ class PorousMediaLab(Lab):
             self.reactions_integrate_scipy(i)
 
     def reactions_integrate(self, i):
-        C_new, rates_per_elem, rates_per_rate = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-        # C_new, rates_per_elem = DESolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
 
         try:
             for rate_name, rate in rates_per_rate.items():
@@ -167,7 +167,7 @@ class PorousMediaLab(Lab):
                 self.transport_integrate_one_element(element, i)
 
     def transport_integrate_one_element(self, element, i):
-        self.profiles[element] = DESolver.linear_alg_solver(
+        self.profiles[element] = desolver.linear_alg_solver(
             self.species[element]['AL'], self.species[element]['B'])
         self.species[element]['concentration'][:, i] = self.profiles[element]
         self.update_matrices_due_to_bc(element, i)
@@ -242,17 +242,17 @@ class PorousMediaLab(Lab):
     def is_solute(self, element):
         return self.species[element]['is_solute']
 
-    """Mapping of plotting methods from Plotter module"""
+    """Mapping of plotting methods from plotter module"""
 
-    custom_plot = Plotter.custom_plot
-    plot_depths = Plotter.plot_depths
-    plot_times = Plotter.plot_times
-    plot_profiles = Plotter.plot_profiles
-    plot_profile = Plotter.plot_profile
-    plot_contourplots = Plotter.plot_contourplots
-    contour_plot = Plotter.contour_plot
-    plot_contourplots_of_rates = Plotter.plot_contourplots_of_rates
-    contour_plot_of_rates = Plotter.contour_plot_of_rates
-    plot_contourplots_of_deltas = Plotter.plot_contourplots_of_deltas
-    contour_plot_of_delta = Plotter.contour_plot_of_delta
-    plot_saturation_index = Plotter.saturation_index_countour
+    custom_plot = plotter.custom_plot
+    plot_depths = plotter.plot_depths
+    plot_times = plotter.plot_times
+    plot_profiles = plotter.plot_profiles
+    plot_profile = plotter.plot_profile
+    plot_contourplots = plotter.plot_contourplots
+    contour_plot = plotter.contour_plot
+    plot_contourplots_of_rates = plotter.plot_contourplots_of_rates
+    contour_plot_of_rates = plotter.contour_plot_of_rates
+    plot_contourplots_of_deltas = plotter.plot_contourplots_of_deltas
+    contour_plot_of_delta = plotter.contour_plot_of_delta
+    plot_saturation_index = plotter.saturation_index_countour

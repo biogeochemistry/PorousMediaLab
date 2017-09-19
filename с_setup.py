@@ -15,7 +15,7 @@ for m in modules:
     m.cython_c_in_temp = True
 
 setup(
-    name='PorousMediaLab app',
+    name='Column app',
     ext_modules=cythonize(modules),
     cmdclass={'build_ext': build_ext}
 )

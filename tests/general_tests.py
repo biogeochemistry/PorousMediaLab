@@ -2,7 +2,7 @@ import unittest
 from spec import skip
 import sys
 sys.path.append('../porousmedialab')
-import PorousMediaLab
+import Column
 import OdeSolver
 import numpy as np
 from scipy import special
@@ -16,12 +16,12 @@ def create_lab():
     length = 100
     phi = 1
     dt = 0.001
-    lab = PorousMediaLab.PorousMediaLab(length, dx, tend, dt, phi, w)
+    lab = Column.Column(length, dx, tend, dt, phi, w)
     return lab
 
 
 class TestIntialization:
-    """Test the initialization of the PorousMediaLab class with correct boundary conditions  and initial concentrations"""
+    """Test the initialization of the Column class with correct boundary conditions  and initial concentrations"""
 
     def initial_concentrations_test(self):
         """ Scalar initial condition assigned to the whole vector"""
