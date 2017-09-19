@@ -1,8 +1,8 @@
-from lab import Lab
-from dotdict import DotDict
 import numpy as np
-import plotter
-import phcalc
+from porousmedialab.lab import Lab
+from porousmedialab.dotdict import DotDict
+import porousmedialab.plotter as plotter
+import porousmedialab.phcalc as phcalc
 
 
 class Batch(Lab):

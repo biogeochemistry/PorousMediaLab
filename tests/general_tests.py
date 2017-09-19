@@ -1,7 +1,5 @@
 import unittest
 from spec import skip
-import sys
-sys.path.append('../porousmedialab')
 import Column
 import OdeSolver
 import numpy as np

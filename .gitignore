@@ -5,3 +5,5 @@
 /.ipynb_checkpoints/
 /.cache/
 /build/
+/porousmedialab.egg-info/
+/dist/

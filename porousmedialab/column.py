@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.sparse import spdiags
-import plotter
-from lab import Lab
-import desolver
-import equilibriumsolver
-import phcalc
-from dotdict import DotDict
+import porousmedialab.plotter as plotter
+from porousmedialab.lab import Lab
+import porousmedialab.desolver as desolver
+import porousmedialab.phcalc as phcalc
+from porousmedialab.dotdict import DotDict
 
 
 class Column(Lab):

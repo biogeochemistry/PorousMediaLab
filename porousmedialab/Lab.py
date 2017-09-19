@@ -1,12 +1,11 @@
 import time
-import sys
 import traceback
 import numpy as np
 import numexpr as ne
-from dotdict import DotDict
-import phcalc
-import desolver
-import equilibriumsolver
+from porousmedialab.dotdict import DotDict
+import porousmedialab.phcalc as phcalc
+import porousmedialab.desolver as desolver
+import porousmedialab.equilibriumsolver as equilibriumsolver
 
 
 class Lab:

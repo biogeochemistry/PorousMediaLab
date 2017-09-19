@@ -1,11 +1,11 @@
-import sys
-sys.path.append('../porousmedialab')
 from scipy import special
 import numpy as np
-from column import Column
-import desolver
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from porousmedialab.column import Column
+import porousmedialab.desolver as desolver
+
 
 sns.set_style("whitegrid")
 

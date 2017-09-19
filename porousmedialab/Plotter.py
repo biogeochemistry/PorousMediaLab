@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from phcalc import Acid
+from porousmedialab.phcalc import Acid
 
 import seaborn as sns
 from matplotlib.colors import ListedColormap
