@@ -1,5 +1,4 @@
 [![latest version](https://badge.fury.io/py/porousmedialab.svg)](https://badge.fury.io/py/porousmedialab)
-
 [![GitHub issues](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)
 [![GitHub forks](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)
 [![GitHub stars](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)
@@ -12,7 +11,7 @@ Toolbox for batch and 1D reactive transport modeling in porous media aimed on ea
 
 # How to use
 
-For the examples, have a look of simulation of [freeze/thawing cycles](https://github.com/biogeochemistry/PorousMediaLab/blob/master/examples/FT_presentation_simple_3.ipynb) in saturated soil or many other examples in "examples" folder.
+Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tree/master/examples) folder.
 
 # Installation using pip
 
@@ -20,7 +19,7 @@ For the examples, have a look of simulation of [freeze/thawing cycles](https://g
 - install Anaconda [(click)](https://www.anaconda.com/download/);
 - to install the toolbox run ```pip install porousmedialab```
 - in terminal run command ```jupyter notebook```;
-- you will see the folders of PorousMediaLab project, you can go in "examples" folder and play with them;
+- you will see the folders of your home folder. You can navigate in any folder and create new notebook with your model.
 
 
 # Manual installation
