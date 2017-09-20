@@ -19,7 +19,7 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - install Anaconda [(click)](https://www.anaconda.com/download/);
 - to install the toolbox run ```pip install porousmedialab```
 - in terminal run command ```jupyter notebook```;
-- you will see the folders of PorousMediaLab project, you can go in "examples" folder and play with them;
+- you will see the folders of your home folder. You can navigate in any folder and create new notebook with your model.
 
 
 # Manual installation
