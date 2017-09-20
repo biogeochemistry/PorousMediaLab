@@ -11,7 +11,7 @@ Toolbox for batch and 1D reactive transport modeling in porous media aimed on ea
 
 # How to use
 
-For the examples, have a look of simulation of [freeze/thawing cycles](https://github.com/biogeochemistry/PorousMediaLab/blob/master/examples/FT_presentation_simple_3.ipynb) in saturated soil or many other examples in "examples" folder.
+Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tree/master/examples) folder.
 
 # Installation using pip
 
