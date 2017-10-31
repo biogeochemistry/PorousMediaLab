@@ -4,6 +4,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://img.shields.io/badge/license-MIT-blue.svg)
 [![Twitter](https://img.shields.io/twitter/url/https/github.com/biogeochemistry/PorousMediaLab.svg?style=social)](https://img.shields.io/twitter/url/https/github.com/biogeochemistry/PorousMediaLab.svg?style=social)
+[![DOI](https://zenodo.org/badge/78385496.svg)](https://zenodo.org/badge/latestdoi/78385496)
 
 # PorousMediaLab
 
