@@ -113,11 +113,13 @@ class Lab:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
-        fun_str = desolver.create_ode_function(self.species, self.constants, self.rates, self.dcdt)
+        fun_str = desolver.create_ode_function(
+            self.species, self.constants, self.rates, self.dcdt)
         exec(fun_str)
         self.dynamic_functions['dydt_str'] = fun_str
         self.dynamic_functions['dydt'] = locals()['f']
-        self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
+        self.dynamic_functions['solver'] = desolver.create_solver(locals()[
+                                                                  'f'])
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
@@ -139,7 +141,8 @@ class Lab:
             for idx, s in enumerate(self.species):
                 yinit[idx] = self.profiles[s][idx_j]
 
-            ynew = desolver.ode_integrate_scipy(self.dynamic_functions['solver'], yinit, self.dt)
+            ynew = desolver.ode_integrate_scipy(
+                self.dynamic_functions['solver'], yinit, self.dt)
 
             for idx, s in enumerate(self.species):
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]
@@ -159,4 +162,5 @@ class Lab:
                 self.estimated_rates[name][:, idx_t] = r * (r > 0)
 
         for s in self.species:
-            self.species[s]['rates'] = (self.species[s]['concentration'][:, 1:] - self.species[s]['concentration'][:, :-1]) / self.dt
+            self.species[s]['rates'] = (
+                self.species[s]['concentration'][:, 1:] - self.species[s]['concentration'][:, :-1]) / self.dt

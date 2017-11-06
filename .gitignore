@@ -8,3 +8,4 @@
 /porousmedialab.egg-info/
 /dist/
 *.sublime-project
+/.vscode/

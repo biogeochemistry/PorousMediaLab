@@ -28,7 +28,8 @@ def plot_batch_rates(batch, *args, **kwargs):
 
 
 def plot_batch_rate(batch, rate, time_factor=1):
-    plt.plot(batch.time * time_factor, batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
+    plt.plot(batch.time * time_factor,
+             batch.estimated_rates[rate][0] / time_factor, label=rate, lw=3)
     plt.ylabel('Rate, $[\Delta C/\Delta T]$')
     plt.xlabel('Time, [T]')
     plt.legend(frameon=1)
@@ -42,7 +43,8 @@ def plot_batch_deltas(batch, *args, **kwargs):
 
 
 def plot_batch_delta(batch, element, time_factor=1):
-    plt.plot(batch.time[1:] * time_factor, batch.species[element]['rates'][0] / time_factor, label=element, lw=3)
+    plt.plot(batch.time[1:] * time_factor, batch.species[element]
+             ['rates'][0] / time_factor, label=element, lw=3)
     plt.ylabel('Rate of change, $[\Delta C/ \Delta T]$')
     plt.xlabel('Time, [T]')
     plt.legend(frameon=1)
@@ -55,7 +57,8 @@ def saturation_index_countour(lab, elem1, elem2, Ks, labels=False):
     resoluion = 100
     n = math.ceil(lab.time.size / resoluion)
     plt.xlabel('Time')
-    z = np.log10((lab.species[elem1]['concentration'][:, ::n] + 1e-8) * (lab.species[elem2]['concentration'][:, ::n] + 1e-8) / lab.constants[Ks])
+    z = np.log10((lab.species[elem1]['concentration'][:, ::n] + 1e-8) * (
+        lab.species[elem2]['concentration'][:, ::n] + 1e-8) / lab.constants[Ks])
     lim = np.max(abs(z))
     lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
     X, Y = np.meshgrid(lab.time[::n], -lab.x)
@@ -80,7 +83,8 @@ def plot_fractions(lab):
         if isinstance(component['pH_object'], Acid):
             plt.figure()
             for idx in range(len(component['species'])):
-                plt.plot(lab.time, lab.species[component['species'][idx]]['alpha'][0, :], label=component['species'][idx])
+                plt.plot(lab.time, lab.species[component['species'][idx]]
+                         ['alpha'][0, :], label=component['species'][idx])
             plt.ylabel('Fraction')
             plt.xlabel('Time')
             plt.legend(frameon=1)
@@ -111,11 +115,13 @@ def plot_depth_index(lab, element, idx=0, time_to_plot=False, time_factor=1, ax=
     t = lab.time[-num_of_elem:] * time_factor
     ax.set_xlabel('Time')
     if isinstance(element, str):
-        ax.plot(t, lab.species[element]['concentration'][idx][-num_of_elem:], lw=3)
+        ax.plot(t, lab.species[element]['concentration']
+                [idx][-num_of_elem:], lw=3)
         ax.set_title(element + ' concentration')
     elif isinstance(element, (list, tuple)):
         for e in element:
-            ax.plot(t, lab.species[e]['concentration'][idx][-num_of_elem:], lw=3, label=e)
+            ax.plot(t, lab.species[e]['concentration']
+                    [idx][-num_of_elem:], lw=3, label=e)
     ax.legend(frameon=1)
     ax.grid(linestyle='-', linewidth=0.2)
     return ax
@@ -138,7 +144,8 @@ def plot_depths(lab, element, depths=[0, 1, 2, 3, 4], time_to_plot=False):
     plt.xlabel('Time')
     for depth in depths:
         lbl = str(depth)
-        plt.plot(t, lab.species[element]['concentration'][int(depth / lab.dx)][-num_of_elem:], lw=3, label=lbl)
+        plt.plot(t, lab.species[element]['concentration'][int(
+            depth / lab.dx)][-num_of_elem:], lw=3, label=lbl)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.grid(linestyle='-', linewidth=0.2)
     return ax
@@ -170,7 +177,8 @@ def plot_profiles(lab):
 
 def plot_profile(lab, element):
     plt.figure()
-    plt.plot(lab.profiles[element], -lab.x, sns.xkcd_rgb["denim blue"], lw=3, label=element)
+    plt.plot(lab.profiles[element], -lab.x,
+             sns.xkcd_rgb["denim blue"], lw=3, label=element)
     if element == 'Temperature':
         plt.title('Temperature profile')
         plt.xlabel('Temperature, C')
@@ -248,7 +256,8 @@ def contour_plot_of_rates(lab, r, labels=False, last_year=False):
     # lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
     X, Y = np.meshgrid(lab.time[k::n], -lab.x)
     plt.xlabel('Time')
-    CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette("Blues", 51)))
+    CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(
+        sns.color_palette("Blues", 51)))
     if labels:
         plt.clabel(CS, inline=1, fontsize=10, colors='w')
     cbar = plt.colorbar(CS)
