@@ -54,7 +54,8 @@ def transport_equation_plot():
     dt = 0.001
     lab = Column(length, dx, tend, dt, phi, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
+    lab.add_species(True, 'O2', D, 0, bc_top=1,
+                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
     sol = 1 / 2 * (special.erfc((

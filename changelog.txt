@@ -1,5 +1,12 @@
 # porousmedialab changelog
 
+## 1.1.2
+
+2017-11-06
+
+### FIXED
+
+- pre_run_methods() bug fix: when model are setup to integrate from i=0 it throws an error "undefined 'solver' in scipy".
 
 ## 1.1.1
 

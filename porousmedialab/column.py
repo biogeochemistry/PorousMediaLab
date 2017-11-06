@@ -60,7 +60,8 @@ class Column(Lab):
         self.species[element]['concentration'] = np.zeros(
             (self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
+        self.species[element]['concentration'][:,
+                                               0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         if w:
             self.species[element]['w'] = w
@@ -125,10 +126,11 @@ class Column(Lab):
             for idx in range(len(component['species'])):
                 self.species[component['species'][idx]
                              ]['concentration'][:, i] = init_conc * alphas[:, idx]
-                self.profiles[component['species'][idx]] = self.species[component['species'][idx]]['concentration'][:, i]
+                self.profiles[component['species'][idx]
+                              ] = self.species[component['species'][idx]]['concentration'][:, i]
 
     def integrate_one_timestep(self, i):
-        if i == 1:
+        if i < 2:
             self.pre_run_methods()
         self.transport_integrate(i)
         if self.henry_law_equations:
@@ -139,12 +141,14 @@ class Column(Lab):
             self.reactions_integrate_scipy(i)
 
     def reactions_integrate(self, i):
-        C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
+        C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(
+            self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
 
         try:
             for rate_name, rate in rates_per_rate.items():
-                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
+                self.estimated_rates[rate_name][:,
+                                                i - 1] = rates_per_rate[rate_name]
         except:
             pass
 
@@ -153,8 +157,10 @@ class Column(Lab):
                 # the concentration should be positive
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
-            self.species[element]['concentration'][:, i] = self.profiles[element]
-            self.species[element]['rates'][:, i] = rates_per_elem[element] / self.dt
+            self.species[element]['concentration'][:,
+                                                   i] = self.profiles[element]
+            self.species[element]['rates'][:,
+                                           i] = rates_per_elem[element] / self.dt
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 

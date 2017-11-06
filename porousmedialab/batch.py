@@ -15,10 +15,12 @@ class Batch(Lab):
     def add_species(self, element, init_C):
         self.species[element] = DotDict({})
         self.species[element]['init_C'] = init_C
-        self.species[element]['concentration'] = np.zeros((self.N, self.time.size))
+        self.species[element]['concentration'] = np.zeros(
+            (self.N, self.time.size))
         self.species[element]['alpha'] = np.zeros((self.N, self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = self.species[element]['init_C']
+        self.species[element]['concentration'][:,
+                                               0] = self.species[element]['init_C']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         self.species[element]['int_transport'] = False
         self.dcdt[element] = '0'
@@ -46,9 +48,12 @@ class Batch(Lab):
                 init_conc += self.species[component['species']
                                           [idx]]['concentration'][:, i]
             for idx in range(len(component['species'])):
-                self.species[component['species'][idx]]['concentration'][:, i] = init_conc * alphas[idx]
-                self.profiles[component['species'][idx]] = self.species[component['species'][idx]]['concentration'][:, i]
-                self.species[component['species'][idx]]['alpha'][:, i] = alphas[idx]
+                self.species[component['species'][idx]
+                             ]['concentration'][:, i] = init_conc * alphas[idx]
+                self.profiles[component['species'][idx]
+                              ] = self.species[component['species'][idx]]['concentration'][:, i]
+                self.species[component['species'][idx]
+                             ]['alpha'][:, i] = alphas[idx]
 
     plot = plotter.plot_depth_index
     plot_profiles = plotter.all_plot_depth_index
