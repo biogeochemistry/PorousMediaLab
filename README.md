@@ -32,6 +32,9 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - in terminal run command ```jupyter notebook```;
 - you will see the folders of PorousMediaLab project, you can go in "examples" folder and play with them;
 
+# Citation
+
+I. Markelov (2017), The toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for user without computational background, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
 
 # MIT License
 
