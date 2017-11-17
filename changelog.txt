@@ -1,5 +1,14 @@
 # porousmedialab changelog
 
+## 1.2.1
+
+2017-11-06
+
+### NEW
+
+- added multiphase porosity, now each species has its own porosity. This change was required in order to model water/gas/solid interactions with conservation and conversation of mass
+
+
 ## 1.1.5
 
 2017-11-06
