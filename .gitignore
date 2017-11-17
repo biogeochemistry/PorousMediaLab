@@ -9,3 +9,4 @@
 /dist/
 *.sublime-project
 /.vscode/
+*.DS_Store

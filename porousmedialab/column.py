@@ -11,7 +11,7 @@ class Column(Lab):
     """Column module solves Advection-Diffusion-Reaction Equation 
     in porous media"""
 
-    def __init__(self, length, dx, tend, dt, w=0):
+    def __init__(self, length, dx, tend, dt, w=0, ode_method='rk4'):
         # ne.set_num_threads(ne.detect_number_of_cores())
         super().__init__(tend, dt)
         self.x = np.linspace(0, length, length / dx + 1)
@@ -19,17 +19,17 @@ class Column(Lab):
         self.length = length
         self.dx = dx
         self.w = w
-        self.ode_method = 'rk4'
-        # self.phi = np.ones((self.N)) * phi
-        # self.constants['phi'] = self.phi
+        self.ode_method = ode_method
+        # self.theta = np.ones((self.N)) * theta
+        # self.constants['theta'] = self.theta
 
-    def add_species(self, phi, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, w=False, int_transport=True):
+    def add_species(self, theta, element, D, init_C, bc_top, bc_top_type, bc_bot, bc_bot_type, w=False, int_transport=True):
         self.species[element] = DotDict({})
         self.species[element]['bc_top_value'] = bc_top
         self.species[element]['bc_top_type'] = bc_top_type.lower()
         self.species[element]['bc_bot_value'] = bc_bot
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
-        self.species[element]['phi'] = np.ones((self.N)) * phi
+        self.species[element]['theta'] = np.ones((self.N)) * theta
         self.species[element]['D'] = D
         self.species[element]['init_C'] = init_C
         self.species[element]['concentration'] = np.zeros(
@@ -48,14 +48,6 @@ class Column(Lab):
             self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
-    def add_solute_species(self, element, D, init_C):
-        self.add_species(True, element, D, init_C, bc_top=0,
-                         bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
-
-    def add_solid_species(self, element, init_C):
-        self.add_species(False, element, 1e-18, init_C, bc_top=0,
-                         bc_top_type='neumann', bc_bot=0, bc_bot_type='neumann')
-
     def new_top_boundary_condition(self, element, bc):
         self.species[element]['bc_top_value'] = bc
 
@@ -73,19 +65,19 @@ class Column(Lab):
 
     def template_AL_AR(self, element):
         self.species[element]['AL'], self.species[element]['AR'] = desolver.create_template_AL_AR(
-            self.species[element]['phi'], self.species[element]['D'], self.species[element]['w'],
+            self.species[element]['theta'], self.species[element]['D'], self.species[element]['w'],
             self.species[element]['bc_top_type'], self.species[element]['bc_bot_type'], self.dt, self.dx, self.N)
 
     def update_matrices_due_to_bc(self, element, i):
         self.profiles[element], self.species[element]['B'] = desolver.update_matrices_due_to_bc(self.species[
-            element]['AR'], self.profiles[element], self.species[element]['phi'], self.species[element]['D'],
+            element]['AR'], self.profiles[element], self.species[element]['theta'], self.species[element]['D'],
             self.species[element]['w'], self.species[element]['bc_top_type'], self.species[element]['bc_top_value'],
             self.species[element]['bc_bot_type'], self.species[element]['bc_bot_value'], self.dt, self.dx, self.N)
 
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
     def create_acid_base_system(self):
-        self.add_species(phi=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
+        self.add_species(theta=True, element='pH', D=0, init_C=7, bc_top=7, bc_top_type='dirichlet',
                          bc_bot=7, bc_bot_type='dirichlet', w=False, int_transport=False)
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
@@ -124,7 +116,8 @@ class Column(Lab):
 
         try:
             for rate_name, rate in rates_per_rate.items():
-                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
+                self.estimated_rates[rate_name][:,
+                                                i - 1] = rates_per_rate[rate_name]
         except:
             pass
 
@@ -167,23 +160,23 @@ class Column(Lab):
         """
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
-        phi = self.species[elem]['phi']
+        theta = self.species[elem]['theta']
 
         if order == 4:
-            flux = D * (-25 * phi[1] * C[1, idx] + 48 * phi[2] * C[2, idx] - 36 * phi[3] * C[
-                3, idx] + 16 * phi[4] * C[4, idx] - 3 * phi[5] * C[5, idx]) / self.dx / 12 \
-                - phi[0] * self.species[elem]['w'] * C[0]
+            flux = D * (-25 * theta[1] * C[1, idx] + 48 * theta[2] * C[2, idx] - 36 * theta[3] * C[
+                3, idx] + 16 * theta[4] * C[4, idx] - 3 * theta[5] * C[5, idx]) / self.dx / 12 \
+                - theta[0] * self.species[elem]['w'] * C[0]
         if order == 3:
-            flux = D * (-11 * phi[1] * C[1, idx] + 18 * phi[2] * C[2, idx] -
-                        9 * phi[3] * C[3, idx] + 2 * phi[4] * C[4, idx]) / self.dx / 6 \
-                - phi[0] * self.species[elem]['w'] * C[0]
+            flux = D * (-11 * theta[1] * C[1, idx] + 18 * theta[2] * C[2, idx] -
+                        9 * theta[3] * C[3, idx] + 2 * theta[4] * C[4, idx]) / self.dx / 6 \
+                - theta[0] * self.species[elem]['w'] * C[0]
         if order == 2:
-            flux = D * (-3 * phi[1] * C[1, idx] + 4 *
-                        phi[2] * C[2, idx] * phi[3] * C[3, idx]) / self.dx / 2 \
-                - phi[0] * self.species[elem]['w'] * C[0]
+            flux = D * (-3 * theta[1] * C[1, idx] + 4 *
+                        theta[2] * C[2, idx] * theta[3] * C[3, idx]) / self.dx / 2 \
+                - theta[0] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (phi[0] * C[0, idx] * phi[2] * C[2, idx]) / 2 / self.dx \
-                - phi[0] * self.species[elem]['w'] * C[0]
+            flux = - D * (theta[0] * C[0, idx] * theta[2] * C[2, idx]) / 2 / self.dx \
+                - theta[0] * self.species[elem]['w'] * C[0]
 
         return flux
 
@@ -202,23 +195,23 @@ class Column(Lab):
 
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
-        phi = self.species[elem]['phi']
+        theta = self.species[elem]['theta']
 
         if order == 4:
-            flux = D * (-25 * phi[-2] * C[-2, idx] + 48 * phi[-3] * C[-3, idx] - 36 *
-                        phi[-4] * C[-4, idx] + 16 * phi[-5] * C[-5, idx] - 3 * phi[-6] * C[-6, idx]) / self.dx / 12 \
-                + phi[-1] * self.species[elem]['w'] * C[0]
+            flux = D * (-25 * theta[-2] * C[-2, idx] + 48 * theta[-3] * C[-3, idx] - 36 *
+                        theta[-4] * C[-4, idx] + 16 * theta[-5] * C[-5, idx] - 3 * theta[-6] * C[-6, idx]) / self.dx / 12 \
+                + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 3:
-            flux = D * (-11 * phi[-2] * C[-2, idx] + 18 * phi[-3] * C[-3, idx] -
-                        9 * phi[-4] * C[-4, idx] + 2 * phi[-5] * C[-5, idx]) / self.dx / 6 \
-                + phi[-1] * self.species[elem]['w'] * C[0]
+            flux = D * (-11 * theta[-2] * C[-2, idx] + 18 * theta[-3] * C[-3, idx] -
+                        9 * theta[-4] * C[-4, idx] + 2 * theta[-5] * C[-5, idx]) / self.dx / 6 \
+                + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 2:
-            flux = D * (-3 * phi[-2] * C[-2, idx] + 4 *
-                        phi[-3] * C[-3, idx] * phi[-4] * C[-4, idx]) / self.dx / 2 \
-                + phi[-1] * self.species[elem]['w'] * C[0]
+            flux = D * (-3 * theta[-2] * C[-2, idx] + 4 *
+                        theta[-3] * C[-3, idx] * theta[-4] * C[-4, idx]) / self.dx / 2 \
+                + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (phi[-1] * C[-1, idx] * phi[-3] * C[-3, :]) / 2 / self.dx \
-                + phi[-1] * self.species[elem]['w'] * C[0]
+            flux = - D * (theta[-1] * C[-1, idx] * theta[-3] * C[-3, :]) / 2 / self.dx \
+                + theta[-1] * self.species[elem]['w'] * C[0]
 
         return flux
 
