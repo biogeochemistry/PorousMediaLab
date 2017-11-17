@@ -25,6 +25,7 @@ class Lab:
         self.henry_law_equations = []
         self.acid_base_components = []
         self.acid_base_system = phcalc.System()
+        self.ode_method = 'scipy'
 
     def __getattr__(self, attr):
         return self.species[attr]
@@ -125,7 +126,8 @@ class Lab:
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
-        self.create_dynamic_functions()
+        if self.ode_method is 'scipy':
+            self.create_dynamic_functions()
         self.init_rates_arrays()
 
     def change_concentration_profile(self, element, i, new_profile):

@@ -4,11 +4,11 @@ from scipy.sparse import spdiags
 from scipy.integrate import ode
 
 
-def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
+def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
     """ creates 2 matrices for transport equation AL and AR
 
     Args:
-        theta (TYPE): vector of porosity(phi) or 1-phi
+        phi (TYPE): vector of porosity(phi) or 1-phi
         diff_coef (float): diffusion coefficient
         adv_coef (float): advection coefficient
         bc_top_type (string): type of boundary condition
@@ -22,36 +22,36 @@ def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, 
     """
     # TODO: error source somewhere in non constant
     # porosity profile. Maybe we also need d phi/dx
-    s = theta * diff_coef * dt / dx / dx
-    q = theta * adv_coef * dt / dx
-    AL = spdiags([-s / 2 - q / 4, theta + s, -s / 2 + q / 4],
+    s = phi * diff_coef * dt / dx / dx
+    q = phi * adv_coef * dt / dx
+    AL = spdiags([-s / 2 - q / 4, phi + s, -s / 2 + q / 4],
                  [-1, 0, 1], N, N, format='csr')  # .toarray()
-    AR = spdiags([s / 2 + q / 4, theta - s, s / 2 - q / 4],
+    AR = spdiags([s / 2 + q / 4, phi - s, s / 2 - q / 4],
                  [-1, 0, 1], N, N, format='csr')  # .toarray()
 
     if bc_top_type in ['dirichlet', 'constant']:
-        AL[0, 0] = theta[0]
+        AL[0, 0] = phi[0]
         AL[0, 1] = 0
-        AR[0, 0] = theta[0]
+        AR[0, 0] = phi[0]
         AR[0, 1] = 0
     elif bc_top_type in ['neumann', 'flux']:
-        AL[0, 0] = theta[0] + s[0]  # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
+        AL[0, 0] = phi[0] + s[0]  # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
         AL[0, 1] = -s[0]
-        AR[0, 0] = theta[0] - s[0]  # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
+        AR[0, 0] = phi[0] - s[0]  # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
         AR[0, 1] = s[0]
     else:
         print('\nABORT!!!: Not correct top boundary condition type...')
         sys.exit()
 
     if bc_bot_type in ['dirichlet', 'constant']:
-        AL[-1, -1] = theta[-1]
+        AL[-1, -1] = phi[-1]
         AL[-1, -2] = 0
-        AR[-1, -1] = theta[-1]
+        AR[-1, -1] = phi[-1]
         AR[-1, -2] = 0
     elif bc_bot_type in ['neumann', 'flux']:
-        AL[-1, -1] = theta[-1] + s[-1]
+        AL[-1, -1] = phi[-1] + s[-1]
         AL[-1, -2] = -s[-1]  # / 2 - s[-1] / 2
-        AR[-1, -1] = theta[-1] - s[-1]
+        AR[-1, -1] = phi[-1] - s[-1]
         AR[-1, -2] = s[-1]  # / 2 + s[-1] / 2
     else:
         print('\nABORT!!!: Not correct bottom boundary condition type...')
@@ -59,9 +59,9 @@ def create_template_AL_AR(theta, diff_coef, adv_coef, bc_top_type, bc_bot_type, 
     return AL, AR
 
 
-def update_matrices_due_to_bc(AR, profile, theta, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, dx, N):
-    s = theta * diff_coef * dt / dx / dx
-    q = theta * adv_coef * dt / dx
+def update_matrices_due_to_bc(AR, profile, phi, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, dx, N):
+    s = phi * diff_coef * dt / dx / dx
+    q = phi * adv_coef * dt / dx
 
     if (bc_top_type in ['dirichlet', 'constant'] and
             bc_bot_type in ['dirichlet', 'constant']):
@@ -72,20 +72,20 @@ def update_matrices_due_to_bc(AR, profile, theta, diff_coef, adv_coef, bc_top_ty
             bc_bot_type in ['neumann', 'flux']):
         profile[0] = bc_top
         B = AR.dot(profile)
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
 
     elif (bc_top_type in ['neumann', 'flux'] and
             bc_bot_type in ['dirichlet', 'constant']):
         profile[-1] = bc_bot
         B = AR.dot(profile)
-        B[0] = B[0] + 2 * 2 * bc_top * (s[0] / 2 - q[0] / 4) * dx / theta[0] / diff_coef
+        B[0] = B[0] + 2 * 2 * bc_top * (s[0] / 2 - q[0] / 4) * dx / phi[0] / diff_coef
 
     elif (bc_top_type in ['neumann', 'flux'] and
           bc_bot_type in ['neumann', 'flux']):
         B = AR.dot(profile)
         B[0] = B[0] + 2 * 2 * bc_top * (
-            s[0] / 2 - q[0] / 4) * dx / theta[0] / diff_coef
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / theta[-1] / diff_coef
+            s[0] / 2 - q[0] / 4) * dx / phi[0] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
     else:
         print('\nABORT!!!: Not correct boundary condition in the species...')
         sys.exit()
