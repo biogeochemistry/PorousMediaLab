@@ -19,9 +19,9 @@ def transport_equation_boundary_effect():
     length = 30
     phi = 1
     dt = 0.001
-    lab = Column(length, dx, tend, dt, phi, w)
+    lab = Column(length, dx, tend, dt, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1,
+    lab.add_species(phi, 'O2', D, 0, bc_top=1,
                     bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
@@ -52,9 +52,9 @@ def transport_equation_plot():
     length = 100
     phi = 1
     dt = 0.001
-    lab = Column(length, dx, tend, dt, phi, w)
+    lab = Column(length, dx, tend, dt, w)
     D = 5
-    lab.add_species(True, 'O2', D, 0, bc_top=1,
+    lab.add_species(phi, 'O2', D, 0, bc_top=1,
                     bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
