@@ -1,5 +1,6 @@
-""" Metrics for calibrator routines
+"""Statistical metrics for Calibrator routines
 """
+
 import numpy as np
 from sklearn.metrics import r2_score
 
@@ -11,7 +12,6 @@ def filter_nan(s, o):
     this is used by all other functions, otherwise they will produce nan as
     output
     """
-    s, o = filter_nan(s, o)
     data = np.array([s.flatten(), o.flatten()])
     data = np.transpose(data)
     data = data[~np.isnan(data).any(1)]
@@ -27,6 +27,7 @@ def percentage_deviation(s, o):
     output:
         percent deviation
     """
+    s, o = filter_nan(s, o)
     return sum(sum(abs(s - o) / abs(o)))
 
 
