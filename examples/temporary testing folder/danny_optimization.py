@@ -5,6 +5,7 @@ sys.path.append('../../')
 
 import numpy as np
 from scipy.optimize import minimize
+from scipy.optimize import basinhopping
 
 from porousmedialab.metrics import rmse
 from porousmedialab.calibrator import find_indexes_of_intersections
@@ -176,11 +177,17 @@ k_w_out = 0.02
 k_g_in = 0.9
 k_g_out = 90
 
-res_min = minimize(
+minimizer_kwargs = {"method": "Nelder-Mead"}
+ret = basinhopping(
     fun, [w, k_w_in, k_w_out, k_g_in, k_g_out],
-    method='Nelder-Mead',
-    bounds=None,
-    options={
-        'xtol': 1e-6,
-        'disp': True
-    })
+    minimizer_kwargs=minimizer_kwargs,
+    niter=200)
+
+# res_min = minimize(
+#     fun, [w, k_w_in, k_w_out, k_g_in, k_g_out],
+#     method='Nelder-Mead',
+#     bounds=None,
+#     options={
+#         'xtol': 1e-6,
+#         'disp': True
+#     })
