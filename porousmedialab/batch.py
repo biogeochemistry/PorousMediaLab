@@ -2,10 +2,10 @@
 pH equlibrium simulations
 """
 import numpy as np
-from porousmedialab.lab import Lab
-from porousmedialab.dotdict import DotDict
-import porousmedialab.plotter as plotter
 import porousmedialab.phcalc as phcalc
+import porousmedialab.plotter as plotter
+from porousmedialab.dotdict import DotDict
+from porousmedialab.lab import Lab
 
 
 class Batch(Lab):
