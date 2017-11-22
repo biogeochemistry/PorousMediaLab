@@ -201,16 +201,16 @@ class Column(Lab):
         theta = self.species[elem]['theta']
 
         if order == 4:
-            flux = D * (-25 * theta[0] * C[0, idx] + 48 * theta[1] * C[1, idx] - 36 * theta[2] * C[
-                3, idx] + 16 * theta[3] * C[3, idx] - 3 * theta[4] * C[4, idx]) / self.dx / 12 \
+            flux = D * (-25 * theta[1] * C[1, idx] + 48 * theta[2] * C[2, idx] - 36 * theta[3] * C[
+                3, idx] + 16 * theta[4] * C[4, idx] - 3 * theta[5] * C[5, idx]) / self.dx / 12 \
                 - theta[0] * self.species[elem]['w'] * C[0]
         if order == 3:
-            flux = D * (-11 * theta[0] * C[0, idx] + 18 * theta[1] * C[1, idx] -
-                        9 * theta[2] * C[2, idx] + 2 * theta[3] * C[3, idx]) / self.dx / 6 \
+            flux = D * (-11 * theta[1] * C[1, idx] + 18 * theta[2] * C[2, idx] -
+                        9 * theta[3] * C[3, idx] + 2 * theta[4] * C[4, idx]) / self.dx / 6 \
                 - theta[0] * self.species[elem]['w'] * C[0]
         if order == 2:
-            flux = D * (-3 * theta[0] * C[0, idx] + 4 *
-                        theta[1] * C[1, idx] * theta[2] * C[2, idx]) / self.dx / 2 \
+            flux = D * (-3 * theta[1] * C[1, idx] + 4 *
+                        theta[2] * C[2, idx] * theta[3] * C[3, idx]) / self.dx / 2 \
                 - theta[0] * self.species[elem]['w'] * C[0]
         if order == 1:
             flux = - D * (theta[0] * C[0, idx] * theta[2] * C[2, idx]) / 2 / self.dx \
@@ -239,16 +239,16 @@ class Column(Lab):
         theta = self.species[elem]['theta']
 
         if order == 4:
-            flux = D * (-25 * theta[-1] * C[-1, idx] + 48 * theta[-2] * C[-2, idx] - 36 *
-                        theta[-3] * C[-3, idx] + 16 * theta[-4] * C[-4, idx] - 3 * theta[-5] * C[-5, idx]) / self.dx / 12 \
+            flux = D * (-25 * theta[-2] * C[-2, idx] + 48 * theta[-3] * C[-3, idx] - 36 *
+                        theta[-4] * C[-4, idx] + 16 * theta[-5] * C[-5, idx] - 3 * theta[-6] * C[-6, idx]) / self.dx / 12 \
                 + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 3:
-            flux = D * (-11 * theta[-1] * C[-1, idx] + 18 * theta[-2] * C[-2, idx] -
-                        9 * theta[-3] * C[-3, idx] + 2 * theta[-4] * C[-4, idx]) / self.dx / 6 \
+            flux = D * (-11 * theta[-2] * C[-2, idx] + 18 * theta[-3] * C[-3, idx] -
+                        9 * theta[-4] * C[-4, idx] + 2 * theta[-5] * C[-5, idx]) / self.dx / 6 \
                 + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 2:
-            flux = D * (-3 * theta[-1] * C[-1, idx] + 4 *
-                        theta[-2] * C[-2, idx] * theta[-3] * C[-3, idx]) / self.dx / 2 \
+            flux = D * (-3 * theta[-2] * C[-2, idx] + 4 *
+                        theta[-3] * C[-3, idx] * theta[-4] * C[-4, idx]) / self.dx / 2 \
                 + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 1:
             flux = - D * (theta[-1] * C[-1, idx] * theta[-3] * C[-3, :]) / 2 / self.dx \

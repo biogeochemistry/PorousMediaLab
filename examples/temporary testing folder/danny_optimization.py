@@ -10,6 +10,7 @@ from scipy.optimize import basinhopping
 from porousmedialab.metrics import rmse
 from porousmedialab.calibrator import find_indexes_of_intersections
 from porousmedialab.column import Column
+from porousmedialab import blackbox as bb
 from thawmeasurements import (
     C1D9, C1D21, C1D33, F1C1D21, F1C1D33, F2C1D21, F2C1D33, F3C1D21, F3C1D33,
     SA, T1C1D9, T1C1D21, T1C1D33, T2C1D9, T2C1D21, T2C1D33, T3C1D9, T3C1D21,
@@ -179,12 +180,23 @@ k_w_out = 0.02
 k_g_in = 0.9
 k_g_out = 90
 
-minimizer_kwargs = {"method": "Nelder-Mead"}
-ret = basinhopping(
-    fun,
-    [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
-    minimizer_kwargs=minimizer_kwargs,
-    niter=200)
+
+bb.search(
+    f=fun,    # given function
+    box=[[-1., 0.], [0., 10.], [0., 10.], [0., 100.],
+         [0., 100.]],    # range of values for each parameter
+    n=20,    # number of function calls on initial stage (global search)
+    m=20,    # number of function calls on subsequent stage (local search)
+    batch=8,    # number of calls that will be evaluated in parallel
+    resfile='output.csv')    # text file where results will be saved
+
+
+# minimizer_kwargs = {"method": "Nelder-Mead"}
+# ret = basinhopping(
+#     fun,
+#     [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
+#     minimizer_kwargs=minimizer_kwargs,
+#     niter=200)
 
 # res_min = minimize(
 #     fun, [w, k_w_in, k_w_out, k_g_in, k_g_out],
