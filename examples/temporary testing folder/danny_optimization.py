@@ -27,8 +27,8 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = 700
-dt = 0.01
+tend = 457
+dt = 0.02
 dx = 0.2    ## cm
 L = 40    ## cm
 x = np.linspace(0, L, L / dx + 1)
