@@ -27,7 +27,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = Tm[-1]
+tend = 700
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
@@ -163,7 +163,9 @@ def fun(k0):
         ) / (
             phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm] + phi_p[ftc1.x == zm])
 
-        err = rmse(M1D9, C1D9) + rmse(M1D21, C1D21) + rmse(M1D33, C1D33)
+        err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
+            M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
+                M1D33, C1D33[:len(M1D33) - len(C1D33)])
 
     except:
         err = 1e8
@@ -179,7 +181,8 @@ k_g_out = 90
 
 minimizer_kwargs = {"method": "Nelder-Mead"}
 ret = basinhopping(
-    fun, [w, k_w_in, k_w_out, k_g_in, k_g_out],
+    fun,
+    [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
     minimizer_kwargs=minimizer_kwargs,
     niter=200)
 
