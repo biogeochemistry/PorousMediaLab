@@ -181,22 +181,22 @@ k_g_in = 0.9
 k_g_out = 90
 
 
-bb.search(
-    f=fun,    # given function
-    box=[[-1., 0.], [0., 10.], [0., 10.], [0., 100.],
-         [0., 100.]],    # range of values for each parameter
-    n=20,    # number of function calls on initial stage (global search)
-    m=20,    # number of function calls on subsequent stage (local search)
-    batch=8,    # number of calls that will be evaluated in parallel
-    resfile='output.csv')    # text file where results will be saved
+# bb.search(
+#     f=fun,    # given function
+#     box=[[-1., 0.], [0., 10.], [0., 10.], [0., 100.],
+#          [0., 100.]],    # range of values for each parameter
+#     n=20,    # number of function calls on initial stage (global search)
+#     m=20,    # number of function calls on subsequent stage (local search)
+#     batch=8,    # number of calls that will be evaluated in parallel
+#     resfile='output.csv')    # text file where results will be saved
 
 
-# minimizer_kwargs = {"method": "Nelder-Mead"}
-# ret = basinhopping(
-#     fun,
-#     [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
-#     minimizer_kwargs=minimizer_kwargs,
-#     niter=200)
+minimizer_kwargs = {"method": "Nelder-Mead"}
+ret = basinhopping(
+    fun,
+    [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
+    minimizer_kwargs=minimizer_kwargs,
+    niter=200)
 
 # res_min = minimize(
 #     fun, [w, k_w_in, k_w_out, k_g_in, k_g_out],
