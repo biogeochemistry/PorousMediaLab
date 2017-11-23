@@ -38,7 +38,7 @@ Chs = np.zeros(t.shape)    #
 Fx = np.zeros(t.shape)
 phi = (0.99 - 0.91) * np.exp(-x / 10) + 0.91
 
-dT = T1Tm[1::2] - T1Tm[::2]
+dT = Tm[1::2] - Tm[::2]
 
 dC1h = (C1h[1::2] - C1h[::2])
 
