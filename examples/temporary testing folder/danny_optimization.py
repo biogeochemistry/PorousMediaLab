@@ -29,7 +29,7 @@ Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
 tend = 457
-dt = 0.02
+dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
 x = np.linspace(0, L, L / dx + 1)
@@ -50,8 +50,8 @@ h_inj = Vi / SA / 0.93
 #Pores from the FTR experiment#
 
 phi_w = phi * (0.875 / 0.97)
-phi_g = 1 - phi
-phi_p = phi * ((0.97 - 0.875) / 0.97)
+phi_g = phi * ((0.97 - 0.875) / 0.97)
+phi_p = 1 - phi
 
 
 def fun(k0):
@@ -61,7 +61,7 @@ def fun(k0):
         ftc1 = Column(L, dx, tend, dt)
 
         ftc1.add_species(
-            theta=(((phi_g**(10 / 3)) / (phi**2)) / (phi_w + phi_g)),
+            theta=phi_g / phi**2,
             element='SF6g',
             D=D_SF6g,
             init_C=0,
@@ -71,7 +71,7 @@ def fun(k0):
             bc_bot_type='constant',
             w=-0.00)    #-0.055
         ftc1.add_species(
-            theta=(((phi_w**(10 / 3)) / (phi**2)) / (phi_w + phi_g)),
+            theta=phi_w / phi**2,
             element='SF6w',
             D=D_SF6w,
             init_C=0,
@@ -79,7 +79,7 @@ def fun(k0):
             bc_top_type='constant',
             bc_bot=0,
             bc_bot_type='constant',
-            w=-w)
+            w=w)
 
         # SF6mp stands for SF6 gas in micro pores, it is immobile and only collects SF6;
         ftc1.add_species(
@@ -91,6 +91,8 @@ def fun(k0):
             bc_top_type='flux',
             bc_bot=0,
             bc_bot_type='flux')
+
+
 
         #((phi_g**(10/3))/(phi**2))*
         #((phi_w**(10/3))/(phi**2))*
@@ -158,9 +160,10 @@ def fun(k0):
 
         zm = 33
         M1D33 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm] +
-            ftc1.SF6mp.concentration[ftc1.x == zm, time_idxs] * phi_p[ftc1.x == zm]
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
+            phi_w[ftc1.x == zm] + ftc1.SF6g.
+            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm] + ftc1.
+            SF6mp.concentration[ftc1.x == zm, time_idxs] * phi_p[ftc1.x == zm]
         ) / (
             phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm] + phi_p[ftc1.x == zm])
 
@@ -180,16 +183,14 @@ k_w_out = 0.02
 k_g_in = 0.9
 k_g_out = 90
 
-
 # bb.search(
 #     f=fun,    # given function
 #     box=[[-1., 0.], [0., 10.], [0., 10.], [0., 100.],
 #          [0., 100.]],    # range of values for each parameter
 #     n=20,    # number of function calls on initial stage (global search)
 #     m=20,    # number of function calls on subsequent stage (local search)
-#     batch=8,    # number of calls that will be evaluated in parallel
+#     batch=7,    # number of calls that will be evaluated in parallel
 #     resfile='output.csv')    # text file where results will be saved
-
 
 minimizer_kwargs = {"method": "Nelder-Mead"}
 ret = basinhopping(
