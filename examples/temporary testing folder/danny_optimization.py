@@ -61,7 +61,7 @@ def fun(k0):
         ftc1 = Column(L, dx, tend, dt)
 
         ftc1.add_species(
-            theta=phi_g,
+            theta=phi_g/phi**2,
             element='SF6g',
             D=D_SF6g,
             init_C=0,
@@ -71,7 +71,7 @@ def fun(k0):
             bc_bot_type='constant',
             w=-0.00)    #-0.055
         ftc1.add_species(
-            theta=phi_w,
+            theta=phi_w/phi**2,
             element='SF6w',
             D=D_SF6w,
             init_C=0,
