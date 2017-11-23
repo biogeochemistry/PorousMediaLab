@@ -28,7 +28,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = 457
+tend = 796
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
@@ -200,8 +200,10 @@ k_g_out = 90
 
 minimizer_kwargs = {"method": "Nelder-Mead"}
 ret = basinhopping(
-    fun,
-    [-0.0196850617169, 0.0585636682011, 0.0242497929538, 1.09455525468, 54.991],
+    fun, [
+        -0.00948625691731, 0.119755015154, 0.0149131464507, 0.476168401299,
+        115.165761587
+    ],
     minimizer_kwargs=minimizer_kwargs,
     niter=200)
 
