@@ -40,7 +40,7 @@ phi = (0.99 - 0.91) * np.exp(-x / 10) + 0.91
 
 dT = T1Tm[1::2] - T1Tm[::2]
 
-dC1h = (T1C1h[1::2] - T1C1h[::2])
+dC1h = (C1h[1::2] - C1h[::2])
 
 Mi = T1Ci * Vi    # mass injected
 
@@ -61,7 +61,7 @@ def fun(k0):
         ftc1 = Column(L, dx, tend, dt)
 
         ftc1.add_species(
-            theta=phi_g/phi**2,
+            theta=phi_g / phi**2,
             element='SF6g',
             D=D_SF6g,
             init_C=0,
@@ -71,7 +71,7 @@ def fun(k0):
             bc_bot_type='constant',
             w=-0.00)    #-0.055
         ftc1.add_species(
-            theta=phi_w/phi**2,
+            theta=phi_w / phi**2,
             element='SF6w',
             D=D_SF6w,
             init_C=0,
@@ -115,15 +115,14 @@ def fun(k0):
         ftc1.rates['R_g_out'] = 'k_g_out * SF6g'
 
         # # dcdt
-        ftc1.dcdt[
-            'SF6w'] = '-R_g_in + R_g_out * phi_g - R_w_in + R_w_out * phi_p'
+        ftc1.dcdt['SF6w'] = '-R_g_in + R_g_out * phi_g - R_w_in + R_w_out * phi_p'
         ftc1.dcdt['SF6g'] = 'R_g_in / phi_g - R_g_out'
         ftc1.dcdt['SF6mp'] = 'R_w_in / phi_p - R_w_out'
 
         for i in range(0, len(ftc1.time)):
-            if (ftc1.time[i] > F1T_frz - 16 and ftc1.time[i] < T1T_thw - 16
-               ) or (ftc1.time[i] > F2T_frz - 16 and ftc1.time[i] < T2T_thw - 16
-                    ) or (ftc1.time[i] > F3T_frz - 16):
+            if (ftc1.time[i] > F1T_frz - 16 and ftc1.time[i] < T1T_thw - 16) or (
+                    ftc1.time[i] > F2T_frz - 16 and
+                    ftc1.time[i] < T2T_thw - 16) or (ftc1.time[i] > F3T_frz - 16):
                 ftc1.change_boundary_conditions(
                     'SF6g', i, bc_top=0, bc_top_type='flux')
                 ftc1.change_boundary_conditions(
@@ -147,35 +146,36 @@ def fun(k0):
 
         zm = 9
         M1D9 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
-            phi_w[ftc1.x == zm] + ftc1.SF6g.
-            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
+            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]
+        ) / (
+            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         zm = 21
         M1D21 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
-            phi_w[ftc1.x == zm] + ftc1.SF6g.
-            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
+            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]
+        ) / (
+            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         zm = 33
         M1D33 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
-            phi_w[ftc1.x == zm] + ftc1.SF6g.
-            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
+            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]
+        ) / (
+            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         fx_time_idxs = find_indexes_of_intersections(ftc1.time, Tm[::2] + 1)
         F1 = ftc1.estimate_flux_at_top('SF6g')[fx_time_idxs]
         F2 = ftc1.estimate_flux_at_top('SF6w')[fx_time_idxs]
         F3 = ftc1.estimate_flux_at_top('SF6mp')[fx_time_idxs]
-        fx_meas = dC1h*Vh1/SA/dT
+        fx_mod = F1 + F2 + F3
+        fx_meas = dC1h * Vh1 / SA / dT
 
         err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
             M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
-                M1D33, C1D33[:len(M1D33) - len(C1D33)]) + 5 * rmse(F1+F2+F3,
-                fx_meas[:len(F1) - len(fx_meas)])
+                M1D33, C1D33[:len(M1D33) - len(C1D33)]) + 10 * rmse(
+                    fx_mod, fx_meas[:len(F1) - len(fx_meas)])
 
     except:
         err = 1e8
