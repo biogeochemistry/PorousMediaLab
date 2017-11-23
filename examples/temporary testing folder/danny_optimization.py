@@ -166,9 +166,16 @@ def fun(k0):
             concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
                 phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
+        fx_time_idxs = find_indexes_of_intersections(ftc1.time, Tm[::2] + 1)
+        F1 = ftc1.estimate_flux_at_top('SF6g')[fx_time_idxs]
+        F2 = ftc1.estimate_flux_at_top('SF6w')[fx_time_idxs]
+        F3 = ftc1.estimate_flux_at_top('SF6mp')[fx_time_idxs]
+        fx_meas = dC1h*Vh1/SA/dT
+
         err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
             M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
-                M1D33, C1D33[:len(M1D33) - len(C1D33)])
+                M1D33, C1D33[:len(M1D33) - len(C1D33)]) + 5 * rmse(F1+F2+F3,
+                fx_meas[:len(F1) - len(fx_meas)])
 
     except:
         err = 1e8
