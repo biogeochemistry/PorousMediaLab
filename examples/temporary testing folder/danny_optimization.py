@@ -92,8 +92,6 @@ def fun(k0):
             bc_bot=0,
             bc_bot_type='flux')
 
-
-
         #((phi_g**(10/3))/(phi**2))*
         #((phi_w**(10/3))/(phi**2))*
 
@@ -117,19 +115,24 @@ def fun(k0):
         ftc1.rates['R_g_out'] = 'k_g_out * SF6g'
 
         # # dcdt
-        ftc1.dcdt['SF6w'] = '-R_g_in + R_g_out * phi_g - R_w_in + R_w_out * phi_p'
+        ftc1.dcdt[
+            'SF6w'] = '-R_g_in + R_g_out * phi_g - R_w_in + R_w_out * phi_p'
         ftc1.dcdt['SF6g'] = 'R_g_in / phi_g - R_g_out'
         ftc1.dcdt['SF6mp'] = 'R_w_in / phi_p - R_w_out'
 
         for i in range(0, len(ftc1.time)):
-            if (ftc1.time[i] > F1T_frz - 16 and ftc1.time[i] < T1T_thw - 16) or (
-                    ftc1.time[i] > F2T_frz - 16 and
-                    ftc1.time[i] < T2T_thw - 16) or (ftc1.time[i] > F3T_frz - 16):
-                ftc1.change_boundary_conditions('SF6g', i, bc_top=0, bc_top_type='flux')
-                ftc1.change_boundary_conditions('SF6w', i, bc_top=0, bc_top_type='flux')
+            if (ftc1.time[i] > F1T_frz - 16 and ftc1.time[i] < T1T_thw - 16
+               ) or (ftc1.time[i] > F2T_frz - 16 and ftc1.time[i] < T2T_thw - 16
+                    ) or (ftc1.time[i] > F3T_frz - 16):
+                ftc1.change_boundary_conditions(
+                    'SF6g', i, bc_top=0, bc_top_type='flux')
+                ftc1.change_boundary_conditions(
+                    'SF6w', i, bc_top=0, bc_top_type='flux')
             else:
-                ftc1.change_boundary_conditions('SF6g', i, bc_top=0, bc_top_type='constant')
-                ftc1.change_boundary_conditions('SF6w', i, bc_top=0, bc_top_type='constant')
+                ftc1.change_boundary_conditions(
+                    'SF6g', i, bc_top=0, bc_top_type='constant')
+                ftc1.change_boundary_conditions(
+                    'SF6w', i, bc_top=0, bc_top_type='constant')
             if any([ftc1.time[i] == T_inj for T_inj in Ti]):
                 SF6_add = np.zeros(x.size)
                 SF6_add[x > 0] = 0
@@ -144,28 +147,24 @@ def fun(k0):
 
         zm = 9
         M1D9 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm] +
-            ftc1.SF6mp.concentration[ftc1.x == zm, time_idxs] * phi_p[ftc1.x == zm]
-        ) / (
-            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm] + phi_p[ftc1.x == zm])
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
+            phi_w[ftc1.x == zm] + ftc1.SF6g.
+            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
+                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         zm = 21
         M1D21 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm] +
-            ftc1.SF6mp.concentration[ftc1.x == zm, time_idxs] * phi_p[ftc1.x == zm]
-        ) / (
-            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm] + phi_p[ftc1.x == zm])
+            ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
+            phi_w[ftc1.x == zm] + ftc1.SF6g.
+            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
+                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         zm = 33
         M1D33 = (
             ftc1.SF6w.concentration[ftc1.x == zm, time_idxs] *
             phi_w[ftc1.x == zm] + ftc1.SF6g.
-            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm] + ftc1.
-            SF6mp.concentration[ftc1.x == zm, time_idxs] * phi_p[ftc1.x == zm]
-        ) / (
-            phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm] + phi_p[ftc1.x == zm])
+            concentration[ftc1.x == zm, time_idxs] * phi_g[ftc1.x == zm]) / (
+                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
         err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
             M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
