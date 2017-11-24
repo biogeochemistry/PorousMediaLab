@@ -18,7 +18,7 @@ from thawmeasurements import (
     F1Tm, F2C1h, F2Ci, F2T_frz, F2Ti, F2Tm, F3C1h, F3Ci, F3T_frz, F3Ti, F3Tm,
     Kh, SF6_Hcc, T1C1h, T1Ci, T1T_thw, T1Ti, T1Tm, T2C1h, T2Ci, T2T_thw, T2Ti,
     T2Tm, T3C1h, T3Ci, T3Ti, T3Tm, T_frz, T_thw, Ti, Tm, Vh1, Vi, phi_m, z_phi,
-    zm)
+    zm, Tm_nz, C1h_nz)
 
 Tm = np.concatenate([
     0 + T1Tm, F1T_frz + F1Tm, T1T_thw + T2Tm, F2T_frz + F2Tm, T2T_thw + T3Tm,
@@ -28,7 +28,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = 796
+tend = 498
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
@@ -38,9 +38,10 @@ Chs = np.zeros(t.shape)    #
 Fx = np.zeros(t.shape)
 phi = (0.99 - 0.91) * np.exp(-x / 10) + 0.91
 
-dT = Tm[1::2] - Tm[::2]
-
-dC1h = (C1h[1::2] - C1h[::2])
+# dT = Tm[1::2] - Tm[::2]
+# dC1h = (C1h[1::2] - C1h[::2])
+dT = Tm_nz[1::2] - Tm_nz[::2]
+dC1h = (C1h_nz[1::2] - C1h_nz[::2])
 
 Mi = T1Ci * Vi    # mass injected
 
@@ -165,12 +166,12 @@ def fun(k0):
         ) / (
             phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
-        fx_time_idxs = find_indexes_of_intersections(ftc1.time, Tm[::2] + 1)
+        fx_time_idxs = find_indexes_of_intersections(ftc1.time, Tm_nz)
         F1 = ftc1.estimate_flux_at_top('SF6g')[fx_time_idxs]
         F2 = ftc1.estimate_flux_at_top('SF6w')[fx_time_idxs]
         F3 = ftc1.estimate_flux_at_top('SF6mp')[fx_time_idxs]
         fx_mod = F1 + F2 + F3
-        fx_meas = dC1h * Vh1 / SA / dT
+        fx_meas = dC1h * Vh1 / SA / 2
 
         err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
             M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
