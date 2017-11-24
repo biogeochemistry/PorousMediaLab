@@ -28,7 +28,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = 498
+tend = 796
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
@@ -175,8 +175,8 @@ def fun(k0):
 
         err = rmse(M1D9, C1D9[:len(M1D9) - len(C1D9)]) + rmse(
             M1D21, C1D21[:len(M1D21) - len(C1D21)]) + rmse(
-                M1D33, C1D33[:len(M1D33) - len(C1D33)]) + 10 * rmse(
-                    fx_mod, fx_meas[:len(F1) - len(fx_meas)])
+                M1D33, C1D33[:len(M1D33) - len(C1D33)]) + 100 * rmse(
+                    fx_mod, fx_meas[:len(fx_mod)])
 
     except:
         err = 1e8
