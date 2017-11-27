@@ -28,7 +28,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = F1T_frz - 16
+tend = F1T_frz[0] - 16
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
