@@ -306,12 +306,12 @@ def fun(k0):
             bc_bot_type='flux')
 
         # # Constants
-        ftc3.constants['k_w_in'] = k_w_in    #from FTR w
-        ftc3.constants['k_w_out'] = k_w_out
+        ftc3.constants['k_w_in'] = k_w_in_3    #from FTR w
+        ftc3.constants['k_w_out'] = k_w_out_3
         #0.4
 
-        ftc3.constants['k_g_in'] = k_g_in
-        ftc3.constants['k_g_out'] = k_g_out
+        ftc3.constants['k_g_in'] = k_g_in_3
+        ftc3.constants['k_g_out'] = k_g_out_3
 
         ftc3.constants['phi_w'] = phi_w
         ftc3.constants['phi_g'] = phi_g
