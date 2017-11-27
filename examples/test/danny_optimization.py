@@ -58,7 +58,7 @@ phi_p = phi * ((0.97 - 0.875) / 0.97)
 def fun(k0):
     w, k_w_in, k_w_out, k_g_in, k_g_out = k0
     print(*k0)
-    try:
+    # try:
         ftc1 = Column(L, dx, tend, dt)
 
         ftc1.add_species(
