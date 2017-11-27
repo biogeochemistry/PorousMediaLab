@@ -28,7 +28,7 @@ Ti = np.array(np.array([16, 177, 350, 514, 681, 851]))
 Tm = Tm - Ti[0]
 Ti = Ti - Ti[0]
 
-tend = 796
+tend = F1T_frz - 16
 dt = 0.01
 dx = 0.2    ## cm
 L = 40    ## cm
@@ -51,8 +51,8 @@ h_inj = Vi / SA / 0.93
 #Pores from the FTR experiment#
 
 phi_w = phi * (0.875 / 0.97)
-phi_g = phi * ((0.97 - 0.875) / 0.97)
-phi_p = 1 - phi
+phi_g = 1 - phi
+phi_p = phi * ((0.97 - 0.875) / 0.97)
 
 
 def fun(k0):
@@ -62,7 +62,7 @@ def fun(k0):
         ftc1 = Column(L, dx, tend, dt)
 
         ftc1.add_species(
-            theta=phi_g / phi**2,
+            theta=((phi_g**(10 / 3)) / (phi**2)),
             element='SF6g',
             D=D_SF6g,
             init_C=0,
@@ -72,7 +72,7 @@ def fun(k0):
             bc_bot_type='constant',
             w=-0.00)    #-0.055
         ftc1.add_species(
-            theta=phi_w / phi**2,
+            theta=((phi_w**(10 / 3)) / (phi**2)),
             element='SF6w',
             D=D_SF6w,
             init_C=0,
