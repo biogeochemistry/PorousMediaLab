@@ -35,11 +35,11 @@ dT = Tm_nz[1::2] - Tm_nz[::2]
 dC1h = (C1h[1::2] - C1h[::2])
 dC2h = (C2h[1::2] - C2h[::2])
 dC3h = (C3h[1::2] - C3h[::2])
-Fx_mean = (dC3h * Vh3 / SA / 2 + dC2h * Vh2 / SA / 2 + dC1h * Vh1 / SA / 2) / 3
+Fx_mean = (dC3h * Vh3 / SA / 2  + dC1h * Vh1 / SA / 2) / 2
 
-CD33_mean = (C1D33 + C2D33 + C3D33) / 3
-CD21_mean = (C1D21 + C2D21 + C3D21) / 3
-CD9_mean = (C1D9 + C2D9 + C3D9) / 3
+CD33_mean = (C1D33  + C3D33) / 2
+CD21_mean = (C1D21  + C3D21) / 2
+CD9_mean = (C1D9 + C3D9) / 2
 
 Mi = T1Ci * Vi    # mass injected
 h_inj = Vi / SA / 0.93
