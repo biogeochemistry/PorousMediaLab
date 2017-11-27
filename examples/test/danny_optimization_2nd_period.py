@@ -129,8 +129,8 @@ def fun(k0):
 
         for i in range(0, len(ftc1.time)):
             if (ftc1.time[i] > periods[0] and ftc1.time[i] < periods[1]) or (
-                    ftc1.time[i] > periods[2] and ftc1.time[i] < periods[3]
-            ) or (ftc1.time[i] > periods[4] and ftc1.time[i] < periods[5]):
+                    ftc1.time[i] > periods[2] and ftc1.time[i] < periods[3]) or (
+                        ftc1.time[i] > periods[4] and ftc1.time[i] < periods[5]):
                 ftc1.change_boundary_conditions(
                     'SF6g', i, bc_top=0, bc_top_type='flux')
                 ftc1.change_boundary_conditions(
@@ -373,56 +373,47 @@ def fun(k0):
         # idxs_f_3 = find_indexes_of_intersections(ftc3.time + ftc2.time[-1] + ftc1.time[-1, Tm[::2]+1)
 
         zm = 9
-        M1D9 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+        M1D9 = (ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
+                ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
+                    phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
-        M2D9 = (
-            ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
-            ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
-                phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
+        M2D9 = (ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
+                ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
+                    phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
 
-        M3D9 = (
-            ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
-            ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
-                phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
+        M3D9 = (ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
+                ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
+                    phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
 
         MD9 = np.concatenate((M1D9[0], M2D9[0], M3D9[0]))
 
         zm = 21
-        M1D21 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+        M1D21 = (ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
+                ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
+                    phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
-        M2D21 = (
-            ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
-            ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
-                phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
+        M2D21 = (ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
+                ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
+                    phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
 
-        M3D21 = (
-            ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
-            ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
-                phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
+        M3D21 = (ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
+                ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
+                    phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
 
         MD21 = np.concatenate((M1D21[0], M2D21[0], M3D21[0]))
 
         zm = 33
-        M1D33 = (
-            ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
-            ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
-                phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
+        M1D33 = (ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
+                ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
+                    phi_w[ftc1.x == zm] + phi_g[ftc1.x == zm])
 
-        M2D33 = (
-            ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
-            ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
-                phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
+        M2D33 = (ftc2.SF6w.concentration[ftc2.x == zm, :] * phi_w[ftc2.x == zm] +
+                ftc2.SF6g.concentration[ftc2.x == zm, :] * phi_g[ftc2.x == zm]) / (
+                    phi_w[ftc2.x == zm] + phi_g[ftc2.x == zm])
 
-        M3D33 = (
-            ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
-            ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
-                phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
+        M3D33 = (ftc3.SF6w.concentration[ftc3.x == zm, :] * phi_w[ftc3.x == zm] +
+                ftc3.SF6g.concentration[ftc3.x == zm, :] * phi_g[ftc3.x == zm]) / (
+                    phi_w[ftc3.x == zm] + phi_g[ftc3.x == zm])
 
         MD33 = np.concatenate((M1D33[0], M2D33[0], M3D33[0]))
 
@@ -436,9 +427,10 @@ def fun(k0):
         MF = np.concatenate((MF1, MF2, MF3))
 
         MT = np.concatenate((ftc1.time, ftc2.time + ftc1.time[-1],
-                                ftc3.time + ftc2.time[-1] + ftc1.time[-1]))
+                            ftc3.time + ftc2.time[-1] + ftc1.time[-1]))
 
         idxs = find_indexes_of_intersections(MT, Tm)
+        idxs_f = find_indexes_of_intersections(MT, Tm[::2]+1)
 
         err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
             MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
