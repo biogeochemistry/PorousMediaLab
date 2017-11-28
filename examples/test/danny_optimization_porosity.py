@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.optimize import basinhopping
 
-from porousmedialab.metrics import rmse
+from porousmedialab.metrics import norm_rmse
 from porousmedialab.calibrator import find_indexes_of_intersections
 from porousmedialab.column import Column
 from porousmedialab import blackbox as bb
@@ -434,9 +434,9 @@ def fun(k0):
                 MD21).any() or np.isnan(MD33).any():
             err = 1e8
         else:
-            err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
-                MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
-                    MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 500 * rmse(
+            err = norm_rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + norm_rmse(
+                MD21[idxs], CD21_mean[:len(MD21[idxs])]) + norm_rmse(
+                    MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 10 * norm_rmse(
                         MF[idxs_f], Fx_mean[:len(MF[idxs_f])])
 
     except:
