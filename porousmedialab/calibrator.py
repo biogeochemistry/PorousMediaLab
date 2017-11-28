@@ -135,14 +135,23 @@ class Calibrator:
         return x0, bnds
 
     def print_final_results(self):
+        """function plots final results
+        """
         print(self.res.message)
         self.estimate_error()
         print('Calibrated parameters:')
         for p in self.parameters:
             print('\t{} = {: .4e}'.format(p, self.lab.constants[p]))
 
+    def plot_final_results(self):
+        """function plot graphs of measured vs modeled
+        
+        """
+        raise NotImplementedError
+
     def run(self, verbose=False):
         """ executes calibration of the model
+        and prints final result
         """
         self.verbose = verbose
         x0, bnds = self.iter_params()
