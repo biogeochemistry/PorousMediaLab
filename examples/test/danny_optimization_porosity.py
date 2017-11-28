@@ -370,15 +370,6 @@ def fun(k0):
 
             ftc3.integrate_one_timestep(i)
 
-        # idxs_c_1 = find_indexes_of_intersections(ftc1.time, Tm)
-        # idxs_c_2 = find_indexes_of_intersections(ftc2.time + ftc1.time[-1], Tm)
-        # idxs_c_3 = find_indexes_of_intersections(
-        #     ftc3.time + ftc2.time[-1] + ftc1.time[-1], Tm)
-
-        # idxs_f_1 = find_indexes_of_intersections(ftc1.time, Tm[::2]+1)
-        # idxs_f_2 = find_indexes_of_intersections(ftc2.time + ftc1.time[-1], Tm[::2]+1)
-        # idxs_f_3 = find_indexes_of_intersections(ftc3.time + ftc2.time[-1] + ftc1.time[-1, Tm[::2]+1)
-
         zm = 9
         M1D9 = (ftc1.SF6w.concentration[ftc1.x == zm, :] * phi_w[ftc1.x == zm] +
                 ftc1.SF6g.concentration[ftc1.x == zm, :] * phi_g[ftc1.x == zm]) / (
@@ -440,14 +431,13 @@ def fun(k0):
         idxs_f = find_indexes_of_intersections(MT, Tm[::2] + 1, dt)
 
         if np.isnan(MF).any() or np.isnan(MD9).any() or np.isnan(
-                MD21).any() or np.isnan(M33).any():
+                MD21).any() or np.isnan(MD33).any():
             err = 1e8
         else:
             err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
                 MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
                     MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 500 * rmse(
                         MF[idxs_f], Fx_mean[:len(MF[idxs_f])])
-
 
     except:
         err = 1e8
