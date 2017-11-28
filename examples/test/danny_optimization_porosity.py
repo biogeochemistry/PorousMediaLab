@@ -436,13 +436,18 @@ def fun(k0):
         MT = np.concatenate((ftc1.time, ftc2.time + ftc1.time[-1],
                             ftc3.time + ftc2.time[-1] + ftc1.time[-1]))
 
-        idxs = find_indexes_of_intersections(MT, Tm)
-        idxs_f = find_indexes_of_intersections(MT, Tm[::2]+1)
+        idxs = find_indexes_of_intersections(MT, Tm, dt)
+        idxs_f = find_indexes_of_intersections(MT, Tm[::2] + 1, dt)
 
-        err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
-            MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
-                MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 500 * rmse(
-                    MF[idxs_f], Fx_mean[:len(MF[idxs_f])])
+        if np.isnan(MF).any() or np.isnan(MD9).any() or np.isnan(
+                MD21).any() or np.isnan(M33).any():
+            err = 1e8
+        else:
+            err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
+                MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
+                    MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 500 * rmse(
+                        MF[idxs_f], Fx_mean[:len(MF[idxs_f])])
+
 
     except:
         err = 1e8
