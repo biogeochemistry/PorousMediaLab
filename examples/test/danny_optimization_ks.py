@@ -7,8 +7,8 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.optimize import basinhopping
 
-from porousmedialab.metrics import rmse
-from porousmedialab.calibrator import find_indexes_of_intersection, dts
+from porousmedialab.metrics import norm_rmse
+from porousmedialab.calibrator import find_indexes_of_intersections
 from porousmedialab.column import Column
 from porousmedialab import blackbox as bb
 from thawmeasurements import Vh2, Vh3, C2h, C3h, C3D33, C2D33, C3D21, C2D21, C3D9, C2D9, Tm_nz, C1h_nz, F3Tm, F3T_frz, T3Tm, T2T_thw, F2Tm, F2T_frz, T1T_thw, T2Tm, F1T_frz, T1Tm, C1h, T1C1h, F1C1h, T2C1h, F2C1h, T3C1h, F3C1h, C1D9, T1C1D9, T2C1D9, T3C1D9, C1D21, T1C1D21, F1C1D21, T2C1D21, F2C1D21, T3C1D21, F3C1D21, C1D33, T1C1D33, F1C1D33, T2C1D33, F2C1D33, T3C1D33, F3C1D33, Tm, T1Tm, F1Tm, T2Tm, F2Tm, T3Tm, F3Tm, zm, D_SF6w, D_SF6g, Kh, phi_m, z_phi, Vh1, SA, D_column, Vi, Ci, T1Ci, F1Ci, T2Ci, F2Ci, T3Ci, F3Ci, Ti, T1Ti, F1Ti, T2Ti, F2Ti, T3Ti, F3Ti, SF6_Hcc, T_frz, T_thw
@@ -432,9 +432,9 @@ def fun(k0):
         idxs = find_indexes_of_intersections(MT, Tm, dt)
         idxs_f = find_indexes_of_intersections(MT, Tm[::2]+1, dt)
 
-        err = rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + rmse(
-            MD21[idxs], CD21_mean[:len(MD21[idxs])]) + rmse(
-                MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 100 * rmse(
+        err = norm_rmse(MD9[idxs], CD9_mean[:len(MD9[idxs])]) + norm_rmse(
+            MD21[idxs], CD21_mean[:len(MD21[idxs])]) + norm_rmse(
+                MD33[idxs], CD33_mean[:len(MD33[idxs])]) + 10 * norm_rmse(
                     MF[idxs_f], Fx_mean[:len(MF[idxs_f])])
 
     except:
