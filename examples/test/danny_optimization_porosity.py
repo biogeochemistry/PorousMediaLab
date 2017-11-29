@@ -54,12 +54,13 @@ def fun(k0):
         dx = 0.2    ## cm
         L = 40    ## cm
         x = np.linspace(0, L, L / dx + 1)
-        phi = (phi_1 - 0.91) * np.exp(-x / 10) + 0.91
+
         t = np.linspace(0, tend, round(tend / dt) + 1)
         #phi = 0.8
         Chs = np.zeros(t.shape)    #
         Fx = np.zeros(t.shape)
-        phi = (0.99 - 0.91) * np.exp(-x / 10) + 0.91
+
+        phi = (phi_1 - 0.91) * np.exp(-x / 10) + 0.91
         phi_w = phi * (0.875 / 0.97)
         phi_g = phi * ((0.97 - 0.875) / 0.97)
         phi_p = 1 - phi
