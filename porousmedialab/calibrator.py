@@ -140,8 +140,8 @@ class Calibrator:
         print(self.res.message)
         self.estimate_error()
         print('Calibrated parameters:')
-        for p in self.parameters:
-            print('\t{} = {: .4e}'.format(p, self.lab.constants[p]))
+        for param in self.parameters:
+            print('\t{} = {: .4e}'.format(param, self.lab.constants[param]))
 
     def plot_final_results(self):
         """function plot graphs of measured vs modeled
