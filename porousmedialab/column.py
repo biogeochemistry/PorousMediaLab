@@ -64,20 +64,26 @@ class Column(Lab):
     def change_boundary_conditions(self,
                                    element,
                                    i,
-                                   bc_top=False,
-                                   bc_top_type=False,
-                                   bc_bot=False,
-                                   bc_bot_type=False):
-        if bc_top_type is not False:
+                                   bc_top,
+                                   bc_top_type,
+                                   bc_bot,
+                                   bc_bot_type):
+        """Methods checks if boundary conditions are changed and if yes
+        generates new matrices for solving PDE
+        """
+
+        if (self.species[element].bc_top_type != bc_top_type.lower()
+                or self.species[element].bc_top != bc_top
+                or self.species[element].bc_bot_type != bc_bot_type.lower()
+                or self.species[element].bc_bot != bc_bot):
+            print("Boundary conditions changed for {} at time {}".format(
+                element, self.time[i]))
             self.species[element].bc_top_type = bc_top_type.lower()
-        if bc_top is not False:
             self.species[element].bc_top = bc_top
-        if bc_bot_type is not False:
             self.species[element].bc_bot_type = bc_bot_type.lower()
-        if bc_bot is not False:
             self.species[element].bc_bot = bc_bot
-        self.template_AL_AR(element)
-        self.update_matrices_due_to_bc(element, i)
+            self.template_AL_AR(element)
+            self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
         self.species[element]['AL'], self.species[
