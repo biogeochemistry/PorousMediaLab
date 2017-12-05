@@ -11,10 +11,10 @@ import porousmedialab.equilibriumsolver as equilibriumsolver
 class Lab:
     """The batch experiments simulations"""
 
-    def __init__(self, tend, dt):
+    def __init__(self, tend, dt, tstart=0):
         self.tend = tend
         self.dt = dt
-        self.time = np.linspace(0, tend, round(tend / dt) + 1)
+        self.time = np.linspace(tstart, tend, round(tend / dt) + 1)
         self.species = DotDict({})
         self.dynamic_functions = DotDict({})
         self.profiles = DotDict({})
