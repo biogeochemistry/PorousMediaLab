@@ -11,10 +11,22 @@ import porousmedialab.equilibriumsolver as equilibriumsolver
 class Lab:
     """The batch experiments simulations"""
 
-    def __init__(self, tend, dt):
+    def __init__(self, tend, dt, tstart=0):
+        """ init function
+        
+        initialize the lab class 
+        
+        Arguments:
+            tend {float} -- end time of computation
+            dt {float} -- timestep
+        
+        Keyword Arguments:
+            tstart {float} -- strart time of computation (default: {0})
+        """
+
         self.tend = tend
         self.dt = dt
-        self.time = np.linspace(0, tend, round(tend / dt) + 1)
+        self.time = np.linspace(tstart, tend, round(tend / dt) + 1)
         self.species = DotDict({})
         self.dynamic_functions = DotDict({})
         self.profiles = DotDict({})
@@ -28,14 +40,35 @@ class Lab:
         self.ode_method = 'scipy'
 
     def __getattr__(self, attr):
+        """dot notation for species 
+        
+        you can use lab.element and get
+        species dictionary
+        
+        Arguments:
+            attr {str} -- name of the species
+        
+        Returns:
+            DotDict -- returns DotDict of species
+        """
+
         return self.species[attr]
 
-    def solve(self):
+    def solve(self, verbose=True):
+        """ solves coupled PDEs
+        
+        Keyword Arguments:
+            verbose {bool} -- if true verbose output (default: {True})
+            with estimation of computational time etc.
+        """
+
+        self.reset()
         with np.errstate(invalid='raise'):
             for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
                 # try:
                 self.integrate_one_timestep(i)
-                self.estimate_time_of_computation(i)
+                if verbose:
+                    self.estimate_time_of_computation(i)
                 # except FloatingPointError as inst:
                 #     print(
                 #         '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
@@ -45,22 +78,28 @@ class Lab:
     def estimate_time_of_computation(self, i):
         if i == 1:
             self.tstart = time.time()
-            print("Simulation started:\n\t", time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime()))
+            print("Simulation started:\n\t",
+                  time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
-            total_t = len(self.time) * (time.time() -
-                                        self.tstart) / 100 * self.dt / self.dt
+            total_t = len(self.time) * (
+                time.time() - self.tstart) / 100 * self.dt / self.dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print(
-                "\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds" % (h, m, s))
-            print("Will finish approx.:\n\t", time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime(time.time() + total_t)))
+                "\n\nEstimated time of the code execution:\n\t %dh:%02dm:%02ds"
+                % (h, m, s))
+            print("Will finish approx.:\n\t",
+                  time.strftime("%Y-%m-%d %H:%M:%S",
+                                time.localtime(time.time() + total_t)))
 
     def henry_equilibrium_integrate(self, i):
         for eq in self.henry_law_equations:
-            self.species[eq['gas']]['concentration'][:, i], self.species[eq['aq']]['concentration'][:, i] = equilibriumsolver.solve_henry_law(
-                self.species[eq['aq']]['concentration'][:, i] + self.species[eq['gas']]['concentration'][:, i], eq['Hcc'])
+            self.species[eq['gas']]['concentration'][:, i], self.species[eq[
+                'aq']][
+                    'concentration'][:, i] = equilibriumsolver.solve_henry_law(
+                        self.species[eq['aq']]['concentration'][:, i] +
+                        self.species[eq['gas']]['concentration'][:, i],
+                        eq['Hcc'])
             for elem in [eq['gas'], eq['aq']]:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
                 if self.species[elem]['int_transport']:
@@ -73,7 +112,8 @@ class Lab:
             for c in self.acid_base_components:
                 init_conc = 0
                 for element in c['species']:
-                    init_conc += self.species[element]['concentration'][idx_j, i]
+                    init_conc += self.species[element]['concentration'][idx_j,
+                                                                        i]
                 c['pH_object'].conc = init_conc
             if idx_j == 0:
                 self.acid_base_system.pHsolve(guess=7, tol=1e-4)
@@ -97,13 +137,17 @@ class Lab:
 
     def add_ion(self, element, charge):
         ion = phcalc.Neutral(charge=charge, conc=np.nan)
-        self.acid_base_components.append(
-            {'species': [element], 'pH_object': ion})
+        self.acid_base_components.append({
+            'species': [element],
+            'pH_object': ion
+        })
 
     def add_acid(self, species, pKa, charge=0):
         acid = phcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
-        self.acid_base_components.append(
-            {'species': species, 'pH_object': acid})
+        self.acid_base_components.append({
+            'species': species,
+            'pH_object': acid
+        })
 
     def acid_base_equilibrium_solve(self, i):
         self.acid_base_solve_ph(i)
@@ -114,13 +158,21 @@ class Lab:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
-        fun_str = desolver.create_ode_function(
-            self.species, self.constants, self.rates, self.dcdt)
+        fun_str = desolver.create_ode_function(self.species, self.constants,
+                                               self.rates, self.dcdt)
         exec(fun_str)
         self.dynamic_functions['dydt_str'] = fun_str
         self.dynamic_functions['dydt'] = locals()['f']
-        self.dynamic_functions['solver'] = desolver.create_solver(locals()[
-                                                                  'f'])
+        self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
+
+    def reset(self):
+        """lab.reset()
+        
+        resets the solution for re-run
+        """
+        for element in self.species:
+            self.profiles[element] = self.species[
+                element]['concentration'][:,0]
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
@@ -150,7 +202,8 @@ class Lab:
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]
 
         for element in self.species:
-            self.profiles[element] = self.species[element]['concentration'][:, i]
+            self.profiles[element] = self.species[element]['concentration'][:,
+                                                                            i]
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 
@@ -165,4 +218,5 @@ class Lab:
 
         for s in self.species:
             self.species[s]['rates'] = (
-                self.species[s]['concentration'][:, 1:] - self.species[s]['concentration'][:, :-1]) / self.dt
+                self.species[s]['concentration'][:, 1:] -
+                self.species[s]['concentration'][:, :-1]) / self.dt
