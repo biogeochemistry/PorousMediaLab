@@ -12,6 +12,18 @@ class Lab:
     """The batch experiments simulations"""
 
     def __init__(self, tend, dt, tstart=0):
+        """ init function
+        
+        initialize the lab class 
+        
+        Arguments:
+            tend {float} -- end time of computation
+            dt {float} -- timestep
+        
+        Keyword Arguments:
+            tstart {float} -- strart time of computation (default: {0})
+        """
+
         self.tend = tend
         self.dt = dt
         self.time = np.linspace(tstart, tend, round(tend / dt) + 1)
@@ -28,9 +40,28 @@ class Lab:
         self.ode_method = 'scipy'
 
     def __getattr__(self, attr):
+        """dot notation for species 
+        
+        you can use lab.element and get
+        species dictionary
+        
+        Arguments:
+            attr {str} -- name of the species
+        
+        Returns:
+            DotDict -- returns DotDict of species
+        """
+
         return self.species[attr]
 
     def solve(self, verbose=True):
+        """ solves coupled PDEs
+        
+        Keyword Arguments:
+            verbose {bool} -- if true verbose output (default: {True})
+            with estimation of computational time etc.
+        """
+
         self.reset()
         with np.errstate(invalid='raise'):
             for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
