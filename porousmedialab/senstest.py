@@ -45,17 +45,17 @@ class Sensor:
         raise NotImplementedError
 
 
-class FastFourierTest(Sensor):
+class FastFourierAnalysis(Sensor):
     """Fast Fourier analysis
     """
     def __init__(self, *args):
         
-        super(FastFourierTest, self).__init__(*args))
+        super(FastFourierAnalysis, self).__init__(*args))
 
-class SobolevTest(Sensor):
+class SobolevAnalysis(Sensor):
     """Sobolev sensitivity analysis
     """
     def __init__(self, *args):
-        super(SobolevTest, self).__init__(*args))
+        super(SobolevAnalysis, self).__init__(*args))
         
         
