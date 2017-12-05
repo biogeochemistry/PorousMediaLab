@@ -58,16 +58,8 @@ class Column(Lab):
             self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
-    def new_top_boundary_condition(self, element, bc):
-        self.species[element]['bc_top_value'] = bc
-
-    def change_boundary_conditions(self,
-                                   element,
-                                   i,
-                                   bc_top,
-                                   bc_top_type,
-                                   bc_bot,
-                                   bc_bot_type):
+    def change_boundary_conditions(self, element, i, bc_top, bc_top_type,
+                                   bc_bot, bc_bot_type):
         """Methods checks if boundary conditions are changed and if yes
         generates new matrices for solving PDE
         """
