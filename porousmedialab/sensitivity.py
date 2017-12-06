@@ -6,7 +6,7 @@ based on Salib frameword developed by....
 class Sensor:
     """ sensitivity test anlysis of the PorousMediaLab results
     """
-    
+
     def __init__(self):
         raise NotImplementedError
 
@@ -32,7 +32,7 @@ class Sensor:
             NotImplementedError -- [description]
         """
         raise NotImplementedError
-    
+
     def create_basis_for_analysis(self):
         """ runs model for first time and save the result into
         variable for later comparison as a basis
@@ -40,7 +40,7 @@ class Sensor:
         raise NotImplementedError
 
     def run_test(self):
-        """ run sens test 
+        """ run sensetivity test
         """
         raise NotImplementedError
 
@@ -49,13 +49,10 @@ class FastFourierAnalysis(Sensor):
     """Fast Fourier analysis
     """
     def __init__(self, *args):
-        
-        super(FastFourierAnalysis, self).__init__(*args))
+        super(FastFourierAnalysis, self).__init__(*args)
 
 class SobolevAnalysis(Sensor):
     """Sobolev sensitivity analysis
     """
     def __init__(self, *args):
-        super(SobolevAnalysis, self).__init__(*args))
-        
-        
+        super(SobolevAnalysis, self).__init__(*args)
