@@ -8,7 +8,7 @@ from porousmedialab.lab import Lab
 
 
 class Column(Lab):
-    """Column module solves Advection-Diffusion-Reaction Equation 
+    """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
     def __init__(self, length, dx, tend, dt, w=0, ode_method='rk4'):

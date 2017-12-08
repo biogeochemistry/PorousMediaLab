@@ -1,11 +1,14 @@
+import sys
 import time
 import traceback
-import numpy as np
+
 import numexpr as ne
-from porousmedialab.dotdict import DotDict
-import porousmedialab.phcalc as phcalc
+import numpy as np
+
 import porousmedialab.desolver as desolver
 import porousmedialab.equilibriumsolver as equilibriumsolver
+import porousmedialab.phcalc as phcalc
+from porousmedialab.dotdict import DotDict
 
 
 class Lab:
@@ -64,18 +67,28 @@ class Lab:
 
         self.reset()
         with np.errstate(invalid='raise'):
-            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
-                # try:
-                self.integrate_one_timestep(i)
-                if verbose:
-                    self.estimate_time_of_computation(i)
-                # except FloatingPointError as inst:
-                #     print(
-                #         '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
-                #     traceback.print_exc()
-                #     sys.exit()
+            for i in np.arange(1, len(self.time)):
+                try:
+                    self.integrate_one_timestep(i)
+                    if verbose:
+                        self.estimate_time_of_computation(i)
+                except FloatingPointError as inst:
+                    print(
+                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...'
+                    )
+                    traceback.print_exc()
+                    sys.exit()
 
     def estimate_time_of_computation(self, i):
+        """ function estimates time required for computation
+
+        uses first hundread of steps to estimate approximate
+        time for computation of all steps
+
+        Arguments:
+            i {int} -- index of time
+        """
+
         if i == 1:
             self.tstart = time.time()
             print("Simulation started:\n\t",
@@ -93,6 +106,16 @@ class Lab:
                                 time.localtime(time.time() + total_t)))
 
     def henry_equilibrium_integrate(self, i):
+        """integrates Henry equlibrium reactions
+        
+        Estimates the destribution of species using functions from 
+        equilibriumsolver, and, then, updated the profiles with new 
+        concentrations 
+        
+        Arguments:
+            i {int} -- index of time
+        """
+
         for eq in self.henry_law_equations:
             self.species[eq['gas']]['concentration'][:, i], self.species[eq[
                 'aq']][
@@ -106,6 +129,17 @@ class Lab:
                     self.update_matrices_due_to_bc(elem, i)
 
     def acid_base_solve_ph(self, i):
+        """solves acid base reactions
+        
+        solves acid-base using function from phcalc. First, it sums the total
+        concentration for particular species, then, estimates pH. if it idx=0,
+        then it uses "greedy" algorithm, else, uses +-0.1 of previous pH and finds
+        minimum. 
+        
+        Arguments:
+            i {[type]} -- [description]
+        """
+
         # initial guess from previous time-step
         res = self.species['pH']['concentration'][0, i - 1]
         for idx_j in range(self.N):
@@ -171,8 +205,8 @@ class Lab:
         resets the solution for re-run
         """
         for element in self.species:
-            self.profiles[element] = self.species[
-                element]['concentration'][:,0]
+            self.profiles[element] = self.species[element]['concentration'][:,
+                                                                            0]
 
     def pre_run_methods(self):
         if len(self.acid_base_components) > 0:
