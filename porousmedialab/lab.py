@@ -170,6 +170,13 @@ class Lab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def add_ion(self, element, charge):
+        """add non-dissociative ion in acid-base system
+        
+        Arguments:
+            element {str} -- name of the chemical element
+            charge {float} -- charge of chemical element
+        """
+
         ion = phcalc.Neutral(charge=charge, conc=np.nan)
         self.acid_base_components.append({
             'species': [element],
@@ -177,6 +184,16 @@ class Lab:
         })
 
     def add_acid(self, species, pKa, charge=0):
+        """add acid in acid-base system  
+        
+        Arguments:
+            species {list} -- list of species, e.g. ['H3PO4', 'H2PO4', 'HPO4', 'PO4']
+            pKa {list} -- list of floats with pKs, e.g. [2.148, 7.198, 12.375]
+        
+        Keyword Arguments:
+            charge {float} -- highest charge in the acid  (default: {0})
+        """
+
         acid = phcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
         self.acid_base_components.append({
             'species': species,
@@ -184,14 +201,27 @@ class Lab:
         })
 
     def acid_base_equilibrium_solve(self, i):
+        """solves acid-base equilibrium equations
+        
+        Arguments:
+            i {int} -- step in time
+        """
+
         self.acid_base_solve_ph(i)
         self.acid_base_update_concentrations(i)
 
     def init_rates_arrays(self):
+        """allocates zero matrices for rates
+        """
+
         for rate in self.rates:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
+        """create strings of dynamic functions for scipy solver and later execute
+        them using exec(), potentially not safe but haven't found better approach yet.
+        """
+
         fun_str = desolver.create_ode_function(self.species, self.constants,
                                                self.rates, self.dcdt)
         exec(fun_str)
@@ -209,6 +239,11 @@ class Lab:
                                                                             0]
 
     def pre_run_methods(self):
+        """pre-run before solve
+        initiates acid-base system and creates dynamic functions (strings of ODE)
+        for reaction solver
+        """
+
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
@@ -217,10 +252,24 @@ class Lab:
         self.init_rates_arrays()
 
     def change_concentration_profile(self, element, i, new_profile):
+        """change concentration in profile vectors
+        
+        Arguments:
+            element {str} -- name of the element
+            i {int} -- step in time
+            new_profile {np.array} -- vector of new concetrations
+        """
+
         self.profiles[element] = new_profile
         self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
+        """integrates ODE of reactions
+
+        Arguments:
+            i {int} -- step in time
+        """
+
         # C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # for idx_j in range(self.N):
@@ -236,12 +285,19 @@ class Lab:
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]
 
         for element in self.species:
-            self.profiles[element] = self.species[element]['concentration'][:,
-                                                                            i]
+            self.profiles[element] = self.species[element][
+                'concentration'][:, i]
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 
     def reconstruct_rates(self):
+        """reconstructs rates after model run
+        1. estimates rates;
+        2. estimates changes of concentrations
+        not sure if it works with dynamic functions of "scipy",
+        only with rk4 and butcher 5?
+        """
+
         for idx_t in range(len(self.time)):
             for name, rate in self.rates.items():
                 conc = {}
