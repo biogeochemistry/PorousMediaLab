@@ -1,3 +1,6 @@
+""" PorousMediaLab super class. Contains all the main methods.
+"""
+
 import sys
 import time
 import traceback
@@ -16,15 +19,15 @@ class Lab:
 
     def __init__(self, tend, dt, tstart=0):
         """ init function
-        
-        initialize the lab class 
-        
+
+        initialize the lab class
+
         Arguments:
             tend {float} -- end time of computation
             dt {float} -- timestep
-        
+
         Keyword Arguments:
-            tstart {float} -- strart time of computation (default: {0})
+            tstart {float} -- start time of computation (default: {0})
         """
 
         self.tend = tend
@@ -43,14 +46,14 @@ class Lab:
         self.ode_method = 'scipy'
 
     def __getattr__(self, attr):
-        """dot notation for species 
-        
+        """dot notation for species
+
         you can use lab.element and get
         species dictionary
-        
+
         Arguments:
             attr {str} -- name of the species
-        
+
         Returns:
             DotDict -- returns DotDict of species
         """
@@ -59,7 +62,7 @@ class Lab:
 
     def solve(self, verbose=True):
         """ solves coupled PDEs
-        
+
         Keyword Arguments:
             verbose {bool} -- if true verbose output (default: {True})
             with estimation of computational time etc.
@@ -90,12 +93,13 @@ class Lab:
         """
 
         if i == 1:
-            self.tstart = time.time()
+            self.start_computation_time = time.time()
             print("Simulation started:\n\t",
                   time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
             total_t = len(self.time) * (
-                time.time() - self.tstart) / 100 * self.dt / self.dt
+                time.time() - self.start_computation_time
+            ) / 100 * self.dt / self.dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print(
@@ -107,11 +111,11 @@ class Lab:
 
     def henry_equilibrium_integrate(self, i):
         """integrates Henry equlibrium reactions
-        
-        Estimates the destribution of species using functions from 
-        equilibriumsolver, and, then, updated the profiles with new 
-        concentrations 
-        
+
+        Estimates the destribution of species using functions from
+        equilibriumsolver, and, then, updated the profiles with new
+        concentrations
+
         Arguments:
             i {int} -- index of time
         """
@@ -130,12 +134,12 @@ class Lab:
 
     def acid_base_solve_ph(self, i):
         """solves acid base reactions
-        
+
         solves acid-base using function from phcalc. First, it sums the total
         concentration for particular species, then, estimates pH. if it idx=0,
-        then it uses "greedy" algorithm, else, uses +-0.1 of previous pH and finds
-        minimum. 
-        
+        then it uses "greedy" algorithm, else, uses +-0.1 of previous pH and
+        finds minimum around it.
+
         Arguments:
             i {[type]} -- [description]
         """
@@ -171,7 +175,7 @@ class Lab:
 
     def add_ion(self, element, charge):
         """add non-dissociative ion in acid-base system
-        
+
         Arguments:
             element {str} -- name of the chemical element
             charge {float} -- charge of chemical element
@@ -184,12 +188,12 @@ class Lab:
         })
 
     def add_acid(self, species, pKa, charge=0):
-        """add acid in acid-base system  
-        
+        """add acid in acid-base system
+
         Arguments:
             species {list} -- list of species, e.g. ['H3PO4', 'H2PO4', 'HPO4', 'PO4']
             pKa {list} -- list of floats with pKs, e.g. [2.148, 7.198, 12.375]
-        
+
         Keyword Arguments:
             charge {float} -- highest charge in the acid  (default: {0})
         """
@@ -202,7 +206,7 @@ class Lab:
 
     def acid_base_equilibrium_solve(self, i):
         """solves acid-base equilibrium equations
-        
+
         Arguments:
             i {int} -- step in time
         """
@@ -230,9 +234,7 @@ class Lab:
         self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
 
     def reset(self):
-        """lab.reset()
-        
-        resets the solution for re-run
+        """resets the solution for re-run
         """
         for element in self.species:
             self.profiles[element] = self.species[element]['concentration'][:,
@@ -253,7 +255,7 @@ class Lab:
 
     def change_concentration_profile(self, element, i, new_profile):
         """change concentration in profile vectors
-        
+
         Arguments:
             element {str} -- name of the element
             i {int} -- step in time
@@ -285,8 +287,8 @@ class Lab:
                 self.species[s]['concentration'][idx_j, i] = ynew[idx]
 
         for element in self.species:
-            self.profiles[element] = self.species[element][
-                'concentration'][:, i]
+            self.profiles[element] = self.species[element]['concentration'][:,
+                                                                            i]
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 
@@ -301,12 +303,12 @@ class Lab:
         for idx_t in range(len(self.time)):
             for name, rate in self.rates.items():
                 conc = {}
-                for s in self.species:
-                    conc[s] = self.species[s]['concentration'][:, idx_t]
+                for spc in self.species:
+                    conc[spc] = self.species[spc]['concentration'][:, idx_t]
                 r = ne.evaluate(rate, {**self.constants, **conc})
                 self.estimated_rates[name][:, idx_t] = r * (r > 0)
 
-        for s in self.species:
-            self.species[s]['rates'] = (
-                self.species[s]['concentration'][:, 1:] -
-                self.species[s]['concentration'][:, :-1]) / self.dt
+        for spc in self.species:
+            self.species[spc]['rates'] = (
+                self.species[spc]['concentration'][:, 1:] -
+                self.species[spc]['concentration'][:, :-1]) / self.dt
