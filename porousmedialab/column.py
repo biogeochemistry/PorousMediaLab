@@ -65,15 +65,15 @@ class Column(Lab):
         """
 
         if (self.species[element].bc_top_type != bc_top_type.lower()
-                or self.species[element].bc_top != bc_top
+                or self.species[element].bc_top_value != bc_top
                 or self.species[element].bc_bot_type != bc_bot_type.lower()
-                or self.species[element].bc_bot != bc_bot):
+                or self.species[element].bc_bot_value != bc_bot):
             print("Boundary conditions changed for {} at time {}".format(
                 element, self.time[i]))
             self.species[element].bc_top_type = bc_top_type.lower()
-            self.species[element].bc_top = bc_top
+            self.species[element].bc_top_value = bc_top
             self.species[element].bc_bot_type = bc_bot_type.lower()
-            self.species[element].bc_bot = bc_bot
+            self.species[element].bc_bot_value = bc_bot
             self.template_AL_AR(element)
             self.update_matrices_due_to_bc(element, i)
 
