@@ -72,15 +72,15 @@ def rmse(s, o):
 
 def norm_rmse(s, o):
     """
-    Normalized Root Mean Squared Error
+    Normalized to stanard deviation Root Mean Squared Error
     input:
         s: simulated
         o: observed
     output:
-        rmses: root mean squared error: rmse / mean
+        nrmse: normalized root mean squared error: RMSE / mean or SD
     """
     s, o = filter_nan(s, o)
-    return rmse(s, o) / np.mean(o)
+    return rmse(s, o) / np.std(o)
 
 
 def mae(s, o):
