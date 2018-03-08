@@ -33,15 +33,15 @@ class Batch(Lab):
         super().__init__(tend, dt)
         self.N = 1
 
-    def add_species(self, element, init_conc):
+    def add_species(self, element, init_C):
         """Summary
 
         Args:
             element (string): name of the element
-            init_conc (float): initial concentration
+            init_C (float): initial concentration
         """
         self.species[element] = DotDict({})
-        self.species[element]['init_C'] = init_conc
+        self.species[element]['init_C'] = init_C
         self.species[element]['concentration'] = np.zeros((self.N,
                                                            self.time.size))
         self.species[element]['alpha'] = np.zeros((self.N, self.time.size))
@@ -70,7 +70,7 @@ class Batch(Lab):
         """creates an object of acid-base system stores it as instance variable
         creates variable 'pH' with initial pH=7.
         """
-        self.add_species(element='pH', init_conc=7)
+        self.add_species(element='pH', init_C=7)
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
@@ -81,15 +81,15 @@ class Batch(Lab):
             i (TYPE): Description
         """
         for component in self.acid_base_components:
-            init_conc = 0
+            init_C = 0
             alphas = component['pH_object'].alpha(
                 self.species['pH']['concentration'][:, i])
             for idx in range(len(component['species'])):
-                init_conc += self.species[component['species'][idx]][
+                init_C += self.species[component['species'][idx]][
                     'concentration'][:, i]
             for idx in range(len(component['species'])):
                 self.species[component['species'][idx]][
-                    'concentration'][:, i] = init_conc * alphas[idx]
+                    'concentration'][:, i] = init_C * alphas[idx]
                 self.profiles[component['species'][idx]] = self.species[
                     component['species'][idx]]['concentration'][:, i]
                 self.species[component['species'][idx]]['alpha'][:, i] = alphas[
