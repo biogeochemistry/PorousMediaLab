@@ -4,7 +4,8 @@ from scipy.sparse import spdiags
 from scipy.integrate import ode
 
 
-def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt, dx, N):
+def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
+                          dt, dx, N):
     """ creates 2 matrices for transport equation AL and AR
 
     Args:
@@ -24,10 +25,14 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt
     # porosity profile. Maybe we also need d phi/dx
     s = phi * diff_coef * dt / dx / dx
     q = phi * adv_coef * dt / dx
-    AL = spdiags([-s / 2 - q / 4, phi + s, -s / 2 + q / 4],
-                 [-1, 0, 1], N, N, format='csr')  # .toarray()
-    AR = spdiags([s / 2 + q / 4, phi - s, s / 2 - q / 4],
-                 [-1, 0, 1], N, N, format='csr')  # .toarray()
+    AL = spdiags(
+        [-s / 2 - q / 4, phi + s, -s / 2 + q / 4], [-1, 0, 1],
+        N,
+        N,
+        format='csr') # .toarray()
+    AR = spdiags(
+        [s / 2 + q / 4, phi - s, s / 2 - q / 4], [-1, 0, 1], N, N,
+        format='csr') # .toarray()
 
     if bc_top_type in ['dirichlet', 'constant']:
         AL[0, 0] = phi[0]
@@ -35,9 +40,11 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt
         AR[0, 0] = phi[0]
         AR[0, 1] = 0
     elif bc_top_type in ['neumann', 'flux']:
-        AL[0, 0] = phi[0] + s[0]  # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
+        AL[0,
+           0] = phi[0] + s[0] # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
         AL[0, 1] = -s[0]
-        AR[0, 0] = phi[0] - s[0]  # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
+        AR[0,
+           0] = phi[0] - s[0] # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
         AR[0, 1] = s[0]
     else:
         print('\nABORT!!!: Not correct top boundary condition type...')
@@ -50,42 +57,47 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type, dt
         AR[-1, -2] = 0
     elif bc_bot_type in ['neumann', 'flux']:
         AL[-1, -1] = phi[-1] + s[-1]
-        AL[-1, -2] = -s[-1]  # / 2 - s[-1] / 2
+        AL[-1, -2] = -s[-1] # / 2 - s[-1] / 2
         AR[-1, -1] = phi[-1] - s[-1]
-        AR[-1, -2] = s[-1]  # / 2 + s[-1] / 2
+        AR[-1, -2] = s[-1] # / 2 + s[-1] / 2
     else:
         print('\nABORT!!!: Not correct bottom boundary condition type...')
         sys.exit()
     return AL, AR
 
 
-def update_matrices_due_to_bc(AR, profile, phi, diff_coef, adv_coef, bc_top_type, bc_top, bc_bot_type, bc_bot, dt, dx, N):
+def update_matrices_due_to_bc(AR, profile, phi, diff_coef, adv_coef,
+                              bc_top_type, bc_top, bc_bot_type, bc_bot, dt, dx,
+                              N):
     s = phi * diff_coef * dt / dx / dx
     q = phi * adv_coef * dt / dx
 
-    if (bc_top_type in ['dirichlet', 'constant'] and
-            bc_bot_type in ['dirichlet', 'constant']):
+    if (bc_top_type in ['dirichlet', 'constant']
+            and bc_bot_type in ['dirichlet', 'constant']):
         profile[0], profile[-1] = bc_top, bc_bot
         B = AR.dot(profile)
 
-    elif (bc_top_type in ['dirichlet', 'constant'] and
-            bc_bot_type in ['neumann', 'flux']):
+    elif (bc_top_type in ['dirichlet', 'constant']
+          and bc_bot_type in ['neumann', 'flux']):
         profile[0] = bc_top
         B = AR.dot(profile)
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (
+            s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
 
-    elif (bc_top_type in ['neumann', 'flux'] and
-            bc_bot_type in ['dirichlet', 'constant']):
+    elif (bc_top_type in ['neumann', 'flux']
+          and bc_bot_type in ['dirichlet', 'constant']):
         profile[-1] = bc_bot
-        B = AR.dot(profile)
-        B[0] = B[0] + 2 * 2 * bc_top * (s[0] / 2 - q[0] / 4) * dx / phi[0] / diff_coef
-
-    elif (bc_top_type in ['neumann', 'flux'] and
-          bc_bot_type in ['neumann', 'flux']):
         B = AR.dot(profile)
         B[0] = B[0] + 2 * 2 * bc_top * (
             s[0] / 2 - q[0] / 4) * dx / phi[0] / diff_coef
-        B[-1] = B[-1] + 2 * 2 * bc_bot * (s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
+
+    elif (bc_top_type in ['neumann', 'flux']
+          and bc_bot_type in ['neumann', 'flux']):
+        B = AR.dot(profile)
+        B[0] = B[0] + 2 * 2 * bc_top * (
+            s[0] / 2 - q[0] / 4) * dx / phi[0] / diff_coef
+        B[-1] = B[-1] + 2 * 2 * bc_bot * (
+            s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
     else:
         print('\nABORT!!!: Not correct boundary condition in the species...')
         sys.exit()
@@ -152,11 +164,17 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         for element, rate in rates.items():
             rates_per_rate[element] = ne.evaluate(rate, {**coef, **conc})
             if non_negative_rates:
-                rates_per_rate[element] = rates_per_rate[element] * (rates_per_rate[element] > 0)
+                rates_per_rate[element] = rates_per_rate[element] * (
+                    rates_per_rate[element] > 0)
 
         Kn = {}
         for element in dcdt:
-            Kn[element] = dt * ne.evaluate(dcdt[element], {**coef, **rates_per_rate})
+            Kn[element] = dt * ne.evaluate(dcdt[element], {
+                **
+                coef,
+                **
+                rates_per_rate
+            })
 
         return Kn, rates_per_rate
 
@@ -181,13 +199,16 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
         rates_per_rate = {}
         for rate_name, rate in rates_per_rate1.items():
-            rates_per_rate[rate_name] = (rates_per_rate1[rate_name] + 2 * rates_per_rate2[rate_name] + 2 * rates_per_rate3[rate_name] + rates_per_rate4[rate_name]) / 6
+            rates_per_rate[rate_name] = (
+                rates_per_rate1[rate_name] + 2 * rates_per_rate2[rate_name] +
+                2 * rates_per_rate3[rate_name] + rates_per_rate4[rate_name]) / 6
 
         C_new = {}
         rates_per_element = {}
         for element in C_0:
             rates_per_element[element] = (
-                k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]) / 6
+                k1[element] + 2 * k2[element] + 2 * k3[element] + k4[element]
+            ) / 6
             C_new[element] = C_0[element] + rates_per_element[element]
         return C_new, rates_per_element, rates_per_rate
 
@@ -206,13 +227,17 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         k3 = k_loop(sum_k(sum_k(C_0, k1, 1 / 8), k2, 1 / 8))
         k4 = k_loop(sum_k(sum_k(C_0, k2, -0.5), k3, 1))
         k5 = k_loop(sum_k(sum_k(C_0, k1, 3 / 16), k4, 9 / 16))
-        k6 = k_loop(sum_k(sum_k(sum_k(sum_k(sum_k(C_0, k1, -3 / 7),
-                                            k2, 2 / 7), k3, 12 / 7), k4, -12 / 7), k5, 8 / 7))
+        k6 = k_loop(
+            sum_k(
+                sum_k(
+                    sum_k(sum_k(sum_k(C_0, k1, -3 / 7), k2, 2 / 7), k3, 12 / 7),
+                    k4, -12 / 7), k5, 8 / 7))
         C_new = {}
         rates_per_element = {}
         for element in C_0:
-            rates_per_element[element] = (7 * k1[element] + 32 * k3[element] +
-                                          12 * k4[element] + 32 * k5[element] + 7 * k6[element]) / 90
+            rates_per_element[element] = (
+                7 * k1[element] + 32 * k3[element] + 12 * k4[element] +
+                32 * k5[element] + 7 * k6[element]) / 90
             C_new[element] = C_0[element] + rates_per_element[element]
         return C_new, rates_per_element
 
@@ -224,11 +249,30 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
     return rk4(C0)
 
 
-def create_ode_function(species, constants, rates, dcdt, non_negative_rates=True):
+def create_ode_function(species,
+                        constants,
+                        rates,
+                        dcdt,
+                        non_negative_rates=True):
+    """creates the string of ode function
+
+    Arguments:
+        species {dict} -- dict of species provided by user
+        constants {dict} -- dict of concstants provided by user
+        rates {dict} -- dict of rates provided by user
+        dcdt {dict} -- dict of dcdt provided by user
+
+    Keyword Arguments:
+        non_negative_rates {bool} -- prevent negative values? (default: {True})
+
+    Returns:
+        [str] -- returns string of fun
+    """
     body_of_function = "def f(t, y):\n"
     body_of_function += "\t dydt = np.zeros((len(y), 1))"
     for i, s in enumerate(species):
-        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(s, i, i)
+        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(
+            s, i, i)
     for k, v in constants.items():
         body_of_function += '\n\t {} = {:.2e}'.format(k, v)
     for k, v in rates.items():

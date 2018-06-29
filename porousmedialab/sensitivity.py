@@ -4,7 +4,7 @@ based on Salib frameword developed by....
 
 
 class Sensor:
-    """ sensitivity test anlysis of the PorousMediaLab results
+    """ sensitivity test analysis of the PorousMediaLab results
     """
 
     def __init__(self):
@@ -12,7 +12,7 @@ class Sensor:
 
     def add_paramter(self, name, lower_boundary, upper_boundary):
         """add parameter to test
-        
+
         Arguments:
             name {str} -- name of param, should match name in the model
             lower_boundary {float} -- lower boundary for test
@@ -21,12 +21,12 @@ class Sensor:
         raise NotImplementedError
 
     def add_reference(self, name):
-        """add refernce for test, e.g. what we are testing as changing 
+        """add refernce for test, e.g. what we are testing as changing
         variable in the model (resulting concentration, or amount of biomass),
         it will be comared to itself with varius combination of parameters,
         which are under the test
-        
-        Arguments:  
+
+        Arguments:
             name {str} -- name of the variable in the model
         Raises:
             NotImplementedError -- [description]
@@ -48,11 +48,14 @@ class Sensor:
 class FastFourierAnalysis(Sensor):
     """Fast Fourier analysis
     """
+
     def __init__(self, *args):
         super(FastFourierAnalysis, self).__init__(*args)
+
 
 class SobolevAnalysis(Sensor):
     """Sobolev sensitivity analysis
     """
+
     def __init__(self, *args):
         super(SobolevAnalysis, self).__init__(*args)
