@@ -39,7 +39,7 @@ class Column(Lab):
                     theta,
                     element,
                     D,
-                    init_C,
+                    init_conc,
                     bc_top_value,
                     bc_top_type,
                     bc_bot_value,
@@ -53,7 +53,7 @@ class Column(Lab):
             theta {numpy.array} -- porosity or 1 minus porosity
             element {str} -- name of the element
             D {float} -- total diffusion
-            init_C {float or numpy.array} -- initial concentration
+            init_conc {float or numpy.array} -- initial concentration
             bc_top_value {float} -- top boundary value
             bc_top_type {str} -- boundary type (flux, constant)
             bc_bot_value {float} -- bottom boundary value
@@ -70,12 +70,12 @@ class Column(Lab):
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
         self.species[element]['theta'] = np.ones((self.N)) * theta
         self.species[element]['D'] = D
-        self.species[element]['init_C'] = init_C
+        self.species[element]['init_conc'] = init_conc
         self.species[element]['concentration'] = np.zeros((self.N,
                                                            self.time.size))
         self.species[element]['rates'] = np.zeros((self.N, self.time.size))
         self.species[element]['concentration'][:, 0] = self.species[element][
-            'init_C']
+            'init_conc']
         self.profiles[element] = self.species[element]['concentration'][:, 0]
         if w:
             self.species[element]['w'] = w
@@ -143,7 +143,7 @@ class Column(Lab):
             theta=True,
             element='pH',
             D=0,
-            init_C=7,
+            init_conc=7,
             bc_top_value=7,
             bc_top_type='dirichlet',
             bc_bot_value=7,
