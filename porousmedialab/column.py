@@ -1,17 +1,29 @@
 import numpy as np
-from scipy.sparse import spdiags
-import porousmedialab.plotter as plotter
-from porousmedialab.lab import Lab
+
 import porousmedialab.desolver as desolver
 import porousmedialab.phcalc as phcalc
+import porousmedialab.plotter as plotter
 from porousmedialab.dotdict import DotDict
+from porousmedialab.lab import Lab
 
 
 class Column(Lab):
-    """Column module solves Advection-Diffusion-Reaction Equation 
+    """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
     def __init__(self, length, dx, tend, dt, w=0, ode_method='rk4'):
+        """ initializing the domain of the column model
+
+        Arguments:
+            length {float} -- the length of the domain
+            dx {float} -- mesh size
+            tend {float} -- time of simulation
+            dt {float} -- timestep in the model
+
+        Keyword Arguments:
+            w {float} -- default advective flux for all species (default: {0})
+            ode_method {str} -- method to solve ode (default: {'rk4'})
+        """
         # ne.set_num_threads(ne.detect_number_of_cores())
         super().__init__(tend, dt)
         self.x = np.linspace(0, length, length / dx + 1)
@@ -28,16 +40,33 @@ class Column(Lab):
                     element,
                     D,
                     init_C,
-                    bc_top,
+                    bc_top_value,
                     bc_top_type,
-                    bc_bot,
+                    bc_bot_value,
                     bc_bot_type,
                     w=False,
                     int_transport=True):
+        """add chemical compund to the column model with boundary
+        conditions
+
+        Arguments:
+            theta {numpy.array} -- porosity or 1 minus porosity
+            element {str} -- name of the element
+            D {float} -- total diffusion
+            init_C {float or numpy.array} -- initial concentration
+            bc_top_value {float} -- top boundary value
+            bc_top_type {str} -- boundary type (flux, constant)
+            bc_bot_value {float} -- bottom boundary value
+            bc_bot_type {str} -- type of bottom boundary
+
+        Keyword Arguments:
+            w {float} -- advective term for this element (default: {False})
+            int_transport {bool} -- integrate transport? (default: {True})
+        """
         self.species[element] = DotDict({})
-        self.species[element]['bc_top_value'] = bc_top
+        self.species[element]['bc_top_value'] = bc_top_value
         self.species[element]['bc_top_type'] = bc_top_type.lower()
-        self.species[element]['bc_bot_value'] = bc_bot
+        self.species[element]['bc_bot_value'] = bc_bot_value
         self.species[element]['bc_bot_type'] = bc_bot_type.lower()
         self.species[element]['theta'] = np.ones((self.N)) * theta
         self.species[element]['D'] = D
@@ -58,34 +87,31 @@ class Column(Lab):
             self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
-    def new_top_boundary_condition(self, element, bc):
-        self.species[element]['bc_top_value'] = bc
-
-    def change_boundary_conditions(self,
-                                   element,
-                                   i,
-                                   bc_top,
-                                   bc_top_type,
-                                   bc_bot,
-                                   bc_bot_type):
+    def change_boundary_conditions(self, element, i, bc_top_value, bc_top_type,
+                                   bc_bot_value, bc_bot_type):
         """Methods checks if boundary conditions are changed and if yes
         generates new matrices for solving PDE
         """
 
         if (self.species[element].bc_top_type != bc_top_type.lower()
-                or self.species[element].bc_top != bc_top
+                or self.species[element].bc_top_value != bc_top_value
                 or self.species[element].bc_bot_type != bc_bot_type.lower()
-                or self.species[element].bc_bot != bc_bot):
+                or self.species[element].bc_bot_value != bc_bot_value):
             print("Boundary conditions changed for {} at time {}".format(
                 element, self.time[i]))
             self.species[element].bc_top_type = bc_top_type.lower()
-            self.species[element].bc_top = bc_top
+            self.species[element].bc_top_value = bc_top_value
             self.species[element].bc_bot_type = bc_bot_type.lower()
-            self.species[element].bc_bot = bc_bot
+            self.species[element].bc_bot_value = bc_bot_value
             self.template_AL_AR(element)
             self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
+        """creates the templates of matrices for linear algebra solutions
+
+        Arguments:
+            element {str} -- name of the element for which it creates AL,AR
+        """
         self.species[element]['AL'], self.species[
             element]['AR'] = desolver.create_template_AL_AR(
                 self.species[element]['theta'], self.species[element]['D'],
@@ -94,6 +120,12 @@ class Column(Lab):
                 self.species[element]['bc_bot_type'], self.dt, self.dx, self.N)
 
     def update_matrices_due_to_bc(self, element, i):
+        """updating the matrices due to boundary conditions
+
+        Arguments:
+            element {str} -- name of the element
+            i {int} -- number of the step
+        """
         self.profiles[element], self.species[
             element]['B'] = desolver.update_matrices_due_to_bc(
                 self.species[element]['AR'], self.profiles[element],
@@ -112,9 +144,9 @@ class Column(Lab):
             element='pH',
             D=0,
             init_C=7,
-            bc_top=7,
+            bc_top_value=7,
             bc_top_type='dirichlet',
-            bc_bot=7,
+            bc_bot_value=7,
             bc_bot_type='dirichlet',
             w=False,
             int_transport=False)

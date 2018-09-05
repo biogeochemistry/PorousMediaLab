@@ -1,11 +1,17 @@
+""" PorousMediaLab super class. Contains all the main methods.
+"""
+
+import sys
 import time
 import traceback
-import numpy as np
+
 import numexpr as ne
-from porousmedialab.dotdict import DotDict
-import porousmedialab.phcalc as phcalc
+import numpy as np
+
 import porousmedialab.desolver as desolver
 import porousmedialab.equilibriumsolver as equilibriumsolver
+import porousmedialab.phcalc as phcalc
+from porousmedialab.dotdict import DotDict
 
 
 class Lab:
@@ -13,15 +19,15 @@ class Lab:
 
     def __init__(self, tend, dt, tstart=0):
         """ init function
-        
-        initialize the lab class 
-        
+
+        initialize the lab class
+
         Arguments:
             tend {float} -- end time of computation
             dt {float} -- timestep
-        
+
         Keyword Arguments:
-            tstart {float} -- strart time of computation (default: {0})
+            tstart {float} -- start time of computation (default: {0})
         """
 
         self.tend = tend
@@ -40,14 +46,14 @@ class Lab:
         self.ode_method = 'scipy'
 
     def __getattr__(self, attr):
-        """dot notation for species 
-        
+        """dot notation for species
+
         you can use lab.element and get
         species dictionary
-        
+
         Arguments:
             attr {str} -- name of the species
-        
+
         Returns:
             DotDict -- returns DotDict of species
         """
@@ -56,7 +62,7 @@ class Lab:
 
     def solve(self, verbose=True):
         """ solves coupled PDEs
-        
+
         Keyword Arguments:
             verbose {bool} -- if true verbose output (default: {True})
             with estimation of computational time etc.
@@ -64,25 +70,36 @@ class Lab:
 
         self.reset()
         with np.errstate(invalid='raise'):
-            for i in np.arange(1, len(np.linspace(0, self.tend, round(self.tend / self.dt) + 1))):
-                # try:
-                self.integrate_one_timestep(i)
-                if verbose:
-                    self.estimate_time_of_computation(i)
-                # except FloatingPointError as inst:
-                #     print(
-                #         '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...')
-                #     traceback.print_exc()
-                #     sys.exit()
+            for i in np.arange(1, len(self.time)):
+                try:
+                    self.integrate_one_timestep(i)
+                    if verbose:
+                        self.estimate_time_of_computation(i)
+                except FloatingPointError as inst:
+                    print(
+                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...'
+                    )
+                    traceback.print_exc()
+                    sys.exit()
 
     def estimate_time_of_computation(self, i):
+        """ function estimates time required for computation
+
+        uses first hundread of steps to estimate approximate
+        time for computation of all steps
+
+        Arguments:
+            i {int} -- index of time
+        """
+
         if i == 1:
-            self.tstart = time.time()
+            self.start_computation_time = time.time()
             print("Simulation started:\n\t",
                   time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
             total_t = len(self.time) * (
-                time.time() - self.tstart) / 100 * self.dt / self.dt
+                time.time() - self.start_computation_time
+            ) / 100 * self.dt / self.dt
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print(
@@ -93,6 +110,16 @@ class Lab:
                                 time.localtime(time.time() + total_t)))
 
     def henry_equilibrium_integrate(self, i):
+        """integrates Henry equlibrium reactions
+
+        Estimates the destribution of species using functions from
+        equilibriumsolver, and, then, updated the profiles with new
+        concentrations
+
+        Arguments:
+            i {int} -- index of time
+        """
+
         for eq in self.henry_law_equations:
             self.species[eq['gas']]['concentration'][:, i], self.species[eq[
                 'aq']][
@@ -106,6 +133,17 @@ class Lab:
                     self.update_matrices_due_to_bc(elem, i)
 
     def acid_base_solve_ph(self, i):
+        """solves acid base reactions
+
+        solves acid-base using function from phcalc. First, it sums the total
+        concentration for particular species, then, estimates pH. if it idx=0,
+        then it uses "greedy" algorithm, else, uses +-0.1 of previous pH and
+        finds minimum around it.
+
+        Arguments:
+            i {[type]} -- [description]
+        """
+
         # initial guess from previous time-step
         res = self.species['pH']['concentration'][0, i - 1]
         for idx_j in range(self.N):
@@ -136,6 +174,13 @@ class Lab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def add_ion(self, element, charge):
+        """add non-dissociative ion in acid-base system
+
+        Arguments:
+            element {str} -- name of the chemical element
+            charge {float} -- charge of chemical element
+        """
+
         ion = phcalc.Neutral(charge=charge, conc=np.nan)
         self.acid_base_components.append({
             'species': [element],
@@ -143,6 +188,16 @@ class Lab:
         })
 
     def add_acid(self, species, pKa, charge=0):
+        """add acid in acid-base system
+
+        Arguments:
+            species {list} -- list of species, e.g. ['H3PO4', 'H2PO4', 'HPO4', 'PO4']
+            pKa {list} -- list of floats with pKs, e.g. [2.148, 7.198, 12.375]
+
+        Keyword Arguments:
+            charge {float} -- highest charge in the acid  (default: {0})
+        """
+
         acid = phcalc.Acid(pKa=pKa, charge=charge, conc=np.nan)
         self.acid_base_components.append({
             'species': species,
@@ -150,14 +205,27 @@ class Lab:
         })
 
     def acid_base_equilibrium_solve(self, i):
+        """solves acid-base equilibrium equations
+
+        Arguments:
+            i {int} -- step in time
+        """
+
         self.acid_base_solve_ph(i)
         self.acid_base_update_concentrations(i)
 
     def init_rates_arrays(self):
+        """allocates zero matrices for rates
+        """
+
         for rate in self.rates:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
     def create_dynamic_functions(self):
+        """create strings of dynamic functions for scipy solver and later execute
+        them using exec(), potentially not safe but haven't found better approach yet.
+        """
+
         fun_str = desolver.create_ode_function(self.species, self.constants,
                                                self.rates, self.dcdt)
         exec(fun_str)
@@ -166,15 +234,18 @@ class Lab:
         self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
 
     def reset(self):
-        """lab.reset()
-        
-        resets the solution for re-run
+        """resets the solution for re-run
         """
         for element in self.species:
-            self.profiles[element] = self.species[
-                element]['concentration'][:,0]
+            self.profiles[element] = self.species[element]['concentration'][:,
+                                                                            0]
 
     def pre_run_methods(self):
+        """pre-run before solve
+        initiates acid-base system and creates dynamic functions (strings of ODE)
+        for reaction solver
+        """
+
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
@@ -183,10 +254,24 @@ class Lab:
         self.init_rates_arrays()
 
     def change_concentration_profile(self, element, i, new_profile):
+        """change concentration in profile vectors
+
+        Arguments:
+            element {str} -- name of the element
+            i {int} -- step in time
+            new_profile {np.array} -- vector of new concetrations
+        """
+
         self.profiles[element] = new_profile
         self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
+        """integrates ODE of reactions
+
+        Arguments:
+            i {int} -- step in time
+        """
+
         # C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # for idx_j in range(self.N):
@@ -208,15 +293,22 @@ class Lab:
                 self.update_matrices_due_to_bc(element, i)
 
     def reconstruct_rates(self):
+        """reconstructs rates after model run
+        1. estimates rates;
+        2. estimates changes of concentrations
+        not sure if it works with dynamic functions of "scipy",
+        only with rk4 and butcher 5?
+        """
+
         for idx_t in range(len(self.time)):
             for name, rate in self.rates.items():
                 conc = {}
-                for s in self.species:
-                    conc[s] = self.species[s]['concentration'][:, idx_t]
+                for spc in self.species:
+                    conc[spc] = self.species[spc]['concentration'][:, idx_t]
                 r = ne.evaluate(rate, {**self.constants, **conc})
                 self.estimated_rates[name][:, idx_t] = r * (r > 0)
 
-        for s in self.species:
-            self.species[s]['rates'] = (
-                self.species[s]['concentration'][:, 1:] -
-                self.species[s]['concentration'][:, :-1]) / self.dt
+        for spc in self.species:
+            self.species[spc]['rates'] = (
+                self.species[spc]['concentration'][:, 1:] -
+                self.species[spc]['concentration'][:, :-1]) / self.dt

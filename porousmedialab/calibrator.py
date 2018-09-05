@@ -34,7 +34,7 @@ class Calibrator:
     """
 
     def __init__(self, lab):
-        """ defines which parameters to calibrate, range of the 
+        """ defines which parameters to calibrate, range of the
         parameters, optimization function etc.
 
         NOTE: self.parameters is ordered dictionary
@@ -50,10 +50,10 @@ class Calibrator:
 
     def add_parameter(self, name, lower_boundary, upper_boundary):
         """ add parameter to calibrate
-        
+
         Arguments:
             name {str} -- name of the parameter matching name in model
-            lb {float} -- lower boundary 
+            lb {float} -- lower boundary
             ub {float} -- upper boundary
         """
         self.parameters[name] = DotDict({})
@@ -63,13 +63,13 @@ class Calibrator:
 
     def add_measurement(self, name, values, time, depth=0):
         """add measurment which will be used for calibration. Name
-        of the measurement should match name variable in the model 
-        
+        of the measurement should match name variable in the model
+
         Arguments:
             name {str} -- name of the measurement
             values {np.array} -- values of measurement
             time {np.array} -- when measured (realative to model times)
-            depth {float} -- depth of the measurement for column model 
+            depth {float} -- depth of the measurement for column model
             (default: {0})
         """
         self.measurements[name] = DotDict({})
@@ -79,7 +79,7 @@ class Calibrator:
 
     def estimate_error(self, metric_fun=norm_rmse, disp=True):
         """estimates metrics of measured vs modeled
-        
+
         Keyword Arguments:
             metric_fun {function} -- desired metric function (default: {rmse})
         """
@@ -97,7 +97,7 @@ class Calibrator:
         """minimization function f(x) where x are
         parameters which are minimizaed and f is the
         metric
-        
+
         NOTE: self.parameters is ordered dictionary
         to ensure iteration over the same order and
         assigning correct x values
@@ -118,11 +118,11 @@ class Calibrator:
 
     def iter_params(self):
         """creates initial x0
-        
+
         NOTE: self.parameters is ordered dictionary
         to ensure iteration over the same order and
         assigning correct x0 values
-        
+
         Returns:
             x0 -- x0 vector for minimization function
         """
@@ -145,7 +145,7 @@ class Calibrator:
 
     def plot_final_results(self):
         """function plot graphs of measured vs modeled
-        
+
         """
         raise NotImplementedError
 

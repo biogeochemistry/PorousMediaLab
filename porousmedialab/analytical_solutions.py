@@ -6,7 +6,6 @@ import seaborn as sns
 from porousmedialab.column import Column
 import porousmedialab.desolver as desolver
 
-
 sns.set_style("whitegrid")
 
 
@@ -21,19 +20,29 @@ def transport_equation_boundary_effect():
     dt = 0.001
     lab = Column(length, dx, tend, dt, w)
     D = 5
-    lab.add_species(phi, 'O2', D, 0, bc_top=1,
-                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='flux')
+    lab.add_species(
+        phi,
+        'O2',
+        D,
+        0,
+        bc_top=1,
+        bc_top_type='dirichlet',
+        bc_bot=0,
+        bc_bot_type='flux')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
-    sol = 1 / 2 * (special.erfc((
-        x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
-        np.exp(lab.w * x / D) * special.erfc((
-            x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+    sol = 1 / 2 * (
+        special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
+        np.exp(lab.w * x / D) * special.erfc(
+            (x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
     plt.figure()
     plt.plot(x, sol, 'k', label='Analytical solution')
-    plt.scatter(lab.x[::10], lab.species['O2'].concentration[
-                :, -1][::10], marker='x', label='Numerical')
+    plt.scatter(
+        lab.x[::10],
+        lab.species['O2'].concentration[:, -1][::10],
+        marker='x',
+        label='Numerical')
     plt.xlim([x[0], x[-1]])
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
@@ -54,19 +63,29 @@ def transport_equation_plot():
     dt = 0.001
     lab = Column(length, dx, tend, dt, w)
     D = 5
-    lab.add_species(phi, 'O2', D, 0, bc_top=1,
-                    bc_top_type='dirichlet', bc_bot=0, bc_bot_type='dirichlet')
+    lab.add_species(
+        phi,
+        'O2',
+        D,
+        0,
+        bc_top=1,
+        bc_top_type='dirichlet',
+        bc_bot=0,
+        bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
-    sol = 1 / 2 * (special.erfc((
-        x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
-        np.exp(lab.w * x / D) * special.erfc((
-            x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
+    sol = 1 / 2 * (
+        special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
+        np.exp(lab.w * x / D) * special.erfc(
+            (x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
     plt.figure()
     plt.plot(x, sol, 'k', label='Analytical solution')
-    plt.scatter(lab.x[::10], lab.species['O2'].concentration[
-                :, -1][::10], marker='x', label='Numerical')
+    plt.scatter(
+        lab.x[::10],
+        lab.species['O2'].concentration[:, -1][::10],
+        marker='x',
+        label='Numerical')
     plt.xlim([x[0], x[-1]])
     ax = plt.gca()
     ax.ticklabel_format(useOffset=False)
