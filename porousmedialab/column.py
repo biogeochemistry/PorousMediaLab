@@ -11,7 +11,7 @@ class Column(Lab):
     """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
-    def __init__(self, length, dx, tend, dt, w=0, ode_method='rk4'):
+    def __init__(self, length, dx, tend, dt, w=0, ode_method='scipy'):
         """ initializing the domain of the column model
 
         Arguments:
@@ -32,8 +32,6 @@ class Column(Lab):
         self.dx = dx
         self.w = w
         self.ode_method = ode_method
-        # self.theta = np.ones((self.N)) * theta
-        # self.constants['theta'] = self.theta
 
     def add_species(self,
                     theta,

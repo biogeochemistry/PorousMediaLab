@@ -1,3 +1,4 @@
+import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
@@ -271,10 +272,10 @@ def create_ode_function(species,
     body_of_function = "def f(t, y):\n"
     body_of_function += "\t dydt = np.zeros((len(y), 1))"
     for i, s in enumerate(species):
-        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(
-            s, i, i)
+        body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
+            s, i)
     for k, v in constants.items():
-        body_of_function += '\n\t {} = {:.2e}'.format(k, v)
+        body_of_function += '\n\t {} = {}'.format(k, v)
     for k, v in rates.items():
         body_of_function += '\n\t {} = {}'.format(k, v, v)
         if non_negative_rates:
