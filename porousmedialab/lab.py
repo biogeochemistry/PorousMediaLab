@@ -40,6 +40,7 @@ class Lab:
         self.rates = DotDict({})
         self.estimated_rates = DotDict({})
         self.constants = DotDict({})
+        self.functions = DotDict({})
         self.henry_law_equations = []
         self.acid_base_components = []
         self.acid_base_system = phcalc.System()
@@ -226,8 +227,8 @@ class Lab:
         them using exec(), potentially not safe but haven't found better approach yet.
         """
 
-        fun_str = desolver.create_ode_function(self.species, self.constants,
-                                               self.rates, self.dcdt)
+        fun_str = desolver.create_ode_function(
+            self.species, self.functions, self.constants, self.rates, self.dcdt)
         exec(fun_str)
         self.dynamic_functions['dydt_str'] = fun_str
         self.dynamic_functions['dydt'] = locals()['f']
@@ -299,16 +300,37 @@ class Lab:
         not sure if it works with dynamic functions of "scipy",
         only with rk4 and butcher 5?
         """
+        if self.ode_method == 'scipy':
+            rates_str = desolver.create_rate_function(
+                self.species, self.functions, self.constants, self.rates,
+                self.dcdt)
+            exec(rates_str, globals())
+            self.dynamic_functions['rates_str'] = rates_str
+            # from IPython.core.debugger import set_trace
+            # set_trace()
+            self.dynamic_functions['rates'] = globals()['rates']
+            yinit = np.zeros(len(self.species))
 
-        for idx_t in range(len(self.time)):
-            for name, rate in self.rates.items():
-                conc = {}
-                for spc in self.species:
-                    conc[spc] = self.species[spc]['concentration'][:, idx_t]
-                r = ne.evaluate(rate, {**self.constants, **conc})
-                self.estimated_rates[name][:, idx_t] = r * (r > 0)
+            for idx_t in range(len(self.time)):
+                for idx_j in range(self.N):
+                    for idx, s in enumerate(self.species):
+                        yinit[idx] = self.species[s]['concentration'][idx_j,
+                                                                      idx_t]
 
-        for spc in self.species:
-            self.species[spc]['rates'] = (
-                self.species[spc]['concentration'][:, 1:] -
-                self.species[spc]['concentration'][:, :-1]) / self.dt
+                    rates = self.dynamic_functions['rates'](yinit)
+
+                    for idx, r in enumerate(self.rates):
+                        self.estimated_rates[r][idx_j, idx_t] = rates[idx]
+        else:
+            for idx_t in range(len(self.time)):
+                for name, rate in self.rates.items():
+                    conc = {}
+                    for spc in self.species:
+                        conc[spc] = self.species[spc]['concentration'][:, idx_t]
+                    r = ne.evaluate(rate, {**self.constants, **conc})
+                    self.estimated_rates[name][:, idx_t] = r * (r > 0)
+
+            for spc in self.species:
+                self.species[spc]['rates'] = (
+                    self.species[spc]['concentration'][:, 1:] -
+                    self.species[spc]['concentration'][:, :-1]) / self.dt
