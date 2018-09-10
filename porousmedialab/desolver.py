@@ -255,7 +255,7 @@ def create_ode_function(species,
                         constants,
                         rates,
                         dcdt,
-                        non_negative_rates=True):
+                        non_negative_rates=False):
     """creates the string of ode function
 
     Arguments:
@@ -295,7 +295,7 @@ def create_rate_function(species,
                         constants,
                         rates,
                         dcdt,
-                        non_negative_rates=True):
+                        non_negative_rates=False):
     """creates the string of rates function
 
     Arguments:

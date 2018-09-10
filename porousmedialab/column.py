@@ -85,6 +85,25 @@ class Column(Lab):
             self.update_matrices_due_to_bc(element, 0)
         self.dcdt[element] = '0'
 
+    def save_final_profiles(self):
+        """Saves init conditons from profiles of all species in the
+        current folder in CSV file with the name of species
+        """
+        for p in self.profiles:
+            np.savetxt(p + '.csv', self.profiles[p], delimiter=',')
+
+    def load_initial_conditions(self):
+        """Loads init conditons from profiles of all species in the
+        current folder in CSV file with the name of species
+        """
+        for elem in self.species:
+            init_conc = np.loadtxt(elem + '.csv', delimiter=',')
+            self.species[elem]['init_conc'] = init_conc
+            self.species[elem]['concentration'][:, 0] = self.species[elem]['init_conc']
+            self.profiles[elem] = self.species[elem]['concentration'][:, 0]
+            self.template_AL_AR(elem)
+            self.update_matrices_due_to_bc(elem, 0)
+
     def change_boundary_conditions(self, element, i, bc_top_value, bc_top_type,
                                    bc_bot_value, bc_bot_type):
         """Methods checks if boundary conditions are changed and if yes
