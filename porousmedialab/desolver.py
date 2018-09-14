@@ -1,3 +1,4 @@
+import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
@@ -250,6 +251,7 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
 
 
 def create_ode_function(species,
+                        functions,
                         constants,
                         rates,
                         dcdt,
@@ -271,10 +273,12 @@ def create_ode_function(species,
     body_of_function = "def f(t, y):\n"
     body_of_function += "\t dydt = np.zeros((len(y), 1))"
     for i, s in enumerate(species):
-        body_of_function += '\n\t {} = y[{:.0f}] * (y[{:.0f}]>0)'.format(
-            s, i, i)
+        body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
+            s, i)
+    for k, v in functions.items():
+        body_of_function += '\n\t {} = {}'.format(k, v)
     for k, v in constants.items():
-        body_of_function += '\n\t {} = {:.2e}'.format(k, v)
+        body_of_function += '\n\t {} = {}'.format(k, v)
     for k, v in rates.items():
         body_of_function += '\n\t {} = {}'.format(k, v, v)
         if non_negative_rates:
@@ -282,6 +286,44 @@ def create_ode_function(species,
     for i, s in enumerate(dcdt):
         body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(i, dcdt[s], s)
     body_of_function += "\n\t return dydt"
+
+    return body_of_function
+
+
+def create_rate_function(species,
+                        functions,
+                        constants,
+                        rates,
+                        dcdt,
+                        non_negative_rates=False):
+    """creates the string of rates function
+
+    Arguments:
+        species {dict} -- dict of species provided by user
+        constants {dict} -- dict of concstants provided by user
+        rates {dict} -- dict of rates provided by user
+
+    Keyword Arguments:
+        non_negative_rates {bool} -- prevent negative values? (default: {True})
+
+    Returns:
+        [str] -- returns string of fun
+    """
+    body_of_function = "def rates(y):\n"
+    for i, s in enumerate(species):
+        body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
+            s, i)
+    for k, v in functions.items():
+        body_of_function += '\n\t {} = {}'.format(k, v)
+    for k, v in constants.items():
+        body_of_function += '\n\t {} = {}'.format(k, v)
+    for k, v in rates.items():
+        body_of_function += '\n\t {} = {}'.format(k, v, v)
+        if non_negative_rates:
+            body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
+    body_of_function += "\n\t return "
+    for k, v in rates.items():
+        body_of_function += '{}, '.format(k)
 
     return body_of_function
 
