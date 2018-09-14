@@ -25,9 +25,9 @@ def transport_equation_boundary_effect():
         'O2',
         D,
         0,
-        bc_top=1,
+        bc_top_value=1,
         bc_top_type='dirichlet',
-        bc_bot=0,
+        bc_bot_value=0,
         bc_bot_type='flux')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
@@ -68,9 +68,9 @@ def transport_equation_plot():
         'O2',
         D,
         0,
-        bc_top=1,
+        bc_top_value=1,
         bc_top_type='dirichlet',
-        bc_bot=0,
+        bc_bot_value=0,
         bc_bot_type='dirichlet')
     lab.solve()
     x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
