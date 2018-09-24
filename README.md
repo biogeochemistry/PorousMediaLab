@@ -8,7 +8,7 @@
 
 # PorousMediaLab
 
-Toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for user without computational background.
+The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
 # How to use
 
@@ -20,7 +20,8 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - install Anaconda [(click)](https://www.anaconda.com/download/);
 - to install the toolbox run ```pip install porousmedialab```
 - in terminal run command ```jupyter notebook```;
-- you will see the folders of your home folder. You can navigate in any folder and create new notebook with your model.
+- You will see the folders in your home folder. You can navigate in any folder and create a new notebook with your model.
+
 
 
 # Manual installation
@@ -28,13 +29,13 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - Install python version 3.5 or higher ([click](https://www.python.org/downloads/));
 - install Anaconda [(click)](https://www.anaconda.com/download/);
 - download and unzip or clone (using git) this repository (PorousMediaLab);
-- open terminal and go to the PorousMediaLab folder using ```cd``` command. If you have problems with the terminal, check this [guide](https://www.davidbaumgold.com/tutorials/command-line/);
+- Open terminal and go to the PorousMediaLab folder using ```cd``` command. If you have problems with the terminal, check this [guide](https://www.davidbaumgold.com/tutorials/command-line/);
 - in terminal run command ```jupyter notebook```;
-- you will see the folders of PorousMediaLab project, you can go in "examples" folder and play with them;
+- you will see the folders of the PorousMediaLab project; you can go in "examples" folder and play with them.
 
 # Citation
 
-I. Markelov (2017), The toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for user without computational background, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
+I. Markelov (2017), The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
 
 # MIT License
 
