@@ -174,6 +174,16 @@ class Lab:
         """
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
+    def henry_equilibrium(self, aq, gas, Hcc):
+        """ For partition reactions between 2 species
+
+        Args:
+            aq (string): name of aquatic species
+            gas (string): name of gaseous species
+            Hcc (double): Henry Law Constant
+        """
+        self.add_partition_equilibrium(aq, gas, Hcc)
+
     def add_ion(self, name, charge):
         """add non-dissociative ion in acid-base system
 
@@ -330,7 +340,7 @@ class Lab:
                     r = ne.evaluate(rate, {**self.constants, **conc})
                     self.estimated_rates[name][:, idx_t] = r * (r > 0)
 
-            for spc in self.species:
-                self.species[spc]['rates'] = (
-                    self.species[spc]['concentration'][:, 1:] -
-                    self.species[spc]['concentration'][:, :-1]) / self.dt
+        for spc in self.species:
+            self.species[spc]['rates'] = (
+                self.species[spc]['concentration'][:, 1:] -
+                self.species[spc]['concentration'][:, :-1]) / self.dt
