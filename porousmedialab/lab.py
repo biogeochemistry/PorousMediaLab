@@ -174,17 +174,17 @@ class Lab:
         """
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
-    def add_ion(self, element, charge):
+    def add_ion(self, name, charge):
         """add non-dissociative ion in acid-base system
 
         Arguments:
-            element {str} -- name of the chemical element
+            name {str} -- name of the chemical element
             charge {float} -- charge of chemical element
         """
 
         ion = phcalc.Neutral(charge=charge, conc=np.nan)
         self.acid_base_components.append({
-            'species': [element],
+            'species': [name],
             'pH_object': ion
         })
 

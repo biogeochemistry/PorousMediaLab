@@ -63,7 +63,7 @@ def fun(k0):
 
         ftc1.add_species(
             theta=((phi_g**(10 / 3)) / (phi**2)),
-            element='SF6g',
+            name='SF6g',
             D=D_SF6g,
             init_C=0,
             bc_top=0,
@@ -73,7 +73,7 @@ def fun(k0):
             w=-0.00)    #-0.055
         ftc1.add_species(
             theta=((phi_w**(10 / 3)) / (phi**2)),
-            element='SF6w',
+            name='SF6w',
             D=D_SF6w,
             init_C=0,
             bc_top=0,
@@ -85,7 +85,7 @@ def fun(k0):
         # SF6mp stands for SF6 gas in micro pores, it is immobile and only collects SF6;
         ftc1.add_species(
             theta=phi_p,
-            element='SF6mp',
+            name='SF6mp',
             D=1e-18,
             init_C=0,
             bc_top=0,

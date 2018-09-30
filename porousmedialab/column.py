@@ -35,7 +35,7 @@ class Column(Lab):
 
     def add_species(self,
                     theta,
-                    element,
+                    name,
                     D,
                     init_conc,
                     bc_top_value,
@@ -49,7 +49,7 @@ class Column(Lab):
 
         Arguments:
             theta {numpy.array} -- porosity or 1 minus porosity
-            element {str} -- name of the element
+            name {str} -- name of the element
             D {float} -- total diffusion
             init_conc {float or numpy.array} -- initial concentration
             bc_top_value {float} -- top boundary value
@@ -61,29 +61,29 @@ class Column(Lab):
             w {float} -- advective term for this element (default: {False})
             int_transport {bool} -- integrate transport? (default: {True})
         """
-        self.species[element] = DotDict({})
-        self.species[element]['bc_top_value'] = bc_top_value
-        self.species[element]['bc_top_type'] = bc_top_type.lower()
-        self.species[element]['bc_bot_value'] = bc_bot_value
-        self.species[element]['bc_bot_type'] = bc_bot_type.lower()
-        self.species[element]['theta'] = np.ones((self.N)) * theta
-        self.species[element]['D'] = D
-        self.species[element]['init_conc'] = init_conc
-        self.species[element]['concentration'] = np.zeros((self.N,
+        self.species[name] = DotDict({})
+        self.species[name]['bc_top_value'] = bc_top_value
+        self.species[name]['bc_top_type'] = bc_top_type.lower()
+        self.species[name]['bc_bot_value'] = bc_bot_value
+        self.species[name]['bc_bot_type'] = bc_bot_type.lower()
+        self.species[name]['theta'] = np.ones((self.N)) * theta
+        self.species[name]['D'] = D
+        self.species[name]['init_conc'] = init_conc
+        self.species[name]['concentration'] = np.zeros((self.N,
                                                            self.time.size))
-        self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = self.species[element][
+        self.species[name]['rates'] = np.zeros((self.N, self.time.size))
+        self.species[name]['concentration'][:, 0] = self.species[name][
             'init_conc']
-        self.profiles[element] = self.species[element]['concentration'][:, 0]
+        self.profiles[name] = self.species[name]['concentration'][:, 0]
         if w:
-            self.species[element]['w'] = w
+            self.species[name]['w'] = w
         else:
-            self.species[element]['w'] = self.w
-        self.species[element]['int_transport'] = int_transport
+            self.species[name]['w'] = self.w
+        self.species[name]['int_transport'] = int_transport
         if int_transport:
-            self.template_AL_AR(element)
-            self.update_matrices_due_to_bc(element, 0)
-        self.dcdt[element] = '0'
+            self.template_AL_AR(name)
+            self.update_matrices_due_to_bc(name, 0)
+        self.dcdt[name] = '0'
 
     def save_final_profiles(self):
         """Saves init conditons from profiles of all species in the
@@ -158,7 +158,7 @@ class Column(Lab):
     def create_acid_base_system(self):
         self.add_species(
             theta=True,
-            element='pH',
+            name='pH',
             D=0,
             init_conc=7,
             bc_top_value=7,
