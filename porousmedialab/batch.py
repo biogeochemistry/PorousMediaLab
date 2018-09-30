@@ -33,24 +33,24 @@ class Batch(Lab):
         super().__init__(tend, dt)
         self.N = 1
 
-    def add_species(self, element, init_conc):
+    def add_species(self, name, init_conc):
         """Summary
 
         Args:
-            element (string): name of the element
+            name (string): name of the element
             init_conc (float): initial concentration
         """
-        self.species[element] = DotDict({})
-        self.species[element]['init_conc'] = init_conc
-        self.species[element]['concentration'] = np.zeros((self.N,
+        self.species[name] = DotDict({})
+        self.species[name]['init_conc'] = init_conc
+        self.species[name]['concentration'] = np.zeros((self.N,
                                                            self.time.size))
-        self.species[element]['alpha'] = np.zeros((self.N, self.time.size))
-        self.species[element]['rates'] = np.zeros((self.N, self.time.size))
-        self.species[element]['concentration'][:, 0] = self.species[element][
+        self.species[name]['alpha'] = np.zeros((self.N, self.time.size))
+        self.species[name]['rates'] = np.zeros((self.N, self.time.size))
+        self.species[name]['concentration'][:, 0] = self.species[name][
             'init_conc']
-        self.profiles[element] = self.species[element]['concentration'][:, 0]
-        self.species[element]['int_transport'] = False
-        self.dcdt[element] = '0'
+        self.profiles[name] = self.species[name]['concentration'][:, 0]
+        self.species[name]['int_transport'] = False
+        self.dcdt[name] = '0'
 
     def integrate_one_timestep(self, i):
         """Summary
@@ -70,7 +70,7 @@ class Batch(Lab):
         """creates an object of acid-base system stores it as instance variable
         creates variable 'pH' with initial pH=7.
         """
-        self.add_species(element='pH', init_conc=7)
+        self.add_species(name='pH', init_conc=7)
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
