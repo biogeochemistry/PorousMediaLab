@@ -66,6 +66,13 @@ class Batch(Lab):
         if self.acid_base_components:
             self.acid_base_equilibrium_solve(i)
 
+    def add_time_variable(self):
+        """Temporal hack of adding time variable with dctdt=1
+        Needed for simulation of time dependent variables in
+        """
+        self.add_species(name='TIME', init_conc=0)
+        self.dcdt['TIME'] = '1'
+
     def create_acid_base_system(self):
         """creates an object of acid-base system stores it as instance variable
         creates variable 'pH' with initial pH=7.

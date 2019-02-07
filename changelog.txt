@@ -1,5 +1,30 @@
 # porousmedialab changelog
 
+## 1.3.4
+
+2019-02-07
+
+### NEW
+
+- added time variable in the batch sstem for time dependendant simulations
+
+2018-09-30
+
+### NEW
+
+- Renamed keyword "element=" to "name="
+- Save and load initial concentrations functions
+- Reconstract rates with scipy
+- Renamed keyword "Init_C=" to "init_conc="
+- Automatic calibration example and some DOCS
+- Added docstrings for methods
+
+ ### FIXED
+
+- Fix for bc_top_value
+
+
+
 ## 1.3.3
 
 2018-09-30
