@@ -155,6 +155,11 @@ class Column(Lab):
 
         self.species[element]['concentration'][:, i] = self.profiles[element]
 
+    def add_time_variable(self):
+        # for now we just added it in the batch system. Not sure if we
+        # need it here.
+        pass
+
     def create_acid_base_system(self):
         self.add_species(
             theta=True,

@@ -83,6 +83,10 @@ class Lab:
                     traceback.print_exc()
                     sys.exit()
 
+        # temporal hack for time dependent variables
+        if 'TIME' in self.species:
+            self.species.pop('TIME', None)
+
     def estimate_time_of_computation(self, i):
         """ function estimates time required for computation
 
@@ -174,6 +178,16 @@ class Lab:
         """
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
+    def henry_equilibrium(self, aq, gas, Hcc):
+        """ For partition reactions between 2 species
+
+        Args:
+            aq (string): name of aquatic species
+            gas (string): name of gaseous species
+            Hcc (double): Henry Law Constant
+        """
+        self.add_partition_equilibrium(aq, gas, Hcc)
+
     def add_ion(self, name, charge):
         """add non-dissociative ion in acid-base system
 
@@ -246,7 +260,7 @@ class Lab:
         initiates acid-base system and creates dynamic functions (strings of ODE)
         for reaction solver
         """
-
+        self.add_time_variable()
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
@@ -330,7 +344,7 @@ class Lab:
                     r = ne.evaluate(rate, {**self.constants, **conc})
                     self.estimated_rates[name][:, idx_t] = r * (r > 0)
 
-            for spc in self.species:
-                self.species[spc]['rates'] = (
-                    self.species[spc]['concentration'][:, 1:] -
-                    self.species[spc]['concentration'][:, :-1]) / self.dt
+        for spc in self.species:
+            self.species[spc]['rates'] = (
+                self.species[spc]['concentration'][:, 1:] -
+                self.species[spc]['concentration'][:, :-1]) / self.dt
