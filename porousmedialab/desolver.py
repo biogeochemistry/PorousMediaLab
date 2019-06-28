@@ -30,10 +30,10 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
         [-s / 2 - q / 4, phi + s, -s / 2 + q / 4], [-1, 0, 1],
         N,
         N,
-        format='csr') # .toarray()
+        format='csr')  # .toarray()
     AR = spdiags(
         [s / 2 + q / 4, phi - s, s / 2 - q / 4], [-1, 0, 1], N, N,
-        format='csr') # .toarray()
+        format='csr')  # .toarray()
 
     if bc_top_type in ['dirichlet', 'constant']:
         AL[0, 0] = phi[0]
@@ -41,11 +41,9 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
         AR[0, 0] = phi[0]
         AR[0, 1] = 0
     elif bc_top_type in ['neumann', 'flux']:
-        AL[0,
-           0] = phi[0] + s[0] # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
+        AL[0,0] = phi[0] + s[0]  # + adv_coef * s[0] * dx / diff_coef] - q[0] * adv_coef * dx / diff_coef] / 2
         AL[0, 1] = -s[0]
-        AR[0,
-           0] = phi[0] - s[0] # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
+        AR[0,0] = phi[0] - s[0]  # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
         AR[0, 1] = s[0]
     else:
         print('\nABORT!!!: Not correct top boundary condition type...')
@@ -58,9 +56,9 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
         AR[-1, -2] = 0
     elif bc_bot_type in ['neumann', 'flux']:
         AL[-1, -1] = phi[-1] + s[-1]
-        AL[-1, -2] = -s[-1] # / 2 - s[-1] / 2
+        AL[-1, -2] = -s[-1]  # / 2 - s[-1] / 2
         AR[-1, -1] = phi[-1] - s[-1]
-        AR[-1, -2] = s[-1] # / 2 + s[-1] / 2
+        AR[-1, -2] = s[-1]  # / 2 + s[-1] / 2
     else:
         print('\nABORT!!!: Not correct bottom boundary condition type...')
         sys.exit()
@@ -271,6 +269,7 @@ def create_ode_function(species,
         [str] -- returns string of fun
     """
     body_of_function = "def f(t, y):\n"
+    body_of_function += "\t import scipy as sp\n"
     body_of_function += "\t dydt = np.zeros((len(y), 1))"
     for i, s in enumerate(species):
         body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
@@ -284,18 +283,19 @@ def create_ode_function(species,
         if non_negative_rates:
             body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
     for i, s in enumerate(dcdt):
-        body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(i, dcdt[s], s)
+        body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(
+            i, dcdt[s], s)
     body_of_function += "\n\t return dydt"
 
     return body_of_function
 
 
 def create_rate_function(species,
-                        functions,
-                        constants,
-                        rates,
-                        dcdt,
-                        non_negative_rates=False):
+                         functions,
+                         constants,
+                         rates,
+                         dcdt,
+                         non_negative_rates=False):
     """creates the string of rates function
 
     Arguments:

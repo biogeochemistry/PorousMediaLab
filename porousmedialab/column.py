@@ -90,14 +90,17 @@ class Column(Lab):
         current folder in CSV file with the name of species
         """
         for p in self.profiles:
-            np.savetxt(p + '.csv', self.profiles[p], delimiter=',')
+            np.savetxt(p + '.csv', np.array([self.x, self.profiles[p]]).T, delimiter=',')
 
     def load_initial_conditions(self):
         """Loads init conditons from profiles of all species in the
         current folder in CSV file with the name of species
         """
         for elem in self.species:
-            init_conc = np.loadtxt(elem + '.csv', delimiter=',')
+            init_values = np.loadtxt(elem + '.csv', delimiter=',')
+            init_conc_at_x = init_values[:, 1]
+            x = init_values[:, 0]
+            init_conc = np.interp(self.x, x, init_conc_at_x)
             self.species[elem]['init_conc'] = init_conc
             self.species[elem]['concentration'][:, 0] = self.species[elem]['init_conc']
             self.profiles[elem] = self.species[elem]['concentration'][:, 0]
