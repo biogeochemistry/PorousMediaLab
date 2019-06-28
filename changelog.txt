@@ -1,5 +1,13 @@
 # porousmedialab changelog
 
+## 1.3.5
+
+2019-06-28
+
+### NEW
+
+- saving initial concentrations with the grid X. Loading initial concentrations and interpolate on the required new X grid if needed. It is required when dx was changed between the simulations.
+
 ## 1.3.4
 
 2019-02-07
