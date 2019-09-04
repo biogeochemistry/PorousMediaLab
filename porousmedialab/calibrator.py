@@ -23,7 +23,7 @@ def find_indexes_of_intersections(s, o, eps):
 
     idxs = np.array([])
     for o_i in o:
-        idx, = np.where(abs(s - o_i) < eps)
+        idx, = np.where(abs(s - o_i) <= eps*1.01)
         if idx.size > 0:
             idxs = np.append(idxs, int(idx[0]))
     return idxs.astype(int)
