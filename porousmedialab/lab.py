@@ -12,6 +12,7 @@ import porousmedialab.desolver as desolver
 import porousmedialab.equilibriumsolver as equilibriumsolver
 import porousmedialab.phcalc as phcalc
 from porousmedialab.dotdict import DotDict
+import porousmedialab.saver as saver
 
 
 class Lab:
@@ -60,6 +61,22 @@ class Lab:
         """
 
         return self.species[attr]
+
+    def save_results_in_hdf5(self):
+        """concentrations and rate profiles in the
+        hdf5 files
+        """
+        self.reconstruct_rates()
+        concentrations = {k: v['concentration'] for k, v in self.species.items()}
+
+        results = {}
+        results['time'] = self.time
+        results['concentrations'] = concentrations
+        results['estimated_rates'] = self.estimated_rates
+        results['rates'] = self.rates
+        results['parameters'] = {k: str(v) for k, v in self.constants.items()}
+
+        saver.save_dict_to_hdf5(results, 'results.h5')
 
     def solve(self, verbose=True):
         """ solves coupled PDEs

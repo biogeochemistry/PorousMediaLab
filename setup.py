@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='porousmedialab',
     packages=['porousmedialab'],
-    version='1.3.6',
+    version='1.3.7',
     description='Toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for the user without computational background',
     author='Igor Markelov',
     author_email='is.markelov@gmail.com',
