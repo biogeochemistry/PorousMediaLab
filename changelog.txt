@@ -1,5 +1,13 @@
 # porousmedialab changelog
 
+## 1.3.7
+
+2019-09-06
+
+### NEW
+
+- saving results of the simulation in HDF file using method `save_results_in_hdf5()`
+
 ## 1.3.6
 
 2019-09-04
