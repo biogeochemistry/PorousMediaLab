@@ -58,6 +58,8 @@ class Batch(Lab):
         Args:
             i (TYPE): Description
         """
+        if i == 1 or i == 100:
+            self.estimate_time_of_computation(i)
         if i == 1:
             self.pre_run_methods()
         self.reactions_integrate_scipy(i)

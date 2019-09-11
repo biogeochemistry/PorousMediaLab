@@ -162,14 +162,30 @@ class Column(Lab):
                 or self.species[element].bc_top_value != bc_top_value
                 or self.species[element].bc_bot_type != bc_bot_type.lower()
                 or self.species[element].bc_bot_value != bc_bot_value):
-            print("Boundary conditions changed for {} at time {}".format(
-                element, self.time[i]))
             self.species[element].bc_top_type = bc_top_type.lower()
             self.species[element].bc_top_value = bc_top_value
             self.species[element].bc_bot_type = bc_bot_type.lower()
             self.species[element].bc_bot_value = bc_bot_value
-            self.template_AL_AR(element)
-            self.update_matrices_due_to_bc(element, i)
+            if self.transport_method == 'fipy':
+                if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
+                    self.species[element]['fipy_var'].constrain(
+                      self.species[element]['bc_top_value'], where=self.fipy_mesh.facesLeft)
+
+                elif self.species[element]['bc_top_type'] in ['neumann', 'flux']:
+                    self.species[element]['fipy_var'].faceGrad.constrain(
+                        self.species[element]['bc_top_value'], where=self.fipy_mesh.facesLeft)
+
+                if self.species[element]['bc_bot_type'] in ['dirichlet', 'constant']:
+                    self.species[element]['fipy_var'].constrain(
+                        self.species[element]['bc_bot_value'], where=self.fipy_mesh.facesRight)
+
+                elif self.species[element]['bc_bot_type'] in ['neumann', 'flux']:
+                    self.species[element]['fipy_var'].faceGrad.constrain(
+                        self.species[element]['bc_bot_value'], where=self.fipy_mesh.facesRight)
+
+            else:
+                self.template_AL_AR(element)
+                self.update_matrices_due_to_bc(element, i)
 
     def template_AL_AR(self, element):
         """creates the templates of matrices for linear algebra solutions
@@ -238,6 +254,8 @@ class Column(Lab):
                     component['species'][idx]]['concentration'][:, i]
 
     def integrate_one_timestep(self, i):
+        if i == 1 or i == 100:
+          self.estimate_time_of_computation(i)
         if i < 2:
             self.pre_run_methods()
         self.transport_integrate(i)

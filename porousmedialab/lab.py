@@ -106,6 +106,11 @@ class Lab:
         if 'TIME' in self.species:
             self.species.pop('TIME', None)
 
+        total_t = time.time() - self.start_computation_time
+        m, s = divmod(total_t, 60)
+        h, m = divmod(m, 60)
+        print("\n\nTotal execution time:\n\t %dh:%02dm:%02ds" % (h, m, s))
+
     def estimate_time_of_computation(self, i):
         """ function estimates time required for computation
 
