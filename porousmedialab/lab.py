@@ -93,8 +93,6 @@ class Lab:
             for i in np.arange(1, len(self.time)):
                 try:
                     self.integrate_one_timestep(i)
-                    if verbose:
-                        self.estimate_time_of_computation(i)
                 except FloatingPointError as inst:
                     print(
                         '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...'
@@ -126,9 +124,9 @@ class Lab:
             print("Simulation started:\n\t",
                   time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if i == 100:
-            total_t = len(self.time) * (
+            total_t = (len(self.time) - 100) * (
                 time.time() - self.start_computation_time
-            ) / 100 * self.dt / self.dt
+            ) / 100
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print(
