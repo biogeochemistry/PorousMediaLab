@@ -17,8 +17,8 @@ def transport_equation_boundary_effect():
     dx = 0.1
     length = 30
     phi = 1
-    dt = 0.001
-    lab = Column(length, dx, tend, dt, w)
+    dt = 0.01
+    lab = Column(length, dx, tend, dt, w, transport_method='cn')
     D = 5
     lab.add_species(
         phi,
@@ -60,8 +60,8 @@ def transport_equation_plot():
     dx = 0.1
     length = 100
     phi = 1
-    dt = 0.001
-    lab = Column(length, dx, tend, dt, w)
+    dt = 0.01
+    lab = Column(length, dx, tend, dt, w,  transport_method='cn')
     D = 5
     lab.add_species(
         phi,

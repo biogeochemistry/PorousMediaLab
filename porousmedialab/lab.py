@@ -46,6 +46,8 @@ class Lab:
         self.acid_base_components = []
         self.acid_base_system = phcalc.System()
         self.ode_method = 'scipy'
+        self.transport_method = False
+        self.fipy_eqns = False
 
     def __getattr__(self, attr):
         """dot notation for species
@@ -152,7 +154,8 @@ class Lab:
             for elem in [eq['gas'], eq['aq']]:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
                 if self.species[elem]['int_transport']:
-                    self.update_matrices_due_to_bc(elem, i)
+                    if not self.transport_method == 'fipy':
+                        self.update_matrices_due_to_bc(elem, i)
 
     def acid_base_solve_ph(self, i):
         """solves acid base reactions
@@ -253,6 +256,10 @@ class Lab:
         for rate in self.rates:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
+    def create_fipy_equations(self):
+        fipy_eqns = [self.species[element]['fipy_eq'] for element in self.species if element != 'pH']
+        self.fipy_eqns = np.bitwise_and.reduce(fipy_eqns)
+
     def create_dynamic_functions(self):
         """create strings of dynamic functions for scipy solver and later execute
         them using exec(), potentially not safe but haven't found better approach yet.
@@ -283,6 +290,8 @@ class Lab:
             self.acid_base_equilibrium_solve(0)
         if self.ode_method is 'scipy':
             self.create_dynamic_functions()
+        if self.transport_method is 'fipy':
+            self.create_fipy_equations()
         self.init_rates_arrays()
 
     def change_concentration_profile(self, element, i, new_profile):
@@ -295,7 +304,8 @@ class Lab:
         """
 
         self.profiles[element] = new_profile
-        self.update_matrices_due_to_bc(element, i)
+        if not self.transport_method == 'fipy':
+            self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
         """integrates ODE of reactions
@@ -322,7 +332,8 @@ class Lab:
             self.profiles[element] = self.species[element]['concentration'][:,
                                                                             i]
             if self.species[element]['int_transport']:
-                self.update_matrices_due_to_bc(element, i)
+                if not self.transport_method == 'fipy':
+                    self.update_matrices_due_to_bc(element, i)
 
     def reconstruct_rates(self):
         """reconstructs rates after model run

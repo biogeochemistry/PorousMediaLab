@@ -1,4 +1,5 @@
 import numpy as np
+import fipy
 
 import porousmedialab.desolver as desolver
 import porousmedialab.phcalc as phcalc
@@ -11,7 +12,7 @@ class Column(Lab):
     """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
-    def __init__(self, length, dx, tend, dt, w=0, ode_method='scipy'):
+    def __init__(self, length, dx, tend, dt, w=0, ode_method='scipy', transport_method='cn'):
         """ initializing the domain of the column model
 
         Arguments:
@@ -32,6 +33,10 @@ class Column(Lab):
         self.dx = dx
         self.w = w
         self.ode_method = ode_method
+        self.transport_method = transport_method
+        if transport_method == 'fipy':
+            self.fipy_mesh = fipy.Grid1D(dx=dx, nx=self.N)
+            self.fipy_x = self.fipy_mesh.cellCenters[0]
 
     def add_species(self,
                     theta,
@@ -81,9 +86,49 @@ class Column(Lab):
             self.species[name]['w'] = self.w
         self.species[name]['int_transport'] = int_transport
         if int_transport:
-            self.template_AL_AR(name)
-            self.update_matrices_due_to_bc(name, 0)
+            if self.transport_method == 'fipy':
+                self.create_fipy_variable(name)
+            else:
+                self.template_AL_AR(name)
+                self.update_matrices_due_to_bc(name, 0)
         self.dcdt[name] = '0'
+
+    def create_fipy_variable(self, name):
+        self.species[name]['fipy_var'] = fipy.CellVariable(name=name, mesh=self.fipy_mesh, value=0., hasOld=True)
+        self.species[name]['fipy_var'].setValue(self.species[name]['init_conc'])
+
+        if self.species[name]['bc_top_type'] in ['dirichlet', 'constant']:
+            self.species[name]['fipy_var'].constrain(
+                self.species[name]['bc_top_value'], where=self.fipy_mesh.facesLeft)
+
+        elif self.species[name]['bc_top_type'] in ['neumann', 'flux']:
+            self.species[name]['fipy_var'].faceGrad.constrain(
+                self.species[name]['bc_top_value'], where=self.fipy_mesh.facesLeft)
+
+        if self.species[name]['bc_bot_type'] in ['dirichlet', 'constant']:
+            self.species[name]['fipy_var'].constrain(
+                self.species[name]['bc_bot_value'], where=self.fipy_mesh.facesRight)
+
+        elif self.species[name]['bc_bot_type'] in ['neumann', 'flux']:
+            self.species[name]['fipy_var'].faceGrad.constrain(
+                self.species[name]['bc_bot_value'], where=self.fipy_mesh.facesRight)
+
+
+        # self.species[name]['theta'] * self.species[name]['w']
+        # self.species[name]['theta']*self.species[name]['D']
+        convectionCoeff = fipy.CellVariable(
+            mesh=self.fipy_mesh, value=[self.species[name]['theta'] * self.species[name]['w']])
+        diffCoeff = fipy.CellVariable(
+            mesh=self.fipy_mesh, value=self.species[name]['theta']*self.species[name]['D'])
+        # import ipdb; ipdb.set_trace()
+
+
+        self.species[name]['fipy_eq'] = (fipy.TransientTerm(var=self.species[name]['fipy_var'])
+                                         == fipy.DiffusionTerm(coeff=diffCoeff,
+                                          var=self.species[name]['fipy_var'])
+                                         - fipy.ConvectionTerm(coeff=convectionCoeff,
+                                                  var=self.species[name]['fipy_var']))
+
 
     def save_final_profiles(self):
         """Saves init conditons from profiles of all species in the
@@ -235,13 +280,35 @@ class Column(Lab):
                 self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
+        if self.transport_method == 'fipy':
+            self.transport_integrate_fipy(i)
+        else:
+            self.transport_integrate_cn(i)
+
+    def transport_integrate_fipy(self,i):
         """ Integrates transport equations
+        with FiPy
         """
         for element in self.species:
             if self.species[element]['int_transport']:
-                self.transport_integrate_one_element(element, i)
+                self.species[element]['fipy_var'].setValue(
+                    self.profiles[element])
+                self.species[element]['fipy_var'].updateOld()
+        self.fipy_eqns.solve(dt=self.dt)
+        for element in self.species:
+            if self.species[element]['int_transport']:
+                self.profiles[element] = self.species[element]['fipy_var'].value
+                self.species[element]['concentration'][:,i] = self.profiles[element]
 
-    def transport_integrate_one_element(self, element, i):
+    def transport_integrate_cn(self, i):
+        """ Integrates transport equations
+        with Crank-Nicolson method
+        """
+        for element in self.species:
+            if self.species[element]['int_transport']:
+                self.transport_integrate_cn_one_element(element, i)
+
+    def transport_integrate_cn_one_element(self, element, i):
         self.profiles[element] = desolver.linear_alg_solver(
             self.species[element]['AL'], self.species[element]['B'])
         self.species[element]['concentration'][:, i] = self.profiles[element]
