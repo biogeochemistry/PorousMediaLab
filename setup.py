@@ -11,5 +11,6 @@ setup(
     url='https://github.com/biogeochemistry/PorousMediaLab',
     download_url='https://github.com/biogeochemistry/PorousMediaLab/archive/master.zip',
     keywords=['modeling', 'reactive', 'transport', 'diffusion', 'advection'],
+    install_requires=['scipy', 'numpy', 'fipy', 'numexpr'],
     classifiers=[],
 )

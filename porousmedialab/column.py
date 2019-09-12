@@ -34,7 +34,7 @@ class Column(Lab):
         self.w = w
         self.ode_method = ode_method
         self.transport_method = transport_method
-        if transport_method == 'fipy':
+        if transport_method == 'fv':
             self.fipy_mesh = fipy.Grid1D(dx=dx, nx=self.N)
             self.fipy_x = self.fipy_mesh.cellCenters[0]
 
@@ -86,7 +86,7 @@ class Column(Lab):
             self.species[name]['w'] = self.w
         self.species[name]['int_transport'] = int_transport
         if int_transport:
-            if self.transport_method == 'fipy':
+            if self.transport_method == 'fv':
                 self.create_fipy_variable(name)
             else:
                 self.template_AL_AR(name)
@@ -128,6 +128,8 @@ class Column(Lab):
                                           var=self.species[name]['fipy_var'])
                                          - fipy.ConvectionTerm(coeff=convectionCoeff,
                                                   var=self.species[name]['fipy_var']))
+                                        #  + fipy.ImplicitSourceTerm(coeff=self.species[name]['w'],
+                                        #  var=self.species[name]['fipy_var']))
 
 
     def save_final_profiles(self):
@@ -166,7 +168,7 @@ class Column(Lab):
             self.species[element].bc_top_value = bc_top_value
             self.species[element].bc_bot_type = bc_bot_type.lower()
             self.species[element].bc_bot_value = bc_bot_value
-            if self.transport_method == 'fipy':
+            if self.transport_method == 'fv':
                 if self.species[element]['bc_top_type'] in ['dirichlet', 'constant']:
                     self.species[element]['fipy_var'].constrain(
                       self.species[element]['bc_top_value'], where=self.fipy_mesh.facesLeft)
@@ -298,7 +300,7 @@ class Column(Lab):
                 self.update_matrices_due_to_bc(element, i)
 
     def transport_integrate(self, i):
-        if self.transport_method == 'fipy':
+        if self.transport_method == 'fv':
             self.transport_integrate_fipy(i)
         else:
             self.transport_integrate_cn(i)
@@ -312,6 +314,10 @@ class Column(Lab):
                 self.species[element]['fipy_var'].setValue(
                     self.profiles[element])
                 self.species[element]['fipy_var'].updateOld()
+                # res = 1e8
+                # while res > 0.1:
+                #     res = self.species[element]['fipy_eq'].sweep(
+                #         var=self.species[element]['fipy_var'], dt=self.dt)
         self.fipy_eqns.solve(dt=self.dt)
         for element in self.species:
             if self.species[element]['int_transport']:

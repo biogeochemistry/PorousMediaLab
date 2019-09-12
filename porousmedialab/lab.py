@@ -157,7 +157,7 @@ class Lab:
             for elem in [eq['gas'], eq['aq']]:
                 self.profiles[elem] = self.species[elem]['concentration'][:, i]
                 if self.species[elem]['int_transport']:
-                    if not self.transport_method == 'fipy':
+                    if not self.transport_method == 'fv':
                         self.update_matrices_due_to_bc(elem, i)
 
     def acid_base_solve_ph(self, i):
@@ -293,7 +293,7 @@ class Lab:
             self.acid_base_equilibrium_solve(0)
         if self.ode_method is 'scipy':
             self.create_dynamic_functions()
-        if self.transport_method is 'fipy':
+        if self.transport_method is 'fv':
             self.create_fipy_equations()
         self.init_rates_arrays()
 
@@ -307,7 +307,7 @@ class Lab:
         """
 
         self.profiles[element] = new_profile
-        if not self.transport_method == 'fipy':
+        if not self.transport_method == 'fv':
             self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
@@ -335,7 +335,7 @@ class Lab:
             self.profiles[element] = self.species[element]['concentration'][:,
                                                                             i]
             if self.species[element]['int_transport']:
-                if not self.transport_method == 'fipy':
+                if not self.transport_method == 'fv':
                     self.update_matrices_due_to_bc(element, i)
 
     def reconstruct_rates(self):
