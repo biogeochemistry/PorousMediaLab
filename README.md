@@ -35,7 +35,7 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 # Citation
 
-I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
+I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.3464090
 
 # MIT License
 
