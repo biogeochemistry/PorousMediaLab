@@ -35,11 +35,11 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 # Citation
 
-I. Markelov (2017), The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
+I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.1039644
 
 # MIT License
 
-Copyright (c) 2017 Igor Markelov
+Copyright (c) 2019 Igor Markelov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
