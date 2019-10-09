@@ -149,7 +149,7 @@ class Calibrator:
         """
         raise NotImplementedError
 
-    def run(self, verbose=False):
+    def run(self, verbose=False, method="TNC"):
         """ executes calibration of the model
         and prints final result
         """
@@ -159,7 +159,7 @@ class Calibrator:
         self.res = minimize(
             self.min_function,
             x0,
-            method="Nelder-Mead",
+            method=method,
             bounds=bnds,
             options={
                 'maxiter': 100,
