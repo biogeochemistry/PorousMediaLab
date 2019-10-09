@@ -37,6 +37,10 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.3464090
 
+# Contribution
+
+I am looking for contributors. If you wish to contribute in this open source project, please, create pull request or conact me via email: is.markelov@gmail.com.
+
 # MIT License
 
 Copyright (c) 2019 Igor Markelov
