@@ -41,6 +41,7 @@ I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive 
 
 I am looking for contributors specifically for incorporation of:
 
+- parallelization 
 - sensitivity tests
 - unsaturated flow
 - thermodynamic calculations
