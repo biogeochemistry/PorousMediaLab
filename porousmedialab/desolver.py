@@ -1,6 +1,7 @@
 import sys
 import numexpr as ne
 from scipy.sparse import linalg
+import scipy as sp
 from scipy.sparse import spdiags
 from scipy.integrate import ode
 
@@ -253,7 +254,7 @@ def create_ode_function(species,
                         constants,
                         rates,
                         dcdt,
-                        non_negative_rates=True):
+                        non_negative_rates=False):
     """creates the string of ode function
 
     Arguments:
@@ -309,7 +310,9 @@ def create_rate_function(species,
     Returns:
         [str] -- returns string of fun
     """
-    body_of_function = "def rates(y):\n"
+    body_of_function = "import scipy as sp\n"
+    body_of_function += "import numpy as np\n\n"
+    body_of_function += "def rates(y):\n"
     for i, s in enumerate(species):
         body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
             s, i)
