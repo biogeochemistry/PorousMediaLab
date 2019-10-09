@@ -1,5 +1,13 @@
 # porousmedialab changelog
 
+## 1.4.1
+
+2019-10-09
+
+### FIXED
+
+- calibration respects the boundaries provided
+
 ## 1.3.7
 
 2019-09-06
