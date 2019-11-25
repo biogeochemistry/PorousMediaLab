@@ -49,6 +49,15 @@ I am looking for contributors specifically for incorporation of:
 
 If you wish to contribute in this open source project, please, create pull request or conact me via email: is.markelov@gmail.com. 
 
+# Acknowledgements
+
+This project was funded by 
+
+- Lakes in Transition (Research Council of Norway project no. 244558/E50 (https://prosjektbanken.forskningsradet.no/#/project/NFR/244558)
+
+- the Canada Excellence Research Chair in Ecohydrology (https://www.cerc.gc.ca/chairholders-titulaires/former-ancien-eng.aspx).
+
+
 # MIT License
 
 Copyright (c) 2019 Igor Markelov
