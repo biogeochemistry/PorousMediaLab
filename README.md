@@ -37,6 +37,27 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.3464090
 
+# Contribution
+
+I am looking for contributors specifically for incorporation of:
+
+- parallelization 
+- sensitivity tests
+- unsaturated flow
+- thermodynamic calculations
+- your crazy ideas and needs
+
+If you wish to contribute in this open source project, please, create pull request or conact me via email: is.markelov@gmail.com. 
+
+# Acknowledgements
+
+This project was funded by 
+
+- Lakes in Transition (Research Council of Norway project no. 244558/E50 (https://prosjektbanken.forskningsradet.no/#/project/NFR/244558)
+
+- the Canada Excellence Research Chair in Ecohydrology (https://www.cerc.gc.ca/chairholders-titulaires/former-ancien-eng.aspx).
+
+
 # MIT License
 
 Copyright (c) 2019 Igor Markelov
