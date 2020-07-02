@@ -30,7 +30,7 @@ def transport_equation_boundary_effect():
         bc_bot_value=0,
         bc_bot_type='flux')
     lab.solve()
-    x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+    x = np.linspace(0, lab.length, int(lab.length / lab.dx) + 1)
     sol = 1 / 2 * (
         special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
         np.exp(lab.w * x / D) * special.erfc(
@@ -73,7 +73,7 @@ def transport_equation_plot():
         bc_bot_value=0,
         bc_bot_type='dirichlet')
     lab.solve()
-    x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+    x = np.linspace(0, lab.length, int(lab.length / lab.dx) + 1)
     sol = 1 / 2 * (
         special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) +
         np.exp(lab.w * x / D) * special.erfc(
@@ -104,7 +104,7 @@ def reaction_equation_plot():
     dcdt = {'C': '-R'}
     dt = 0.001
     T = 10
-    time = np.linspace(0, T, T / dt + 1)
+    time = np.linspace(0, T, int(T / dt) + 1)
     num_sol = np.array(C0['C'])
     for i in range(1, len(time)):
         C_new, _, _ = desolver.ode_integrate(
