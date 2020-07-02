@@ -26,7 +26,7 @@ class Column(Lab):
         """
         # ne.set_num_threads(ne.detect_number_of_cores())
         super().__init__(tend, dt)
-        self.x = np.linspace(0, length, length / dx + 1)
+        self.x = np.linspace(0, length, int(length / dx) + 1)
         self.N = self.x.size
         self.length = length
         self.dx = dx
