@@ -35,7 +35,7 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 # Citation
 
-I. Markelov, PorousMediaLab: The Toolbox For Batch And One-Dimensional Reactive Transport Modelling, GitHub repository: https://github.com/biogeochemistry/PorousMediaLab, DOI: 10.5281/zenodo.3464090
+Igor Markelov (2020). Modelling Biogeochemical Cycles Across Scales: From Whole-Lake Phosphorus Dynamics to Microbial Reaction Systems. UWSpace. http://hdl.handle.net/10012/15513
 
 # Contribution
 
