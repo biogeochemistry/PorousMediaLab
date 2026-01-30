@@ -10,6 +10,14 @@
 
 The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
+## What's New in v2.1.0
+
+**2.4x overall performance improvement** with optimized rate reconstruction:
+
+- Vectorized `reconstruct_rates()` method - 45x faster
+- Enabled numexpr multi-threading for parallel rate expression evaluation
+- Pre-allocated arrays in hot loops to reduce memory overhead
+
 ## What's New in v2.0.0
 
 **6-60x faster reaction integration** with the new vectorized ODE solver:
@@ -23,11 +31,6 @@ The toolbox for batch and 1D reactive transport modelling in porous media aimed 
 | 50 | 2 | 13x |
 | 100 | 3 | 23x |
 | 500 | 5 | 62x |
-
-Run the benchmark yourself:
-```bash
-poetry run python benchmarks/benchmark_ode_solver.py
-```
 
 # How to use
 
@@ -49,6 +52,21 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - Install dependencies: ```poetry install```
 - Run tests: ```poetry run pytest```
 - Activate the virtual environment: ```poetry shell```
+
+## Development Commands (Makefile)
+
+The project includes a Makefile for common tasks:
+
+```bash
+make install       # Install dependencies
+make test          # Run test suite
+make benchmark     # Run performance optimization benchmark
+make benchmark-ode # Run ODE solver benchmark
+make build         # Build package
+make publish       # Publish to PyPI
+make release       # Build and publish
+make clean         # Clean build artifacts
+```
 
 # Manual installation
 
