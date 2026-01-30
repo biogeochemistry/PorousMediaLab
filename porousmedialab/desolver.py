@@ -403,6 +403,54 @@ def create_rate_function(species,
     return body
 
 
+def create_vectorized_rate_function(species,
+                                    functions,
+                                    constants,
+                                    rates,
+                                    N,
+                                    non_negative_rates=False):
+    """Creates vectorized rate function for rate reconstruction across N points.
+
+    Processes all N spatial points at once instead of point-by-point.
+    Input shape: (num_species, N) - concentrations for all species at all points
+    Output shape: (num_rates, N) - rates for all rate expressions at all points
+
+    Arguments:
+        species: dict of species provided by user
+        functions: dict of functions provided by user
+        constants: dict of constants provided by user
+        rates: dict of rates provided by user
+        N: number of spatial points
+        non_negative_rates: prevent negative rate values (default False)
+
+    Returns:
+        String representation of the vectorized rates function
+    """
+    num_species = len(species)
+    num_rates = len(rates)
+    species_list = list(species.keys())
+    rate_list = list(rates.keys())
+
+    body = "def rates_vectorized(conc_2d):\n"
+    body += f"\t # conc_2d shape: ({num_species}, {N})\n"
+    body += f"\t # Each species becomes array of shape ({N},)\n"
+
+    # Extract species (each becomes array of shape (N,))
+    for i, s in enumerate(species_list):
+        body += f'\n\t {s} = np.clip(conc_2d[{i}, :], 1e-16, 1e+16)'
+
+    # Add functions, constants, and rates
+    body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
+
+    # Return stacked rate arrays
+    if num_rates == 1:
+        body += f"\n\t return {rate_list[0]}"
+    else:
+        body += f"\n\t return np.stack([{', '.join(rate_list)}], axis=0)"
+
+    return body
+
+
 def create_solver(dydt):
     solver = ode(dydt).set_integrator('lsoda', method='bdf', rtol=1e-2)
     return solver

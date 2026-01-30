@@ -1,4 +1,5 @@
 import numpy as np
+import numexpr as ne
 
 import porousmedialab.desolver as desolver
 import porousmedialab.phcalc as phcalc
@@ -24,7 +25,7 @@ class Column(Lab):
             w {float} -- default advective flux for all species (default: {0})
             ode_method {str} -- method to solve ode (default: {'rk4'})
         """
-        # ne.set_num_threads(ne.detect_number_of_cores())
+        ne.set_num_threads(ne.detect_number_of_cores())
         super().__init__(tend, dt)
         self.x = np.linspace(0, length, int(length / dx) + 1)
         self.N = self.x.size

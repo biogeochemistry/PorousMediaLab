@@ -11,11 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vectorized ODE solver for 6-60x faster reaction integration
 - `ode_integrate_vectorized()` function using `scipy.integrate.solve_ivp`
 - `create_vectorized_ode_function()` for generating vectorized ODE functions
+- `create_vectorized_rate_function()` for 45x faster rate reconstruction
 - `ODESolverError` exception for better error handling when solver fails
 - Benchmark script at `benchmarks/benchmark_ode_solver.py`
+- Performance optimization benchmark at `benchmarks/benchmark_optimizations.py`
 - Comprehensive test suite with 262 tests
 - Poetry for dependency management
 - GitHub Actions CI workflow
+
+### Performance
+- Enabled numexpr multi-threading for parallel rate expression evaluation
+- Vectorized `reconstruct_rates()` method for 45x speedup
+- Pre-allocated arrays in hot loops to reduce memory allocation overhead
+- Overall 2.4x performance improvement for typical simulations
 
 ### Changed
 - Default `ode_method='scipy'` now uses vectorized solver (LSODA method)
