@@ -156,7 +156,7 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
             w_start = C_0[element] + k1[element]
             C_new[element], _ = Newton(F, w_start, dFdw, N=30)
 
-        raise NotImplemented
+        raise NotImplementedError()
 
     def k_loop(conc, dt=dt, non_negative_rates=True):
         rates_per_rate = {}
@@ -270,7 +270,7 @@ def create_ode_function(species,
     """
     body_of_function = "def f(t, y):\n"
     body_of_function += "\t import scipy as sp\n"
-    body_of_function += "\t dydt = np.zeros((len(y), 1))"
+    body_of_function += "\t dydt = np.zeros(len(y))"
     for i, s in enumerate(species):
         body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
             s, i)

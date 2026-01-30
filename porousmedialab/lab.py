@@ -260,10 +260,12 @@ class Lab:
 
         fun_str = desolver.create_ode_function(
             self.species, self.functions, self.constants, self.rates, self.dcdt)
-        exec(fun_str)
+        # Use explicit dict for exec() - required in Python 3 for locals() to work
+        local_vars = {'np': np}
+        exec(fun_str, globals(), local_vars)
         self.dynamic_functions['dydt_str'] = fun_str
-        self.dynamic_functions['dydt'] = locals()['f']
-        self.dynamic_functions['solver'] = desolver.create_solver(locals()['f'])
+        self.dynamic_functions['dydt'] = local_vars['f']
+        self.dynamic_functions['solver'] = desolver.create_solver(local_vars['f'])
 
     def reset(self):
         """resets the solution for re-run
@@ -281,7 +283,7 @@ class Lab:
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
-        if self.ode_method is 'scipy':
+        if self.ode_method == 'scipy':
             self.create_dynamic_functions()
         self.init_rates_arrays()
 

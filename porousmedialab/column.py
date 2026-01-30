@@ -201,7 +201,7 @@ class Column(Lab):
         if self.acid_base_components:
             self.acid_base_equilibrium_solve(i)
         if self.rates:
-            if self.ode_method is 'scipy':
+            if self.ode_method == 'scipy':
                 self.reactions_integrate_scipy(i)
             else:
                 self.reactions_integrate(i)
@@ -219,11 +219,11 @@ class Column(Lab):
             for rate_name, rate in rates_per_rate.items():
                 self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[
                     rate_name]
-        except:
+        except (KeyError, AttributeError):
             pass
 
         for element in C_new:
-            if element is not 'Temperature':
+            if element != 'Temperature':
                 # the concentration should be positive
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
@@ -273,10 +273,10 @@ class Column(Lab):
                 - theta[0] * self.species[elem]['w'] * C[0]
         if order == 2:
             flux = D * (-3 * theta[1] * C[1, idx] + 4 *
-                        theta[2] * C[2, idx] * theta[3] * C[3, idx]) / self.dx / 2 \
+                        theta[2] * C[2, idx] - theta[3] * C[3, idx]) / self.dx / 2 \
                 - theta[0] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (theta[0] * C[0, idx] * theta[2] * C[2, idx]) / 2 / self.dx \
+            flux = - D * (theta[0] * C[0, idx] - theta[2] * C[2, idx]) / 2 / self.dx \
                 - theta[0] * self.species[elem]['w'] * C[0]
 
         return flux
@@ -311,10 +311,10 @@ class Column(Lab):
                 + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 2:
             flux = D * (-3 * theta[-2] * C[-2, idx] + 4 *
-                        theta[-3] * C[-3, idx] * theta[-4] * C[-4, idx]) / self.dx / 2 \
+                        theta[-3] * C[-3, idx] - theta[-4] * C[-4, idx]) / self.dx / 2 \
                 + theta[-1] * self.species[elem]['w'] * C[0]
         if order == 1:
-            flux = - D * (theta[-1] * C[-1, idx] * theta[-3] * C[-3, :]) / 2 / self.dx \
+            flux = - D * (theta[-1] * C[-1, idx] - theta[-3] * C[-3, idx]) / 2 / self.dx \
                 + theta[-1] * self.species[elem]['w'] * C[0]
 
         return flux

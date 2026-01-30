@@ -50,7 +50,7 @@ class TestMathModel:
         lab.add_species(True, 'O2', D, 0, bc_top=1, bc_top_type='dirichlet', bc_bot=0, bc_bot_type='neumann')
         lab.dcdt.O2 = '0'
         lab.solve()
-        x = np.linspace(0, lab.length, lab.length / lab.dx + 1)
+        x = np.linspace(0, lab.length, int(lab.length / lab.dx) + 1)
         sol = 1 / 2 * (special.erfc((x - lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)) + np.exp(
             lab.w * x / D) * special.erfc((x + lab.w * lab.tend) / 2 / np.sqrt(D * lab.tend)))
 
