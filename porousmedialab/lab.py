@@ -253,19 +253,40 @@ class Lab:
         for rate in self.rates:
             self.estimated_rates[rate] = np.zeros((self.N, self.time.size))
 
-    def create_dynamic_functions(self):
-        """create strings of dynamic functions for scipy solver and later execute
-        them using exec(), potentially not safe but haven't found better approach yet.
-        """
+    def _exec_ode_function(self, func_str, func_name):
+        """Execute a dynamically generated ODE function string and return the function.
 
-        fun_str = desolver.create_ode_function(
-            self.species, self.functions, self.constants, self.rates, self.dcdt)
-        # Use explicit dict for exec() - required in Python 3 for locals() to work
+        Arguments:
+            func_str: string containing the function definition
+            func_name: name of the function to extract from local namespace
+
+        Returns:
+            The compiled function object
+        """
         local_vars = {'np': np}
-        exec(fun_str, globals(), local_vars)
-        self.dynamic_functions['dydt_str'] = fun_str
-        self.dynamic_functions['dydt'] = local_vars['f']
-        self.dynamic_functions['solver'] = desolver.create_solver(local_vars['f'])
+        exec(func_str, globals(), local_vars)
+        return local_vars[func_name]
+
+    def create_dynamic_functions(self):
+        """Create strings of dynamic functions for scipy solver and execute them.
+
+        Uses exec() to compile the generated function strings. This approach is
+        potentially not safe but is necessary for the dynamic ODE generation.
+        """
+        # Single-point ODE (for backward compatibility with scipy_sequential)
+        func_str = desolver.create_ode_function(
+            self.species, self.functions, self.constants, self.rates, self.dcdt)
+        self.dynamic_functions['dydt_str'] = func_str
+        self.dynamic_functions['dydt'] = self._exec_ode_function(func_str, 'f')
+        self.dynamic_functions['solver'] = desolver.create_solver(
+            self.dynamic_functions['dydt'])
+
+        # Vectorized ODE for all N points (default scipy method)
+        vec_func_str = desolver.create_vectorized_ode_function(
+            self.species, self.functions, self.constants, self.rates, self.dcdt, self.N)
+        self.dynamic_functions['dydt_vectorized_str'] = vec_func_str
+        self.dynamic_functions['dydt_vectorized'] = self._exec_ode_function(
+            vec_func_str, 'f_vectorized')
 
     def reset(self):
         """resets the solution for re-run
@@ -283,7 +304,7 @@ class Lab:
         if len(self.acid_base_components) > 0:
             self.create_acid_base_system()
             self.acid_base_equilibrium_solve(0)
-        if self.ode_method == 'scipy':
+        if self.ode_method in ('scipy', 'scipy_sequential'):
             self.create_dynamic_functions()
         self.init_rates_arrays()
 
@@ -326,6 +347,40 @@ class Lab:
             if self.species[element]['int_transport']:
                 self.update_matrices_due_to_bc(element, i)
 
+    def reactions_integrate_vectorized(self, i):
+        """Integrates ODE of reactions using vectorized solver.
+
+        Solves all N spatial points in a single ODE call, which is more
+        efficient than looping over each point individually.
+
+        Arguments:
+            i: step in time
+        """
+        num_species = len(self.species)
+        species_names = list(self.species.keys())
+
+        # Gather all concentrations into 2D array: shape (num_species, N)
+        initial_conc = np.zeros((num_species, self.N))
+        for idx, name in enumerate(species_names):
+            initial_conc[idx, :] = self.profiles[name]
+
+        # Solve vectorized ODE (flat array of size N * num_species)
+        result_flat = desolver.ode_integrate_vectorized(
+            self.dynamic_functions['dydt_vectorized'],
+            initial_conc.ravel(),
+            self.dt
+        )
+
+        # Reshape and clip to valid concentration range
+        result = np.clip(result_flat.reshape(num_species, self.N), 1e-16, 1e+16)
+
+        # Update species dictionaries with new concentrations
+        for idx, name in enumerate(species_names):
+            self.species[name]['concentration'][:, i] = result[idx, :]
+            self.profiles[name] = result[idx, :]
+            if self.species[name]['int_transport']:
+                self.update_matrices_due_to_bc(name, i)
+
     def reconstruct_rates(self):
         """reconstructs rates after model run
         1. estimates rates;
@@ -333,14 +388,12 @@ class Lab:
         not sure if it works with dynamic functions of "scipy",
         only with rk4 and butcher 5?
         """
-        if self.ode_method == 'scipy':
+        if self.ode_method in ('scipy', 'scipy_sequential'):
             rates_str = desolver.create_rate_function(
                 self.species, self.functions, self.constants, self.rates,
                 self.dcdt)
             exec(rates_str, globals())
             self.dynamic_functions['rates_str'] = rates_str
-            # from IPython.core.debugger import set_trace
-            # set_trace()
             self.dynamic_functions['rates'] = globals()['rates']
             yinit = np.zeros(len(self.species))
 
@@ -352,8 +405,13 @@ class Lab:
 
                     rates = self.dynamic_functions['rates'](yinit)
 
-                    for idx, r in enumerate(self.rates):
-                        self.estimated_rates[r][idx_j, idx_t] = rates[idx]
+                    # Handle single rate case (scalar) vs multiple rates (tuple)
+                    if len(self.rates) == 1:
+                        rate_name = list(self.rates.keys())[0]
+                        self.estimated_rates[rate_name][idx_j, idx_t] = rates
+                    else:
+                        for idx, r in enumerate(self.rates):
+                            self.estimated_rates[r][idx_j, idx_t] = rates[idx]
         else:
             for idx_t in range(len(self.time)):
                 for name, rate in self.rates.items():

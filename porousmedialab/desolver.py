@@ -1,7 +1,7 @@
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
-from scipy.integrate import ode
+from scipy.integrate import ode, solve_ivp
 
 
 class InvalidBoundaryConditionError(ValueError):
@@ -258,46 +258,114 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
     return rk4(C0)
 
 
+def _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates):
+    """Appends function, constant, and rate definitions to function body string.
+
+    This is a shared helper for ODE function generators.
+
+    Arguments:
+        body: current function body string
+        functions: dict of functions provided by user
+        constants: dict of constants provided by user
+        rates: dict of rates provided by user
+        non_negative_rates: if True, clamp negative rates to zero
+
+    Returns:
+        Updated function body string
+    """
+    for k, v in functions.items():
+        body += f'\n\t {k} = {v}'
+    for k, v in constants.items():
+        body += f'\n\t {k} = {v}'
+    for k, v in rates.items():
+        body += f'\n\t {k} = {v}'
+        if non_negative_rates:
+            body += f'\n\t {k} = {k}*({k}>0)'
+    return body
+
+
 def create_ode_function(species,
                         functions,
                         constants,
                         rates,
                         dcdt,
                         non_negative_rates=True):
-    """creates the string of ode function
+    """Creates the string of ODE function for single-point integration.
 
     Arguments:
-        species {dict} -- dict of species provided by user
-        constants {dict} -- dict of concstants provided by user
-        rates {dict} -- dict of rates provided by user
-        dcdt {dict} -- dict of dcdt provided by user
-
-    Keyword Arguments:
-        non_negative_rates {bool} -- prevent negative values? (default: {True})
+        species: dict of species provided by user
+        functions: dict of functions provided by user
+        constants: dict of constants provided by user
+        rates: dict of rates provided by user
+        dcdt: dict of dcdt provided by user
+        non_negative_rates: prevent negative rate values (default True)
 
     Returns:
-        [str] -- returns string of fun
+        String representation of the ODE function
     """
-    body_of_function = "def f(t, y):\n"
-    body_of_function += "\t import scipy as sp\n"
-    body_of_function += "\t dydt = np.zeros(len(y))"
-    for i, s in enumerate(species):
-        body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
-            s, i)
-    for k, v in functions.items():
-        body_of_function += '\n\t {} = {}'.format(k, v)
-    for k, v in constants.items():
-        body_of_function += '\n\t {} = {}'.format(k, v)
-    for k, v in rates.items():
-        body_of_function += '\n\t {} = {}'.format(k, v, v)
-        if non_negative_rates:
-            body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
-    for i, s in enumerate(dcdt):
-        body_of_function += '\n\t dydt[{:.0f}] = {}  # {}'.format(
-            i, dcdt[s], s)
-    body_of_function += "\n\t return dydt"
+    body = "def f(t, y):\n"
+    body += "\t dydt = np.zeros(len(y))"
 
-    return body_of_function
+    # Extract species with clipping
+    for i, s in enumerate(species):
+        body += f'\n\t {s} = np.clip(y[{i}], 1e-16, 1e+16)'
+
+    # Add functions, constants, and rates
+    body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
+
+    # Add dcdt assignments
+    for i, s in enumerate(dcdt):
+        body += f'\n\t dydt[{i}] = {dcdt[s]}  # {s}'
+
+    body += "\n\t return dydt"
+    return body
+
+
+def create_vectorized_ode_function(species,
+                                   functions,
+                                   constants,
+                                   rates,
+                                   dcdt,
+                                   N,
+                                   non_negative_rates=True):
+    """Creates vectorized ODE function handling all N spatial points at once.
+
+    State vector y has shape (N*S,) where S = number of species.
+    Internally reshaped to (S, N) for vectorized operations.
+
+    Arguments:
+        species: dict of species provided by user
+        functions: dict of functions provided by user
+        constants: dict of constants provided by user
+        rates: dict of rates provided by user
+        dcdt: dict of dcdt provided by user
+        N: number of spatial points
+        non_negative_rates: prevent negative rate values (default True)
+
+    Returns:
+        String representation of the vectorized ODE function
+    """
+    num_species = len(species)
+    species_list = list(species.keys())
+
+    body = "def f_vectorized(t, y):\n"
+    body += f"\t y_2d = y.reshape({num_species}, {N})\n"
+    body += f"\t dydt_2d = np.zeros(({num_species}, {N}))\n"
+
+    # Extract species (each becomes array of shape (N,))
+    for i, s in enumerate(species_list):
+        body += f'\n\t {s} = np.clip(y_2d[{i}, :], 1e-16, 1e+16)'
+
+    # Add functions, constants, and rates
+    body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
+
+    # Add dcdt assignments
+    for i, s in enumerate(species_list):
+        if s in dcdt:
+            body += f'\n\t dydt_2d[{i}, :] = {dcdt[s]}  # {s}'
+
+    body += "\n\t return dydt_2d.ravel()"
+    return body
 
 
 def create_rate_function(species,
@@ -306,36 +374,33 @@ def create_rate_function(species,
                          rates,
                          dcdt,
                          non_negative_rates=False):
-    """creates the string of rates function
+    """Creates the string of rates function for rate reconstruction.
 
     Arguments:
-        species {dict} -- dict of species provided by user
-        constants {dict} -- dict of concstants provided by user
-        rates {dict} -- dict of rates provided by user
-
-    Keyword Arguments:
-        non_negative_rates {bool} -- prevent negative values? (default: {True})
+        species: dict of species provided by user
+        functions: dict of functions provided by user
+        constants: dict of constants provided by user
+        rates: dict of rates provided by user
+        dcdt: dict of dcdt provided by user (unused, kept for API consistency)
+        non_negative_rates: prevent negative rate values (default False)
 
     Returns:
-        [str] -- returns string of fun
+        String representation of the rates function
     """
-    body_of_function = "def rates(y):\n"
-    for i, s in enumerate(species):
-        body_of_function += '\n\t {} = np.clip(y[{:.0f}], 1e-16, 1e+16)'.format(
-            s, i)
-    for k, v in functions.items():
-        body_of_function += '\n\t {} = {}'.format(k, v)
-    for k, v in constants.items():
-        body_of_function += '\n\t {} = {}'.format(k, v)
-    for k, v in rates.items():
-        body_of_function += '\n\t {} = {}'.format(k, v, v)
-        if non_negative_rates:
-            body_of_function += '\n\t {} = {}*({}>0)'.format(k, k, k)
-    body_of_function += "\n\t return "
-    for k, v in rates.items():
-        body_of_function += '{}, '.format(k)
+    body = "def rates(y):\n"
 
-    return body_of_function
+    # Extract species with clipping
+    for i, s in enumerate(species):
+        body += f'\n\t {s} = np.clip(y[{i}], 1e-16, 1e+16)'
+
+    # Add functions, constants, and rates
+    body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
+
+    # Return all rate values
+    body += "\n\t return "
+    body += ', '.join(rates.keys())
+
+    return body
 
 
 def create_solver(dydt):
@@ -349,3 +414,40 @@ def ode_integrate_scipy(solver, yinit, timestep):
     while solver.successful() and solver.t < timestep:
         solver.integrate(solver.t + timestep)
     return solver.y
+
+
+class ODESolverError(RuntimeError):
+    """Raised when the ODE solver fails to converge."""
+    pass
+
+
+def ode_integrate_vectorized(dydt_func, initial_state, timestep, method='LSODA'):
+    """Integrates vectorized ODE using scipy.integrate.solve_ivp.
+
+    Arguments:
+        dydt_func: vectorized ODE function f(t, y) where y has shape (N*S,)
+        initial_state: initial state, shape (N*S,)
+        timestep: integration time
+        method: solver method (default 'LSODA' which auto-detects stiffness)
+
+    Returns:
+        Final state array, shape (N*S,)
+
+    Raises:
+        ODESolverError: if the solver fails to converge
+    """
+    solution = solve_ivp(
+        dydt_func,
+        t_span=(0.0, timestep),
+        y0=initial_state,
+        method=method,
+        t_eval=[timestep],
+        rtol=1e-3,
+        atol=1e-6
+    )
+    if not solution.success:
+        raise ODESolverError(
+            f"ODE solver failed: {solution.message}. "
+            f"Consider adjusting timestep or checking for numerical instabilities."
+        )
+    return solution.y[:, -1]
