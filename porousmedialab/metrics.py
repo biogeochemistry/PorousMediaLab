@@ -146,7 +146,7 @@ def correlation(s, o):
     """
     s, o = filter_nan(s, o)
     if s.size == 0:
-        corr = np.NaN
+        corr = np.nan
     else:
         corr = np.corrcoef(o, s)[0, 1]
 

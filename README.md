@@ -33,6 +33,21 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 - in terminal run command ```jupyter notebook```;
 - you will see the folders of the PorousMediaLab project; you can go in "examples" folder and play with them.
 
+# Testing
+
+To run the test suite:
+
+```bash
+pip install pytest pytest-cov
+pytest tests/ -v
+```
+
+For coverage report:
+
+```bash
+pytest tests/ --cov=porousmedialab --cov-report=term-missing
+```
+
 # Citation
 
 Igor Markelov (2020). Modelling Biogeochemical Cycles Across Scales: From Whole-Lake Phosphorus Dynamics to Microbial Reaction Systems. UWSpace. http://hdl.handle.net/10012/15513
