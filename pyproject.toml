@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "porousmedialab"
-version = "1.5.1"
+version = "2.0.0"
 description = "Toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for the user without computational background"
 authors = ["Igor Markelov <is.markelov@gmail.com>"]
 license = "MIT"
@@ -36,6 +36,8 @@ scikit-learn = ">=1.0"
 cython = "^3.0"
 pytest = "^7.0"
 pytest-cov = "^4.0"
+jupyter = "^1.1.1"
+nbconvert = "^7.17.0"
 
 [build-system]
 requires = ["poetry-core"]

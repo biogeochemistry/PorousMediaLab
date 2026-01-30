@@ -202,7 +202,9 @@ class Column(Lab):
             self.acid_base_equilibrium_solve(i)
         if self.rates:
             if self.ode_method == 'scipy':
-                self.reactions_integrate_scipy(i)
+                self.reactions_integrate_vectorized(i)  # Use vectorized by default
+            elif self.ode_method == 'scipy_sequential':
+                self.reactions_integrate_scipy(i)  # Keep for backward compat
             else:
                 self.reactions_integrate(i)
 

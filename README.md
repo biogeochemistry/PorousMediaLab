@@ -10,6 +10,25 @@
 
 The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
+## What's New in v2.0.0
+
+**6-60x faster reaction integration** with the new vectorized ODE solver:
+
+- Reactions are now solved using a vectorized approach that processes all spatial points simultaneously
+- Uses `scipy.integrate.solve_ivp` with LSODA method (auto-detects stiffness)
+- Backward compatible: use `ode_method='scipy_sequential'` for the old behavior
+
+| Spatial Points | Species | Speedup |
+|----------------|---------|---------|
+| 50 | 2 | 13x |
+| 100 | 3 | 23x |
+| 500 | 5 | 62x |
+
+Run the benchmark yourself:
+```bash
+poetry run python benchmarks/benchmark_ode_solver.py
+```
+
 # How to use
 
 Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tree/master/examples) folder.
@@ -63,13 +82,12 @@ Igor Markelov (2020). Modelling Biogeochemical Cycles Across Scales: From Whole-
 
 I am looking for contributors specifically for incorporation of:
 
-- parallelization 
 - sensitivity tests
 - unsaturated flow
 - thermodynamic calculations
 - your crazy ideas and needs
 
-If you wish to contribute in this open source project, please, create pull request or conact me via email: is.markelov@gmail.com. 
+If you wish to contribute in this open source project, please, create pull request or contact me via email: is.markelov@gmail.com. 
 
 # Acknowledgements
 

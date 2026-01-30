@@ -14,7 +14,9 @@ from porousmedialab.desolver import (
     create_rate_function,
     create_solver,
     ode_integrate_scipy,
-    InvalidBoundaryConditionError
+    ode_integrate_vectorized,
+    InvalidBoundaryConditionError,
+    ODESolverError
 )
 
 
@@ -481,3 +483,120 @@ class TestOdeIntegrateScipy:
         # After t=0.1 with dy/dt=-2y, y should be exp(-0.2)
         expected = np.exp(-0.2)
         assert_allclose(y_final[0], expected, rtol=0.01)
+
+
+class TestVectorizedODE:
+    """Tests for vectorized ODE solver."""
+
+    def test_vectorized_ode_function_generation(self):
+        """Test that vectorized ODE function is generated correctly."""
+        from porousmedialab.desolver import create_vectorized_ode_function
+
+        species = {'A': {}, 'B': {}}
+        functions = {}
+        constants = {'k': 1.0}
+        rates = {'R': 'k * A'}
+        dcdt = {'A': '-R', 'B': 'R'}
+        N = 10
+
+        fun_str = create_vectorized_ode_function(
+            species, functions, constants, rates, dcdt, N)
+
+        assert 'f_vectorized' in fun_str
+        assert 'y.reshape(2, 10)' in fun_str
+        assert 'dydt_2d.ravel()' in fun_str
+
+    def test_vectorized_ode_integration(self):
+        """Test that vectorized ODE integration works correctly."""
+        from porousmedialab.desolver import (
+            create_vectorized_ode_function,
+            ode_integrate_vectorized
+        )
+
+        species = {'A': {}}
+        functions = {}
+        constants = {'k': 1.0}
+        rates = {'R': 'k * A'}
+        dcdt = {'A': '-R'}
+        N = 5
+
+        fun_str = create_vectorized_ode_function(
+            species, functions, constants, rates, dcdt, N)
+        local_vars = {'np': np}
+        exec(fun_str, {'np': np}, local_vars)
+        f = local_vars['f_vectorized']
+
+        # Initial concentrations (all spatial points start at 1.0)
+        yinit = np.ones(N)
+        timestep = 0.1
+
+        ynew = ode_integrate_vectorized(f, yinit, timestep)
+
+        # After t=0.1 with dy/dt = -A, A should be approximately exp(-0.1)
+        expected = np.exp(-0.1)
+        assert_allclose(ynew, expected * np.ones(N), rtol=0.01)
+
+    def test_vectorized_matches_sequential(self):
+        """Verify vectorized and sequential produce same results."""
+        from porousmedialab.column import Column
+
+        # Run vectorized (default scipy)
+        col1 = Column(length=5, dx=0.5, tend=0.1, dt=0.01, ode_method='scipy')
+        col1.add_species(theta=1, name='A', D=0.1, init_conc=1.0,
+                         bc_top_value=1, bc_top_type='dirichlet',
+                         bc_bot_value=0, bc_bot_type='flux')
+        col1.constants['k'] = 1.0
+        col1.rates['R'] = 'k * A'
+        col1.dcdt['A'] = '-R'
+        col1.solve(verbose=False)
+        result_vec = col1.species['A']['concentration'].copy()
+
+        # Run sequential for comparison
+        col2 = Column(length=5, dx=0.5, tend=0.1, dt=0.01, ode_method='scipy_sequential')
+        col2.add_species(theta=1, name='A', D=0.1, init_conc=1.0,
+                         bc_top_value=1, bc_top_type='dirichlet',
+                         bc_bot_value=0, bc_bot_type='flux')
+        col2.constants['k'] = 1.0
+        col2.rates['R'] = 'k * A'
+        col2.dcdt['A'] = '-R'
+        col2.solve(verbose=False)
+        result_seq = col2.species['A']['concentration'].copy()
+
+        # Different solvers (BDF vs lsoda) have slightly different results
+        np.testing.assert_allclose(result_vec, result_seq, rtol=1e-3)
+
+    def test_vectorized_multi_species(self):
+        """Test vectorized solver with multiple species."""
+        from porousmedialab.column import Column
+
+        col = Column(length=5, dx=0.5, tend=0.1, dt=0.01, ode_method='scipy')
+        col.add_species(theta=0.9, name='O2', D=1.0, init_conc=1.0,
+                        bc_top_value=1, bc_top_type='dirichlet',
+                        bc_bot_value=0, bc_bot_type='flux')
+        col.add_species(theta=0.9, name='CH4', D=0.5, init_conc=1.0,
+                        bc_top_value=0, bc_top_type='flux',
+                        bc_bot_value=1, bc_bot_type='dirichlet')
+        col.constants['k'] = 0.5
+        col.rates['R'] = 'k * O2 * CH4'
+        col.dcdt['O2'] = '-R'
+        col.dcdt['CH4'] = '-R'
+
+        # Should not raise any errors
+        col.solve(verbose=False)
+
+        # Both concentrations should remain positive
+        assert np.all(col.species['O2']['concentration'] >= 0)
+        assert np.all(col.species['CH4']['concentration'] >= 0)
+
+
+class TestODESolverError:
+    """Tests for ODESolverError exception."""
+
+    def test_ode_solver_error_is_runtime_error(self):
+        """ODESolverError should be a subclass of RuntimeError."""
+        assert issubclass(ODESolverError, RuntimeError)
+
+    def test_ode_solver_error_can_be_raised(self):
+        """ODESolverError should be raiseable with a message."""
+        with pytest.raises(ODESolverError, match="test message"):
+            raise ODESolverError("test message")
