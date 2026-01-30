@@ -10,3 +10,7 @@
 *.sublime-project
 /.vscode/
 *.DS_Store
+
+# Virtual environments
+.venv/
+venv/

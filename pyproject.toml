@@ -1,0 +1,69 @@
+[tool.poetry]
+name = "porousmedialab"
+version = "1.5.1"
+description = "Toolbox for batch and 1D reactive transport modeling in porous media aimed on easiness of use for the user without computational background"
+authors = ["Igor Markelov <is.markelov@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/biogeochemistry/PorousMediaLab"
+keywords = ["modeling", "reactive", "transport", "diffusion", "advection"]
+packages = [{include = "porousmedialab"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = ">=1.20,<3"
+numexpr = ">=2.7"
+scipy = ">=1.10"
+matplotlib = ">=3.4"
+seaborn = ">=0.11"
+h5py = ">=3.0"
+scikit-learn = ">=1.0"
+
+[tool.poetry.group.dev.dependencies]
+cython = "^3.0"
+pytest = "^7.0"
+pytest-cov = "^4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["porousmedialab"]
+branch = true
+omit = ["tests/*", "examples/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+]
