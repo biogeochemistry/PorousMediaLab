@@ -330,8 +330,8 @@ class Lab:
         # C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
         # for idx_j in range(self.N):
+        yinit = np.zeros(len(self.species))  # Pre-allocate outside loop
         for idx_j in range(self.N):
-            yinit = np.zeros(len(self.species))
             for idx, s in enumerate(self.species):
                 yinit[idx] = self.profiles[s][idx_j]
 
@@ -389,29 +389,39 @@ class Lab:
         only with rk4 and butcher 5?
         """
         if self.ode_method in ('scipy', 'scipy_sequential'):
-            rates_str = desolver.create_rate_function(
+            # Use vectorized rate function - processes all N spatial points at once
+            rates_vec_str = desolver.create_vectorized_rate_function(
                 self.species, self.functions, self.constants, self.rates,
-                self.dcdt)
-            exec(rates_str, globals())
-            self.dynamic_functions['rates_str'] = rates_str
-            self.dynamic_functions['rates'] = globals()['rates']
-            yinit = np.zeros(len(self.species))
+                self.N)
+            exec(rates_vec_str, globals())
+            self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
+            self.dynamic_functions['rates_vectorized'] = globals()['rates_vectorized']
 
-            for idx_t in range(len(self.time)):
-                for idx_j in range(self.N):
-                    for idx, s in enumerate(self.species):
-                        yinit[idx] = self.species[s]['concentration'][idx_j,
-                                                                      idx_t]
+            # Pre-compute arrays outside loop
+            num_species = len(self.species)
+            species_list = list(self.species.keys())
+            rate_names = list(self.rates.keys())
+            num_timesteps = len(self.time)
+            rate_func = self.dynamic_functions['rates_vectorized']
 
-                    rates = self.dynamic_functions['rates'](yinit)
+            # Build concentration array: (num_species, N, num_timesteps)
+            conc_3d = np.zeros((num_species, self.N, num_timesteps))
+            for idx, name in enumerate(species_list):
+                conc_3d[idx, :, :] = self.species[name]['concentration']
 
-                    # Handle single rate case (scalar) vs multiple rates (tuple)
-                    if len(self.rates) == 1:
-                        rate_name = list(self.rates.keys())[0]
-                        self.estimated_rates[rate_name][idx_j, idx_t] = rates
-                    else:
-                        for idx, r in enumerate(self.rates):
-                            self.estimated_rates[r][idx_j, idx_t] = rates[idx]
+            # Process all N points at once per timestep
+            is_single_rate = len(self.rates) == 1
+            if is_single_rate:
+                rate_name = rate_names[0]
+                for idx_t in range(num_timesteps):
+                    # conc_2d shape: (num_species, N)
+                    self.estimated_rates[rate_name][:, idx_t] = rate_func(conc_3d[:, :, idx_t])
+            else:
+                for idx_t in range(num_timesteps):
+                    # rates shape: (num_rates, N)
+                    rates = rate_func(conc_3d[:, :, idx_t])
+                    for idx, rate_name in enumerate(rate_names):
+                        self.estimated_rates[rate_name][:, idx_t] = rates[idx, :]
         else:
             for idx_t in range(len(self.time)):
                 for name, rate in self.rates.items():
