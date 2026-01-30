@@ -1,5 +1,21 @@
 # porousmedialab changelog
 
+## 1.5.1
+
+2025-01-30
+
+### NEW
+
+- Added Poetry for dependency management with pyproject.toml
+- All dependencies now explicitly declared (numpy, scipy, matplotlib, seaborn, h5py, scikit-learn, numexpr)
+- Added poetry.lock for reproducible installs
+
+### CHANGED
+
+- Minimum Python version is now 3.10
+- Replaced setup.py with modern pyproject.toml (PEP 517/518)
+- Migrated test configuration from setup.cfg to pyproject.toml
+
 ## 1.5.0
 
 2025-01-30
@@ -138,7 +154,3 @@
 ### FIXED
 
 - clashed method names
-
-
-
-

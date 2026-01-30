@@ -16,22 +16,29 @@ Have a look at ["examples"](https://github.com/biogeochemistry/PorousMediaLab/tr
 
 # Installation using pip
 
-- Install python version 3.5 or higher ([click](https://www.python.org/downloads/));
-- install Anaconda [(click)](https://www.anaconda.com/download/);
-- to install the toolbox run ```pip install porousmedialab```
-- in terminal run command ```jupyter notebook```;
+- Install Python version 3.10 or higher ([click](https://www.python.org/downloads/));
+- To install the toolbox run ```pip install porousmedialab```
+- In terminal run ```jupyter notebook```;
 - You will see the folders in your home folder. You can navigate in any folder and create a new notebook with your model.
 
+# Development installation using Poetry
 
+- Install Python version 3.10 or higher ([click](https://www.python.org/downloads/));
+- Install Poetry ([click](https://python-poetry.org/docs/#installation));
+- Clone this repository: ```git clone https://github.com/biogeochemistry/PorousMediaLab```
+- Navigate to the project folder: ```cd PorousMediaLab```
+- Install dependencies: ```poetry install```
+- Run tests: ```poetry run pytest```
+- Activate the virtual environment: ```poetry shell```
 
 # Manual installation
 
-- Install python version 3.5 or higher ([click](https://www.python.org/downloads/));
-- install Anaconda [(click)](https://www.anaconda.com/download/);
-- download and unzip or clone (using git) this repository (PorousMediaLab);
+- Install Python version 3.10 or higher ([click](https://www.python.org/downloads/));
+- Download and unzip or clone (using git) this repository (PorousMediaLab);
 - Open terminal and go to the PorousMediaLab folder using ```cd``` command. If you have problems with the terminal, check this [guide](https://www.davidbaumgold.com/tutorials/command-line/);
-- in terminal run command ```jupyter notebook```;
-- you will see the folders of the PorousMediaLab project; you can go in "examples" folder and play with them.
+- Install dependencies: ```pip install numpy numexpr scipy matplotlib seaborn h5py scikit-learn```
+- In terminal run command ```jupyter notebook```;
+- You will see the folders of the PorousMediaLab project; you can go in "examples" folder and play with them.
 
 # Testing
 
