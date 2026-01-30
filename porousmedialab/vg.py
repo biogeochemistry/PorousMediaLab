@@ -42,14 +42,14 @@ KFun = np.vectorize(KFun)
 
 def setpars():
     pars = {}
-    pars['thetaR'] = float(raw_input("thetaR = "))
-    pars['thetaS'] = float(raw_input("thetaS = "))
-    pars['alpha'] = float(raw_input("alpha = "))
-    pars['n'] = float(raw_input("n = "))
+    pars['thetaR'] = float(input("thetaR = "))
+    pars['thetaS'] = float(input("thetaS = "))
+    pars['alpha'] = float(input("alpha = "))
+    pars['n'] = float(input("n = "))
     pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = float(raw_input("Ks = "))
-    pars['neta'] = float(raw_input("neta = "))
-    pars['Ss'] = float(raw_input("Ss = "))
+    pars['Ks'] = float(input("Ks = "))
+    pars['neta'] = float(input("neta = "))
+    pars['Ss'] = float(input("Ss = "))
     return pars
 
 
