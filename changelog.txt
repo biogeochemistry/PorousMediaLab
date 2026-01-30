@@ -1,5 +1,21 @@
 # porousmedialab changelog
 
+## 1.5.0
+
+2025-01-30
+
+### NEW
+
+- Comprehensive pytest test suite with 256 tests covering all modules
+- Test fixtures in conftest.py for common test objects
+- pytest.ini configuration file
+
+### IMPROVED
+
+- Replaced sys.exit() with InvalidBoundaryConditionError exception in desolver.py
+- Fixed NumPy 2.0 compatibility (np.NaN -> np.nan in metrics.py)
+- Fixed escape sequence warnings in plotter.py
+
 ## 1.4.1
 
 2019-10-09

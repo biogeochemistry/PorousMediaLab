@@ -1,8 +1,12 @@
-import sys
 import numexpr as ne
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
 from scipy.integrate import ode
+
+
+class InvalidBoundaryConditionError(ValueError):
+    """Raised when an invalid boundary condition type is provided."""
+    pass
 
 
 def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
@@ -46,8 +50,10 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
         AR[0,0] = phi[0] - s[0]  # - adv_coef * s[0] * dx / diff_coef] + q[0] * adv_coef * dx / diff_coef] / 2
         AR[0, 1] = s[0]
     else:
-        print('\nABORT!!!: Not correct top boundary condition type...')
-        sys.exit()
+        raise InvalidBoundaryConditionError(
+            f"Invalid top boundary condition type: '{bc_top_type}'. "
+            "Valid types are: 'dirichlet', 'constant', 'neumann', 'flux'"
+        )
 
     if bc_bot_type in ['dirichlet', 'constant']:
         AL[-1, -1] = phi[-1]
@@ -60,8 +66,10 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
         AR[-1, -1] = phi[-1] - s[-1]
         AR[-1, -2] = s[-1]  # / 2 + s[-1] / 2
     else:
-        print('\nABORT!!!: Not correct bottom boundary condition type...')
-        sys.exit()
+        raise InvalidBoundaryConditionError(
+            f"Invalid bottom boundary condition type: '{bc_bot_type}'. "
+            "Valid types are: 'dirichlet', 'constant', 'neumann', 'flux'"
+        )
     return AL, AR
 
 
@@ -98,8 +106,10 @@ def update_matrices_due_to_bc(AR, profile, phi, diff_coef, adv_coef,
         B[-1] = B[-1] + 2 * 2 * bc_bot * (
             s[-1] / 2 - q[-1] / 4) * dx / phi[-1] / diff_coef
     else:
-        print('\nABORT!!!: Not correct boundary condition in the species...')
-        sys.exit()
+        raise InvalidBoundaryConditionError(
+            f"Invalid boundary condition combination: top='{bc_top_type}', bot='{bc_bot_type}'. "
+            "Valid types are: 'dirichlet', 'constant', 'neumann', 'flux'"
+        )
 
     return profile, B
 
