@@ -263,8 +263,9 @@ class Lab:
         Returns:
             The compiled function object
         """
-        local_vars = {'np': np}
-        exec(func_str, globals(), local_vars)
+        safe_globals = {'np': np, 'ne': ne, '__builtins__': {'len': len, 'range': range}}
+        local_vars = {'np': np, 'ne': ne}
+        exec(func_str, safe_globals, local_vars)
         return local_vars[func_name]
 
     def create_dynamic_functions(self):
@@ -393,8 +394,9 @@ class Lab:
             rates_vec_str = desolver.create_vectorized_rate_function(
                 self.species, self.functions, self.constants, self.rates,
                 self.N)
+            safe_globals = {'np': np, 'ne': ne, '__builtins__': {'len': len, 'range': range}}
             local_vars = {'np': np, 'ne': ne}
-            exec(rates_vec_str, {'np': np, 'ne': ne, '__builtins__': {}}, local_vars)
+            exec(rates_vec_str, safe_globals, local_vars)
             self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
             self.dynamic_functions['rates_vectorized'] = local_vars['rates_vectorized']
 
