@@ -668,9 +668,9 @@ class TestInputValidation:
                 bc_top_type='dirichlet', bc_bot_type='neumann',
                 dt=1.0, dx=0.1, N=5
             )
-            # Check that a CFL warning was issued
-            cfl_warnings = [warning for warning in w if "CFL" in str(warning.message)]
-            assert len(cfl_warnings) > 0, "Expected CFL warning was not issued"
+            # Check that a diffusion stability warning was issued
+            cfl_warnings = [warning for warning in w if "Diffusion stability" in str(warning.message)]
+            assert len(cfl_warnings) > 0, "Expected diffusion stability warning was not issued"
 
     def test_no_cfl_warning_when_stable(self):
         """Test that no CFL warning is issued when coefficient <= 0.25."""

@@ -45,7 +45,7 @@ def pc_bias(s, o):
     """
     s, o = filter_nan(s, o)
     sum_o = sum(o)
-    if sum_o == 0:
+    if abs(sum_o) < np.finfo(float).tiny:
         raise ValueError("Cannot compute percent bias: sum of observed values is zero")
     return 100.0 * sum(s - o) / sum_o
 
@@ -64,7 +64,7 @@ def apb(s, o):
     """
     s, o = filter_nan(s, o)
     sum_o = sum(o)
-    if sum_o == 0:
+    if abs(sum_o) < np.finfo(float).tiny:
         raise ValueError("Cannot compute absolute percent bias: sum of observed values is zero")
     return 100.0 * sum(abs(s - o)) / sum_o
 
@@ -96,7 +96,7 @@ def norm_rmse(s, o):
     """
     s, o = filter_nan(s, o)
     std_o = np.std(o)
-    if std_o == 0:
+    if std_o < np.finfo(float).tiny:
         raise ValueError("Cannot compute normalized RMSE: observed values have zero standard deviation")
     return rmse(s, o) / std_o
 
@@ -141,7 +141,7 @@ def NS(s, o):
     """
     s, o = filter_nan(s, o)
     denom = sum((o - np.mean(o))**2)
-    if denom == 0:
+    if abs(denom) < np.finfo(float).tiny:
         raise ValueError("Cannot compute Nash-Sutcliffe coefficient: observed values have zero variance")
     return 1 - sum((s - o)**2) / denom
 
@@ -161,7 +161,7 @@ def likelihood(s, o, N=5):
     """
     s, o = filter_nan(s, o)
     denom = sum((o - np.mean(o))**2)
-    if denom == 0:
+    if abs(denom) < np.finfo(float).tiny:
         raise ValueError("Cannot compute likelihood: observed values have zero variance")
     return np.exp(-N * sum((s - o)**2) / denom)
 
@@ -198,7 +198,7 @@ def index_agreement(s, o):
     """
     s, o = filter_nan(s, o)
     denom = np.sum((np.abs(s - np.mean(o)) + np.abs(o - np.mean(o)))**2)
-    if denom == 0:
+    if abs(denom) < np.finfo(float).tiny:
         raise ValueError("Cannot compute index of agreement: denominator is zero")
     ia = 1 - (np.sum((o - s)**2)) / denom
     return ia
