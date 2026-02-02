@@ -39,9 +39,15 @@ def pc_bias(s, o):
         o: observed
     output:
         pc_bias: percent bias
+
+    Raises:
+        ValueError: if sum of observed values is zero
     """
     s, o = filter_nan(s, o)
-    return 100.0 * sum(s - o) / sum(o)
+    sum_o = sum(o)
+    if sum_o == 0:
+        raise ValueError("Cannot compute percent bias: sum of observed values is zero")
+    return 100.0 * sum(s - o) / sum_o
 
 
 def apb(s, o):
@@ -52,9 +58,15 @@ def apb(s, o):
         o: observed
     output:
         apb_bias: absolute percent bias
+
+    Raises:
+        ValueError: if sum of observed values is zero
     """
     s, o = filter_nan(s, o)
-    return 100.0 * sum(abs(s - o)) / sum(o)
+    sum_o = sum(o)
+    if sum_o == 0:
+        raise ValueError("Cannot compute absolute percent bias: sum of observed values is zero")
+    return 100.0 * sum(abs(s - o)) / sum_o
 
 
 def rmse(s, o):
@@ -78,9 +90,15 @@ def norm_rmse(s, o):
         o: observed
     output:
         nrmse: normalized root mean squared error: RMSE / mean or SD
+
+    Raises:
+        ValueError: if observed values have zero standard deviation
     """
     s, o = filter_nan(s, o)
-    return rmse(s, o) / np.std(o)
+    std_o = np.std(o)
+    if std_o == 0:
+        raise ValueError("Cannot compute normalized RMSE: observed values have zero standard deviation")
+    return rmse(s, o) / std_o
 
 
 def mae(s, o):
@@ -117,9 +135,15 @@ def NS(s, o):
         o: observed
     output:
         ns: Nash Sutcliffe efficient coefficient
+
+    Raises:
+        ValueError: if observed values have zero variance
     """
     s, o = filter_nan(s, o)
-    return 1 - sum((s - o)**2) / sum((o - np.mean(o))**2)
+    denom = sum((o - np.mean(o))**2)
+    if denom == 0:
+        raise ValueError("Cannot compute Nash-Sutcliffe coefficient: observed values have zero variance")
+    return 1 - sum((s - o)**2) / denom
 
 
 def likelihood(s, o, N=5):
@@ -128,11 +152,18 @@ def likelihood(s, o, N=5):
     input:
         s: simulated
         o: observed
+        N: scaling parameter (default 5)
     output:
         L: likelihood
+
+    Raises:
+        ValueError: if observed values have zero variance
     """
     s, o = filter_nan(s, o)
-    return np.exp(-N * sum((s - o)**2) / sum((o - np.mean(o))**2))
+    denom = sum((o - np.mean(o))**2)
+    if denom == 0:
+        raise ValueError("Cannot compute likelihood: observed values have zero variance")
+    return np.exp(-N * sum((s - o)**2) / denom)
 
 
 def correlation(s, o):
@@ -161,10 +192,15 @@ def index_agreement(s, o):
         o: observed
     output:
         ia: index of agreement
+
+    Raises:
+        ValueError: if denominator is zero
     """
     s, o = filter_nan(s, o)
-    ia = 1 - (np.sum((o - s)**2)) / (
-        np.sum((np.abs(s - np.mean(o)) + np.abs(o - np.mean(o)))**2))
+    denom = np.sum((np.abs(s - np.mean(o)) + np.abs(o - np.mean(o)))**2)
+    if denom == 0:
+        raise ValueError("Cannot compute index of agreement: denominator is zero")
+    ia = 1 - (np.sum((o - s)**2)) / denom
     return ia
 
 

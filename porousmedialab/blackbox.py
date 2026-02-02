@@ -1,4 +1,5 @@
 import sys
+import math
 import multiprocessing as mp
 import numpy as np
 import scipy.optimize as op
@@ -98,9 +99,9 @@ def search(f, box, n, m, batch, resfile,
 
     # volume of d-dimensional ball (r = 1)
     if d % 2 == 0:
-        v1 = np.pi**(d/2)/np.math.factorial(d/2)
+        v1 = np.pi**(d/2)/math.factorial(d//2)
     else:
-        v1 = 2*(4*np.pi)**((d-1)/2)*np.math.factorial((d-1)/2)/np.math.factorial(d)
+        v1 = 2*(4*np.pi)**((d-1)/2)*math.factorial((d-1)//2)/math.factorial(d)
 
     # subsequent iterations (current subsequent iteration = i*batch+j)
     T = np.identity(d)

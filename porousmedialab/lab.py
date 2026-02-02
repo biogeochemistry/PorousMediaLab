@@ -393,9 +393,10 @@ class Lab:
             rates_vec_str = desolver.create_vectorized_rate_function(
                 self.species, self.functions, self.constants, self.rates,
                 self.N)
-            exec(rates_vec_str, globals())
+            local_vars = {'np': np, 'ne': ne}
+            exec(rates_vec_str, {'np': np, 'ne': ne, '__builtins__': {}}, local_vars)
             self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
-            self.dynamic_functions['rates_vectorized'] = globals()['rates_vectorized']
+            self.dynamic_functions['rates_vectorized'] = local_vars['rates_vectorized']
 
             # Pre-compute arrays outside loop
             num_species = len(self.species)

@@ -1,4 +1,7 @@
+import warnings
+
 import numexpr as ne
+import numpy as np
 from scipy.sparse import linalg
 from scipy.sparse import spdiags
 from scipy.integrate import ode, solve_ivp
@@ -25,10 +28,30 @@ def create_template_AL_AR(phi, diff_coef, adv_coef, bc_top_type, bc_bot_type,
 
     Returns:
         array: AL and AR matrices
+
+    Raises:
+        ValueError: if dx <= 0, phi contains zeros, or diff_coef <= 0
     """
+    # Input validation
+    if dx <= 0:
+        raise ValueError(f"dx must be positive, got {dx}")
+    if np.any(np.asarray(phi) == 0):
+        raise ValueError("Porosity (phi) cannot contain zero values")
+    if diff_coef is not None and diff_coef <= 0:
+        raise ValueError(f"Diffusion coefficient must be positive, got {diff_coef}")
+
     # TODO: error source somewhere in non constant
     # porosity profile. Maybe we also need d phi/dx
     s = phi * diff_coef * dt / dx / dx
+
+    # CFL stability check
+    cfl = np.max(np.abs(s)) if hasattr(s, '__iter__') else abs(s)
+    if cfl > 0.25:
+        warnings.warn(
+            f"CFL condition may be violated: max coefficient = {cfl:.4f} > 0.25. "
+            "Consider reducing dt or increasing dx.",
+            stacklevel=2
+        )
     q = phi * adv_coef * dt / dx
     AL = spdiags(
         [-s / 2 - q / 4, phi + s, -s / 2 + q / 4], [-1, 0, 1],

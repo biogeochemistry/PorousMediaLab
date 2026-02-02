@@ -600,3 +600,91 @@ class TestODESolverError:
         """ODESolverError should be raiseable with a message."""
         with pytest.raises(ODESolverError, match="test message"):
             raise ODESolverError("test message")
+
+
+class TestInputValidation:
+    """Tests for input validation in create_template_AL_AR."""
+
+    def test_create_template_raises_on_negative_dx(self):
+        """Test that dx < 0 raises ValueError."""
+        phi = np.ones(10)
+        with pytest.raises(ValueError, match="dx must be positive"):
+            create_template_AL_AR(
+                phi, diff_coef=1e-5, adv_coef=0.1,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.1, dx=-1, N=10
+            )
+
+    def test_create_template_raises_on_zero_dx(self):
+        """Test that dx = 0 raises ValueError."""
+        phi = np.ones(10)
+        with pytest.raises(ValueError, match="dx must be positive"):
+            create_template_AL_AR(
+                phi, diff_coef=1e-5, adv_coef=0.1,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.1, dx=0, N=10
+            )
+
+    def test_create_template_raises_on_zero_porosity(self):
+        """Test that phi containing zero raises ValueError."""
+        phi = np.array([0.5, 0, 0.5, 0.5, 0.5])
+        with pytest.raises(ValueError, match="Porosity.*cannot contain zero"):
+            create_template_AL_AR(
+                phi, diff_coef=1e-5, adv_coef=0.1,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.1, dx=1, N=5
+            )
+
+    def test_create_template_raises_on_negative_diffusion(self):
+        """Test that negative diffusion coefficient raises ValueError."""
+        phi = np.ones(5)
+        with pytest.raises(ValueError, match="Diffusion coefficient must be positive"):
+            create_template_AL_AR(
+                phi, diff_coef=-1e-5, adv_coef=0.1,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.1, dx=1, N=5
+            )
+
+    def test_create_template_raises_on_zero_diffusion(self):
+        """Test that zero diffusion coefficient raises ValueError."""
+        phi = np.ones(5)
+        with pytest.raises(ValueError, match="Diffusion coefficient must be positive"):
+            create_template_AL_AR(
+                phi, diff_coef=0, adv_coef=0.1,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.1, dx=1, N=5
+            )
+
+    def test_cfl_warning_issued(self):
+        """Test that CFL warning is issued when coefficient > 0.25."""
+        import warnings
+        phi = np.ones(5)
+        # Create parameters that will violate CFL: s = phi * diff_coef * dt / dx^2
+        # With phi=1, diff_coef=1, dt=1, dx=0.1: s = 1 * 1 * 1 / 0.01 = 100 >> 0.25
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            create_template_AL_AR(
+                phi, diff_coef=1.0, adv_coef=0.0,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=1.0, dx=0.1, N=5
+            )
+            # Check that a CFL warning was issued
+            cfl_warnings = [warning for warning in w if "CFL" in str(warning.message)]
+            assert len(cfl_warnings) > 0, "Expected CFL warning was not issued"
+
+    def test_no_cfl_warning_when_stable(self):
+        """Test that no CFL warning is issued when coefficient <= 0.25."""
+        import warnings
+        phi = np.ones(5)
+        # Create stable parameters: s = phi * diff_coef * dt / dx^2
+        # With phi=1, diff_coef=0.1, dt=0.01, dx=1: s = 1 * 0.1 * 0.01 / 1 = 0.001 < 0.25
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            create_template_AL_AR(
+                phi, diff_coef=0.1, adv_coef=0.0,
+                bc_top_type='dirichlet', bc_bot_type='neumann',
+                dt=0.01, dx=1, N=5
+            )
+            # Check that no CFL warning was issued
+            cfl_warnings = [warning for warning in w if "CFL" in str(warning.message)]
+            assert len(cfl_warnings) == 0, "Unexpected CFL warning was issued"
