@@ -1,9 +1,9 @@
 [![latest version](https://badge.fury.io/py/porousmedialab.svg)](https://badge.fury.io/py/porousmedialab)
-[![GitHub issues](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)
-[![GitHub forks](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)
-[![GitHub stars](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://img.shields.io/badge/license-MIT-blue.svg)
-[![Twitter](https://img.shields.io/twitter/url/https/github.com/biogeochemistry/PorousMediaLab.svg?style=social)](https://img.shields.io/twitter/url/https/github.com/biogeochemistry/PorousMediaLab.svg?style=social)
+[![GitHub issues](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/issues)
+[![GitHub forks](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/stargazers)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/biogeochemistry/PorousMediaLab/blob/master/LICENSE)
+[![Twitter](https://img.shields.io/twitter/url/https/github.com/biogeochemistry/PorousMediaLab.svg?style=social)](https://twitter.com/intent/tweet?text=Check%20out%20PorousMediaLab%20https://github.com/biogeochemistry/PorousMediaLab)
 [![DOI](https://zenodo.org/badge/78385496.svg)](https://zenodo.org/badge/latestdoi/78385496)
 
 # PorousMediaLab
