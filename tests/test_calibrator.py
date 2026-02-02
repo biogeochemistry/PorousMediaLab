@@ -182,6 +182,8 @@ class TestCalibratorMinFunction:
 
     def test_min_function_updates_constants(self):
         """min_function should update model constants."""
+        from porousmedialab.metrics import rmse
+
         batch = Batch(tend=0.1, dt=0.01)
         batch.add_species('A', init_conc=1.0)
         batch.constants['k'] = 1.0
@@ -190,7 +192,8 @@ class TestCalibratorMinFunction:
 
         cal = Calibrator(batch)
         cal.add_parameter('k', 0.1, 10.0)
-        cal.add_measurement('A', np.array([0.5]), np.array([0.05]))
+        # Use multiple measurement points with variance for norm_rmse compatibility
+        cal.add_measurement('A', np.array([0.98, 0.96, 0.94]), np.array([0.02, 0.04, 0.06]))
 
         # Call min_function with new k value
         cal.min_function([2.0])
@@ -207,7 +210,8 @@ class TestCalibratorMinFunction:
 
         cal = Calibrator(batch)
         cal.add_parameter('k', 0.1, 10.0)
-        cal.add_measurement('A', np.array([0.5]), np.array([0.05]))
+        # Use multiple measurement points with variance for norm_rmse compatibility
+        cal.add_measurement('A', np.array([0.98, 0.96, 0.94]), np.array([0.02, 0.04, 0.06]))
 
         error = cal.min_function([1.0])
 

@@ -68,3 +68,13 @@ class TestHenryLaw:
 
         assert_allclose(gas, [0.0, 0.0])
         assert_allclose(aq, [0.0, 0.0])
+
+
+class TestInputValidation:
+    """Tests for input validation in Henry's Law solver."""
+
+    def test_solve_henry_law_raises_on_invalid_constant(self):
+        """Test that HenryC = -1 raises ValueError."""
+        total_conc = np.array([1.0, 2.0, 3.0])
+        with pytest.raises(ValueError, match="cannot be -1"):
+            solve_henry_law(total_conc, HenryC=-1)

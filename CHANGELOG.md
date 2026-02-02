@@ -5,6 +5,33 @@ All notable changes to PorousMediaLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Input validation for numerical stability:
+  - Division-by-zero guards in `desolver.py` (dx, phi, diff_coef)
+  - Division-by-zero guards in `metrics.py` (pc_bias, apb, norm_rmse, NS, likelihood, index_agreement)
+  - Henry's constant validation in `equilibriumsolver.py`
+- CFL stability warning when coefficient exceeds 0.25
+
+### Fixed
+- Global namespace pollution in `lab.py` when using `exec()` for rate functions
+
+### Removed
+- `sensitivity.py` module (contained only unimplemented stubs)
+
+### Tests
+- Added comprehensive tests for all new input validation
+- Added 28 tests for blackbox.py optimization module (0% → 85% coverage)
+- Added 9 integration tests validating mathematical correctness:
+  - Mass conservation in batch reactions
+  - Analytical solutions (1st/2nd order kinetics)
+  - Multi-species cascade reactions
+  - Michaelis-Menten kinetics
+  - Column transport with Dirichlet BCs
+  - Advection pulse transport
+  - Timestep convergence
+
 ## [2.1.0] - 2026-01-30
 
 ### Added

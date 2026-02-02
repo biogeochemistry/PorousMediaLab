@@ -343,3 +343,50 @@ class TestPercentageDeviation:
         o = np.array([[2.0, 4.0]])
         # |1-2|/|2| + |2-4|/|4| = 0.5 + 0.5 = 1.0
         assert_allclose(percentage_deviation(s, o), 1.0)
+
+
+class TestInputValidation:
+    """Tests for input validation that raises errors on invalid inputs."""
+
+    def test_pc_bias_raises_on_zero_sum(self):
+        """Test that pc_bias raises when sum(o) == 0."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([0.0, 0.0, 0.0])
+        with pytest.raises(ValueError, match="sum of observed.*zero"):
+            pc_bias(s, o)
+
+    def test_apb_raises_on_zero_sum(self):
+        """Test that apb raises when sum(o) == 0."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([0.0, 0.0, 0.0])
+        with pytest.raises(ValueError, match="sum of observed.*zero"):
+            apb(s, o)
+
+    def test_norm_rmse_raises_on_zero_std(self):
+        """Test that norm_rmse raises when std(o) == 0."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([5.0, 5.0, 5.0])  # All same value - zero std
+        with pytest.raises(ValueError, match="zero standard deviation"):
+            norm_rmse(s, o)
+
+    def test_ns_raises_on_constant_observed(self):
+        """Test that NS raises when observed values have zero variance."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([5.0, 5.0, 5.0])  # All same value - zero variance
+        with pytest.raises(ValueError, match="zero variance"):
+            NS(s, o)
+
+    def test_likelihood_raises_on_zero_variance(self):
+        """Test that likelihood raises when observed values have zero variance."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([5.0, 5.0, 5.0])  # All same value - zero variance
+        with pytest.raises(ValueError, match="zero variance"):
+            likelihood(s, o)
+
+    def test_index_agreement_raises_on_zero_denominator(self):
+        """Test that index_agreement raises when denominator is zero."""
+        # When s == o and both are constant, denominator becomes zero
+        s = np.array([5.0, 5.0, 5.0])
+        o = np.array([5.0, 5.0, 5.0])
+        with pytest.raises(ValueError, match="denominator is zero"):
+            index_agreement(s, o)
