@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PorousMediaLab Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            color: #333;
+        }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; }
+        h2 { color: #34495e; margin-top: 2rem; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .nav-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .nav-table td { padding: 0.75rem; border-bottom: 1px solid #eee; }
+        .nav-table td:first-child { font-weight: bold; width: 40%; }
+        ul { padding-left: 1.5rem; }
+        li { margin: 0.5rem 0; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 3px; }
+        pre { background: #f4f4f4; padding: 1rem; border-radius: 5px; overflow-x: auto; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .feature { background: #f8f9fa; padding: 1rem; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>PorousMediaLab Documentation</h1>
+
+    <p>PorousMediaLab is a Python toolbox for batch and 1D reactive transport modeling in porous media, designed for scientists without extensive computational backgrounds.</p>
+
+    <h2>Quick Links</h2>
+    <table class="nav-table">
+        <tr><td><a href="quickstart.md">Quickstart</a></td><td>Get started in 5 minutes</td></tr>
+        <tr><td><a href="batch-guide.md">Batch Guide</a></td><td>Complete guide to 0D batch reactor simulations</td></tr>
+        <tr><td><a href="column-guide.md">Column Guide</a></td><td>Complete guide to 1D reactive transport</td></tr>
+    </table>
+
+    <h2>Tutorials</h2>
+    <p>Step-by-step tutorials with real-world examples:</p>
+    <ul>
+        <li><a href="tutorials/batch-roden.md">Organic Matter Degradation</a> - Batch reactor modeling following Roden 2008</li>
+        <li><a href="tutorials/sediment-column.md">Sediment Diagenesis</a> - 1D column transport with complex reactions</li>
+    </ul>
+
+    <h2>Features</h2>
+    <div class="features">
+        <div class="feature"><strong>Batch Module</strong><br>0D closed-system reaction simulations</div>
+        <div class="feature"><strong>Column Module</strong><br>1D advection-diffusion-reaction solver</div>
+        <div class="feature"><strong>Flexible Reactions</strong><br>Define rates using string expressions</div>
+        <div class="feature"><strong>pH Equilibrium</strong><br>Built-in acid-base chemistry</div>
+        <div class="feature"><strong>Calibration</strong><br>Parameter optimization tools</div>
+        <div class="feature"><strong>Visualization</strong><br>Built-in plotting methods</div>
+    </div>
+
+    <h2>Installation</h2>
+    <pre><code>pip install porousmedialab</code></pre>
+
+    <h2>Links</h2>
+    <ul>
+        <li><a href="https://github.com/biogeochemistry/PorousMediaLab">GitHub Repository</a></li>
+        <li><a href="https://pypi.org/project/porousmedialab/">PyPI Package</a></li>
+        <li><a href="https://github.com/biogeochemistry/PorousMediaLab/tree/master/examples">Example Notebooks</a></li>
+    </ul>
+
+    <h2>Citation</h2>
+    <p>Igor Markelov (2020). Modelling Biogeochemical Cycles Across Scales: From Whole-Lake Phosphorus Dynamics to Microbial Reaction Systems. UWSpace. <a href="http://hdl.handle.net/10012/15513">http://hdl.handle.net/10012/15513</a></p>
+</body>
+</html>
