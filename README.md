@@ -1,4 +1,4 @@
-[![latest version](https://badge.fury.io/py/porousmedialab.svg)](https://badge.fury.io/py/porousmedialab)
+[![PyPI version](https://img.shields.io/pypi/v/porousmedialab.svg)](https://pypi.org/project/porousmedialab/)
 [![GitHub issues](https://img.shields.io/github/issues/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/issues)
 [![GitHub forks](https://img.shields.io/github/forks/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/network/members)
 [![GitHub stars](https://img.shields.io/github/stars/biogeochemistry/PorousMediaLab.svg)](https://github.com/biogeochemistry/PorousMediaLab/stargazers)
