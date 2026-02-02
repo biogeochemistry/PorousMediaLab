@@ -1,0 +1,16 @@
+title: PorousMediaLab Documentation
+description: Python toolbox for batch and 1D reactive transport modeling in porous media
+remote_theme: pages-themes/cayman@v0.2.0
+plugins:
+  - jekyll-remote-theme
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
