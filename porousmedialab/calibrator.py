@@ -21,12 +21,12 @@ def find_indexes_of_intersections(s, o, eps):
         idxs: indexes of simulated values
     """
 
-    idxs = np.array([])
+    idxs = []
     for o_i in o:
-        idx, = np.where(abs(s - o_i) <= eps*1.01)
+        idx, = np.where(abs(s - o_i) <= eps * 1.01)
         if idx.size > 0:
-            idxs = np.append(idxs, int(idx[0]))
-    return idxs.astype(int)
+            idxs.append(int(idx[0]))
+    return np.array(idxs, dtype=int)
 
 
 class Calibrator:

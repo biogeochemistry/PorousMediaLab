@@ -57,6 +57,42 @@ class TestFindIndexesOfIntersections:
         assert len(idxs) == 1
         assert idxs[0] == 1  # First match
 
+    def test_large_input(self):
+        """Should work correctly with larger arrays."""
+        simulated = np.linspace(0, 10, 1001)
+        observed = np.array([1.0, 5.0, 9.0])
+        eps = 0.01
+
+        idxs = find_indexes_of_intersections(simulated, observed, eps)
+
+        assert len(idxs) == 3
+        # Verify values at found indexes are close to observed
+        for i, o_val in enumerate(observed):
+            assert abs(simulated[idxs[i]] - o_val) <= eps * 1.01
+
+    def test_returns_int_array(self):
+        """Return type should be numpy int array."""
+        simulated = np.array([0.0, 0.1, 0.2])
+        observed = np.array([0.1])
+        eps = 0.01
+
+        idxs = find_indexes_of_intersections(simulated, observed, eps)
+
+        assert isinstance(idxs, np.ndarray)
+        assert idxs.dtype == int
+
+    def test_empty_observed_returns_empty_int_array(self):
+        """Empty observed array should return empty int array."""
+        simulated = np.array([0.0, 0.1, 0.2])
+        observed = np.array([])
+        eps = 0.01
+
+        idxs = find_indexes_of_intersections(simulated, observed, eps)
+
+        assert isinstance(idxs, np.ndarray)
+        assert idxs.dtype == int
+        assert len(idxs) == 0
+
 
 class TestCalibratorInitialization:
     """Tests for Calibrator initialization."""
