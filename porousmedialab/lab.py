@@ -328,9 +328,6 @@ class Lab:
             i {int} -- step in time
         """
 
-        # C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-        # C_new, rates_per_elem = desolver.ode_integrate(self.profiles, self.dcdt, self.rates, self.constants, self.dt, solver='rk4')
-        # for idx_j in range(self.N):
         yinit = np.zeros(len(self.species))  # Pre-allocate outside loop
         for idx_j in range(self.N):
             for idx, s in enumerate(self.species):
