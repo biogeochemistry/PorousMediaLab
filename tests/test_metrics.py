@@ -230,33 +230,43 @@ class TestCorrelation:
 
 
 class TestCoefficientOfDetermination:
-    """Tests for R-squared (coefficient of determination).
-
-    Note: coefficient_of_determination has a bug where it passes a scalar
-    to squared_error which then fails in filter_nan. Using rsquared instead.
-    """
+    """Tests for R-squared (coefficient of determination)."""
 
     def test_perfect_match(self):
         """R2 should be 1.0 for perfect match."""
         s = np.array([1.0, 2.0, 3.0, 4.0])
         o = np.array([1.0, 2.0, 3.0, 4.0])
-        # coefficient_of_determination has a bug, use rsquared
-        assert_allclose(rsquared(s, o), 1.0)
+        assert_allclose(coefficient_of_determination(s, o), 1.0)
 
     def test_r2_mean_predictor(self):
         """R2 should be 0 when predicting mean."""
         o = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         s = np.full_like(o, np.mean(o))
-        # rsquared uses sklearn which handles this correctly
-        assert_allclose(rsquared(s, o), 0.0, atol=1e-10)
+        assert_allclose(coefficient_of_determination(s, o), 0.0, atol=1e-10)
 
     def test_r2_positive_correlation(self):
         """R2 should be positive for correlated data."""
         np.random.seed(42)
         o = np.random.rand(100) * 10
         s = o + np.random.rand(100) * 0.5  # Add small noise
-        r2 = rsquared(s, o)
+        r2 = coefficient_of_determination(s, o)
         assert r2 > 0.9  # Should be highly correlated
+
+    def test_matches_rsquared(self):
+        """coefficient_of_determination should match rsquared (sklearn)."""
+        np.random.seed(42)
+        o = np.random.rand(50) * 10
+        s = o + np.random.rand(50) * 1.0
+        r2_ours = coefficient_of_determination(s, o)
+        r2_sklearn = rsquared(s, o)
+        assert_allclose(r2_ours, r2_sklearn, rtol=1e-10)
+
+    def test_zero_variance_raises(self):
+        """Should raise ValueError when observed has zero variance."""
+        s = np.array([1.0, 2.0, 3.0])
+        o = np.array([5.0, 5.0, 5.0])
+        with pytest.raises(ValueError, match="zero variance"):
+            coefficient_of_determination(s, o)
 
 
 class TestSquaredError:
@@ -321,28 +331,34 @@ class TestLikelihood:
 
 
 class TestPercentageDeviation:
-    """Tests for percentage deviation.
+    """Tests for percentage deviation."""
 
-    Note: The percentage_deviation function uses sum(sum(...)) which fails
-    for arrays that become scalars after filter_nan flattening. This is a
-    known issue in the metrics module - the function expects 2D input but
-    filter_nan flattens to 1D. Tests are skipped until the module is fixed.
-    """
-
-    @pytest.mark.skip(reason="percentage_deviation has bug with sum(sum()) on 1D arrays")
     def test_no_deviation_2d(self):
         """Percentage deviation should be 0 for identical 2D arrays."""
         s = np.array([[1.0, 2.0, 3.0]])
         o = np.array([[1.0, 2.0, 3.0]])
         assert_allclose(percentage_deviation(s, o), 0.0)
 
-    @pytest.mark.skip(reason="percentage_deviation has bug with sum(sum()) on 1D arrays")
     def test_known_deviation_2d(self):
         """Test percentage deviation with known 2D values."""
         s = np.array([[1.0, 2.0]])
         o = np.array([[2.0, 4.0]])
         # |1-2|/|2| + |2-4|/|4| = 0.5 + 0.5 = 1.0
         assert_allclose(percentage_deviation(s, o), 1.0)
+
+    def test_percentage_deviation_1d(self):
+        """Test percentage deviation with 1D arrays."""
+        s = np.array([1.5, 3.0])
+        o = np.array([1.0, 2.0])
+        # |0.5|/|1| + |1.0|/|2| = 0.5 + 0.5 = 1.0
+        assert_allclose(percentage_deviation(s, o), 1.0)
+
+    def test_zero_observed_raises(self):
+        """Should raise ValueError when observed contains zeros."""
+        s = np.array([1.0, 2.0])
+        o = np.array([0.0, 2.0])
+        with pytest.raises(ValueError, match="contain zeros"):
+            percentage_deviation(s, o)
 
 
 class TestInputValidation:

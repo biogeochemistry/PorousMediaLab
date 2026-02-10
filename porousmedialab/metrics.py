@@ -26,9 +26,14 @@ def percentage_deviation(s, o):
         o: observed
     output:
         percent deviation
+
+    Raises:
+        ValueError: if any observed values are zero
     """
     s, o = filter_nan(s, o)
-    return sum(sum(abs(s - o) / abs(o)))
+    if np.any(np.abs(o) < np.finfo(float).tiny):
+        raise ValueError("Cannot compute percentage deviation: observed values contain zeros")
+    return np.sum(np.abs(s - o) / np.abs(o))
 
 
 def pc_bias(s, o):
@@ -225,13 +230,16 @@ def coefficient_of_determination(s, o):
         o: observed
     output:
         r2: coefficient of determination
+
+    Raises:
+        ValueError: if observed values have zero variance
     """
     s, o = filter_nan(s, o)
-    o_mean = np.mean(o)
-    se = squared_error(s, o)
-    se_mean = squared_error(o, o_mean)
-    r2 = 1 - (se / se_mean)
-    return r2
+    ss_res = np.sum((s - o)**2)
+    ss_tot = np.sum((o - np.mean(o))**2)
+    if abs(ss_tot) < np.finfo(float).tiny:
+        raise ValueError("Cannot compute coefficient of determination: observed values have zero variance")
+    return 1 - (ss_res / ss_tot)
 
 
 def rsquared(s, o):
