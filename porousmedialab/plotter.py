@@ -54,20 +54,16 @@ def plot_batch_delta(batch, element, time_factor=1):
 def saturation_index_countour(lab, elem1, elem2, Ks, labels=False):
     plt.figure()
     plt.title('Saturation index %s%s' % (elem1, elem2))
-    resoluion = 100
-    n = math.ceil(lab.time.size / resoluion)
+    resolution = 100
+    n = math.ceil(lab.time.size / resolution)
     plt.xlabel('Time')
     z = np.log10((lab.species[elem1]['concentration'][:, ::n] + 1e-8) * (
         lab.species[elem2]['concentration'][:, ::n] + 1e-8) / lab.constants[Ks])
     lim = np.max(abs(z))
     lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
     X, Y = np.meshgrid(lab.time[::n], -lab.x)
-    plt.xlabel('Time')
     CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(sns.color_palette(
         "RdBu_r", 101)), origin='lower', levels=lim, extend='both')
-    if labels:
-        plt.clabel(CS, inline=1, fontsize=10, colors='w')
-    # cbar = plt.colorbar(CS)
     if labels:
         plt.clabel(CS, inline=1, fontsize=10, colors='w')
     cbar = plt.colorbar(CS)
@@ -205,8 +201,8 @@ def plot_contourplots(lab, **kwargs):
 def contour_plot(lab, element, labels=False, days=False, last_year=False):
     plt.figure()
     plt.title(element + ' concentration')
-    resoluion = 100
-    n = math.ceil(lab.time.size / resoluion)
+    resolution = 100
+    n = math.ceil(lab.time.size / resolution)
     if last_year:
         k = n - int(1 / lab.dt)
     else:
@@ -245,15 +241,13 @@ def plot_contourplots_of_rates(lab, **kwargs):
 def contour_plot_of_rates(lab, r, labels=False, last_year=False):
     plt.figure()
     plt.title('{}'.format(r))
-    resoluion = 100
-    n = math.ceil(lab.time.size / resoluion)
+    resolution = 100
+    n = math.ceil(lab.time.size / resolution)
     if last_year:
         k = n - int(1 / lab.dt)
     else:
         k = 1
     z = lab.estimated_rates[r][:, k - 1:-1:n]
-    # lim = np.max(np.abs(z))
-    # lim = np.linspace(-lim - 0.1, +lim + 0.1, 51)
     X, Y = np.meshgrid(lab.time[k::n], -lab.x)
     plt.xlabel('Time')
     CS = plt.contourf(X, Y, z, 20, cmap=ListedColormap(
@@ -279,8 +273,8 @@ def plot_contourplots_of_deltas(lab, **kwargs):
 def contour_plot_of_delta(lab, element, labels=False, last_year=False):
     plt.figure()
     plt.title('Rate of %s consumption/production' % element)
-    resoluion = 100
-    n = math.ceil(lab.time.size / resoluion)
+    resolution = 100
+    n = math.ceil(lab.time.size / resolution)
     if last_year:
         k = n - int(1 / lab.dt)
     else:

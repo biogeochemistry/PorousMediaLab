@@ -102,6 +102,44 @@ class TestColumnPlotSmoke:
         finally:
             plt.close('all')
 
+    @pytest.fixture
+    def solved_column_with_rates(self):
+        """Create a solved column with reactions for rate plotting tests."""
+        col = Column(length=10, dx=0.5, tend=0.5, dt=0.01, w=0)
+        col.add_species(
+            theta=1, name='A', D=1.0, init_conc=1.0,
+            bc_top_value=1, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet'
+        )
+        col.add_species(
+            theta=1, name='B', D=0.5, init_conc=0.0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet'
+        )
+        col.constants['k'] = 1.0
+        col.rates['R'] = 'k * A'
+        col.dcdt['A'] = '-R'
+        col.dcdt['B'] = 'R'
+        col.solve(verbose=False)
+        col.reconstruct_rates()
+        return col
+
+    def test_contour_plot_of_rates_runs(self, solved_column_with_rates):
+        """contour_plot_of_rates should execute without error."""
+        try:
+            ax = solved_column_with_rates.contour_plot_of_rates('R')
+            assert ax is not None
+        finally:
+            plt.close('all')
+
+    def test_contour_plot_of_delta_runs(self, solved_column_with_rates):
+        """contour_plot_of_delta should execute without error."""
+        try:
+            ax = solved_column_with_rates.contour_plot_of_delta('A')
+            assert ax is not None
+        finally:
+            plt.close('all')
+
 
 class TestCustomPlotSmoke:
     """Smoke tests for custom plot function."""
