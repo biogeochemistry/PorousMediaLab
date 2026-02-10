@@ -3,38 +3,6 @@ from scipy.integrate import odeint
 import porousmedialab.vg as vg
 
 
-def thetaFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
-    return pars['thetaR'] + (pars['thetaS'] - pars['thetaR']) * Se
-
-
-def CFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
-    dSedh = pars['alpha'] * pars['m'] / \
-        (1 - pars['m']) * Se**(1 / pars['m']) * \
-        (1 - Se**(1 / pars['m']))**pars['m']
-    return Se * pars['Ss'] + (pars['thetaS'] - pars['thetaR']) * dSedh
-
-
-def KFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
-    return pars['Ks'] * Se**pars['neta'] * (1 - (1 - Se**(1 / pars['m']))**pars['m'])**2
-
-
-thetaFun = np.vectorize(thetaFun)
-CFun = np.vectorize(CFun)
-KFun = np.vectorize(KFun)
-
-
 class RichardsModel:
     """Unsaturated transport model"""
 
@@ -68,14 +36,14 @@ class RichardsModel:
     def RichardsEquation(self, psi, t, dz, n, p, qTop, qBot, psiTop, psiBot):
 
         # Basic properties:
-        C = CFun(psi, p)
+        C = vg.CFun(psi, p)
 
         # initialize vectors:
         q = np.zeros(n + 1)
 
         # Upper boundary
         if qTop == []:
-            KTop = KFun(np.zeros(1) + psiTop, p)
+            KTop = vg.KFun(np.zeros(1) + psiTop, p)
             q[n] = -KTop * ((psiTop - psi[n - 1]) / dz * 2 + 1)
         else:
             q[n] = qTop
@@ -84,11 +52,11 @@ class RichardsModel:
         if qBot == []:
             if psiBot == []:
                 # Free drainage
-                KBot = KFun(np.zeros(1) + psi[0], p)
+                KBot = vg.KFun(np.zeros(1) + psi[0], p)
                 q[0] = -KBot
             else:
                 # Type 1 boundary
-                KBot = KFun(np.zeros(1) + psiBot, p)
+                KBot = vg.KFun(np.zeros(1) + psiBot, p)
                 q[0] = -KBot * ((psi[0] - psiBot) / dz * 2 + 1.0)
         else:
             # Type 2 boundary
@@ -96,7 +64,7 @@ class RichardsModel:
 
         # Internal nodes
         i = np.arange(0, n - 1)
-        Knodes = KFun(psi, p)
+        Knodes = vg.KFun(psi, p)
         Kmid = (Knodes[i + 1] + Knodes[i]) / 2.0
 
         j = np.arange(1, n)

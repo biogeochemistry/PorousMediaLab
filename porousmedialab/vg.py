@@ -53,98 +53,32 @@ def setpars():
     return pars
 
 
-def PlotProps(pars):
-    import numpy as np
-    import pylab as pl
-    import vanGenuchten as vg
-    psi = np.linspace(-10, 2, 200)
-    pl.figure
-    pl.subplot(3, 1, 1)
-    pl.plot(psi, vg.thetaFun(psi, pars))
-    pl.ylabel(r'$\theta(\psi) [-]$')
-    pl.subplot(3, 1, 2)
-    pl.plot(psi, vg.CFun(psi, pars))
-    pl.ylabel(r'$C(\psi) [1/m]$')
-    pl.subplot(3, 1, 3)
-    pl.plot(psi, vg.KFun(psi, pars))
-    pl.xlabel(r'$\psi [m]$')
-    pl.ylabel(r'$K(\psi) [m/d]$')
-    # pl.show()
+def _create_soil_params(thetaR, thetaS, alpha, n, Ks, neta=0.5, Ss=1e-6):
+    return {
+        'thetaR': thetaR, 'thetaS': thetaS, 'alpha': alpha,
+        'n': n, 'm': 1 - 1 / n, 'Ks': Ks, 'neta': neta, 'Ss': Ss
+    }
 
 
 def HygieneSandstone():
-    pars = {}
-    pars['thetaR'] = 0.153
-    pars['thetaS'] = 0.25
-    pars['alpha'] = 0.79
-    pars['n'] = 10.4
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 1.08
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.153, 0.25, 0.79, 10.4, 1.08)
 
 
 def TouchetSiltLoam():
-    pars = {}
-    pars['thetaR'] = 0.19
-    pars['thetaS'] = 0.469
-    pars['alpha'] = 0.5
-    pars['n'] = 7.09
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 3.03
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.19, 0.469, 0.5, 7.09, 3.03)
 
 
 def SiltLoamGE3():
-    pars = {}
-    pars['thetaR'] = 0.131
-    pars['thetaS'] = 0.396
-    pars['alpha'] = 0.423
-    pars['n'] = 2.06
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 0.0496
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.131, 0.396, 0.423, 2.06, 0.0496)
 
 
 def GuelphLoamDrying():
-    pars = {}
-    pars['thetaR'] = 0.218
-    pars['thetaS'] = 0.520
-    pars['alpha'] = 1.15
-    pars['n'] = 2.03
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 0.316
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.218, 0.520, 1.15, 2.03, 0.316)
 
 
 def GuelphLoamWetting():
-    pars = {}
-    pars['thetaR'] = 0.218
-    pars['thetaS'] = 0.434
-    pars['alpha'] = 2.0
-    pars['n'] = 2.76
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 0.316
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.218, 0.434, 2.0, 2.76, 0.316)
 
 
 def BeitNetofaClay():
-    pars = {}
-    pars['thetaR'] = 0.
-    pars['thetaS'] = 0.446
-    pars['alpha'] = 0.152
-    pars['n'] = 1.17
-    pars['m'] = 1 - 1 / pars['n']
-    pars['Ks'] = 0.00082
-    pars['neta'] = 0.5
-    pars['Ss'] = 0.000001
-    return pars
+    return _create_soil_params(0.0, 0.446, 0.152, 1.17, 0.00082)
