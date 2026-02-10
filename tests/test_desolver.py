@@ -277,13 +277,8 @@ class TestOdeIntegrateRK4:
 
 
 class TestOdeIntegrateButcher5:
-    """Tests for Butcher 5th order ODE integration.
+    """Tests for Butcher 5th order ODE integration."""
 
-    Note: butcher5 solver has a known bug where k_loop returns a tuple
-    but sum_k expects dict values. These tests are skipped until fixed.
-    """
-
-    @pytest.mark.skip(reason="butcher5 solver has a bug with tuple return from k_loop")
     def test_exponential_decay(self, simple_ode_system):
         """Butcher5 should accurately integrate exponential decay."""
         C0 = dict(simple_ode_system['C0'])
@@ -297,16 +292,15 @@ class TestOdeIntegrateButcher5:
         num_sol = np.array([C0['C']])
 
         for i in range(1, len(time)):
-            C_new, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver='butcher5')
+            C_new, _, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver='butcher5')
             C0['C'] = C_new['C']
             num_sol = np.append(num_sol, C_new['C'])
 
         analytical = 1.0 * np.exp(-coef['k'] * time)
         assert_allclose(num_sol, analytical, rtol=1e-4)
 
-    @pytest.mark.skip(reason="butcher5 solver has a bug with tuple return from k_loop")
-    def test_butcher5_returns_two_values(self, simple_ode_system):
-        """Butcher5 should return C_new and rates_per_element."""
+    def test_butcher5_returns_three_values(self, simple_ode_system):
+        """Butcher5 should return C_new, rates_per_element, and rates_per_rate."""
         C0 = simple_ode_system['C0']
         coef = simple_ode_system['coef']
         rates = simple_ode_system['rates']
@@ -314,7 +308,37 @@ class TestOdeIntegrateButcher5:
         dt = simple_ode_system['dt']
 
         result = ode_integrate(C0, dcdt, rates, coef, dt, solver='butcher5')
-        assert len(result) == 2
+        assert len(result) == 3
+        C_new, rates_per_element, rates_per_rate = result
+        assert 'C' in C_new
+        assert 'C' in rates_per_element
+        assert 'R' in rates_per_rate
+
+    def test_butcher5_rates_per_rate(self, simple_ode_system):
+        """Butcher5 rates_per_rate should contain arrays for all rate names."""
+        C0 = simple_ode_system['C0']
+        coef = simple_ode_system['coef']
+        rates = simple_ode_system['rates']
+        dcdt = simple_ode_system['dcdt']
+        dt = simple_ode_system['dt']
+
+        _, _, rates_per_rate = ode_integrate(C0, dcdt, rates, coef, dt, solver='butcher5')
+        assert set(rates_per_rate.keys()) == set(rates.keys())
+        for rate_name in rates_per_rate:
+            assert isinstance(rates_per_rate[rate_name], (float, np.floating, np.ndarray))
+
+    def test_butcher5_matches_rk4(self, simple_ode_system):
+        """Butcher5 and RK4 should produce similar results for simple decay."""
+        C0_b = dict(simple_ode_system['C0'])
+        C0_r = dict(simple_ode_system['C0'])
+        coef = simple_ode_system['coef']
+        rates = simple_ode_system['rates']
+        dcdt = simple_ode_system['dcdt']
+        dt = simple_ode_system['dt']
+
+        C_b, _, _ = ode_integrate(C0_b, dcdt, rates, coef, dt, solver='butcher5')
+        C_r, _, _ = ode_integrate(C0_r, dcdt, rates, coef, dt, solver='rk4')
+        assert_allclose(C_b['C'], C_r['C'], rtol=1e-3)
 
 
 class TestOdeIntegrateMultiSpecies:
@@ -375,6 +399,28 @@ class TestOdeIntegrateKeyError:
 
         with pytest.raises(KeyError):
             ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4')
+
+    def test_unknown_solver_raises_error(self):
+        """Unknown solver name should raise ValueError."""
+        C0 = {'C': 1.0}
+        coef = {'k': 2}
+        rates = {'R': 'k*C'}
+        dcdt = {'C': '-R'}
+        dt = 0.0001
+
+        with pytest.raises(ValueError, match="Unknown solver"):
+            ode_integrate(C0, dcdt, rates, coef, dt, solver='implicit')
+
+    def test_invalid_solver_name_raises_error(self):
+        """Completely invalid solver name should raise ValueError."""
+        C0 = {'C': 1.0}
+        coef = {'k': 2}
+        rates = {'R': 'k*C'}
+        dcdt = {'C': '-R'}
+        dt = 0.0001
+
+        with pytest.raises(ValueError, match="Unknown solver"):
+            ode_integrate(C0, dcdt, rates, coef, dt, solver='nonexistent')
 
 
 class TestCreateOdeFunction:

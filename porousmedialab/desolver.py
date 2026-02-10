@@ -146,51 +146,6 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
     or Butcher 5th where the variables, rates, coef are passed as dictionaries
     """
 
-    def implicit_solver(C_0):
-
-        class Derivative:
-
-            def __init__(self, f, h=1E-5):
-                self.f = f
-                self.h = float(h)
-
-            def __call__(self, x):
-                f, h = self.f, self.h
-                return (f(x + h) - f(x - h)) / (2 * h)
-
-        def Newton(f, x, dfdx, epsilon=1.0E-7, N=100, store=False):
-            f_value = f(x)
-            n = 0
-            if store:
-                info = [(x, f_value)]
-            while abs(f_value) > epsilon and n <= N:
-                dfdx_value = float(dfdx(x))
-                if abs(dfdx_value) < 1E-14:
-                    raise ValueError("Newton: f’(%g)=%g" % (x, dfdx_value))
-
-                x = x - f_value / dfdx_value
-                n += 1
-                f_value = f(x)
-                if store:
-                    info.append((x, f_value))
-            if store:
-                return x, info
-            else:
-                return x, n, f_value
-
-        def F(w):
-            return w - k_loop(w) - C0
-
-        dFdw = Derivative(F)
-
-        C_new = {}
-        k1 = k_loop(C_0)
-        for element in C_0:
-            w_start = C_0[element] + k1[element]
-            C_new[element], _ = Newton(F, w_start, dFdw, N=30)
-
-        raise NotImplementedError()
-
     def k_loop(conc, dt=dt, non_negative_rates=True):
         rates_per_rate = {}
         for element, rate in rates.items():
@@ -254,16 +209,24 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
         k_6 = dt*sediment_rates(C0 - 3/7*k_1 + 2/7*k_2 + 12/7*k_3 - 12/7*k_4 + 8/7*k_5, dt);
         C_new = C0 + (7*k_1 + 32*k_3 + 12*k_4 + 32*k_5 + 7*k_6)/90;
         """
-        k1 = k_loop(C_0)
-        k2 = k_loop(sum_k(C_0, k1, 1 / 4))
-        k3 = k_loop(sum_k(sum_k(C_0, k1, 1 / 8), k2, 1 / 8))
-        k4 = k_loop(sum_k(sum_k(C_0, k2, -0.5), k3, 1))
-        k5 = k_loop(sum_k(sum_k(C_0, k1, 3 / 16), k4, 9 / 16))
-        k6 = k_loop(
+        k1, rpr1 = k_loop(C_0)
+        k2, rpr2 = k_loop(sum_k(C_0, k1, 1 / 4))
+        k3, rpr3 = k_loop(sum_k(sum_k(C_0, k1, 1 / 8), k2, 1 / 8))
+        k4, rpr4 = k_loop(sum_k(sum_k(C_0, k2, -0.5), k3, 1))
+        k5, rpr5 = k_loop(sum_k(sum_k(C_0, k1, 3 / 16), k4, 9 / 16))
+        k6, rpr6 = k_loop(
             sum_k(
                 sum_k(
                     sum_k(sum_k(sum_k(C_0, k1, -3 / 7), k2, 2 / 7), k3, 12 / 7),
                     k4, -12 / 7), k5, 8 / 7))
+
+        rates_per_rate = {}
+        for rate_name in rpr1:
+            rates_per_rate[rate_name] = (
+                7 * rpr1[rate_name] + 32 * rpr3[rate_name] +
+                12 * rpr4[rate_name] + 32 * rpr5[rate_name] +
+                7 * rpr6[rate_name]) / 90
+
         C_new = {}
         rates_per_element = {}
         for element in C_0:
@@ -271,14 +234,14 @@ def ode_integrate(C0, dcdt, rates, coef, dt, solver='rk4'):
                 7 * k1[element] + 32 * k3[element] + 12 * k4[element] +
                 32 * k5[element] + 7 * k6[element]) / 90
             C_new[element] = C_0[element] + rates_per_element[element]
-        return C_new, rates_per_element
+        return C_new, rates_per_element, rates_per_rate
 
     if solver == 'butcher5':
         return butcher5(C0)
-    if solver == 'implicit':
-        return implicit_solver(C0)
+    if solver == 'rk4':
+        return rk4(C0)
 
-    return rk4(C0)
+    raise ValueError(f"Unknown solver: '{solver}'. Valid options are 'rk4' and 'butcher5'.")
 
 
 def _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates):

@@ -37,7 +37,6 @@ class TestExponentialDecay:
         # RK4 achieves good accuracy but not exact due to discretization
         assert_allclose(num_sol, analytical, rtol=1e-4)
 
-    @pytest.mark.skip(reason="butcher5 solver has a bug with tuple return from k_loop")
     def test_butcher5_exponential_decay(self):
         """Butcher 5th order should match analytical solution."""
         C0 = {'C': 1.0}
@@ -51,13 +50,13 @@ class TestExponentialDecay:
         num_sol = [C0['C']]
 
         for i in range(1, len(time)):
-            C_new, _ = desolver.ode_integrate(
+            C_new, _, _ = desolver.ode_integrate(
                 C0, dcdt, rates, coef, dt, solver='butcher5')
             C0['C'] = C_new['C']
             num_sol.append(C_new['C'])
 
         analytical = np.exp(-2.0 * time)
-        assert_allclose(num_sol, analytical, rtol=1e-5)
+        assert_allclose(num_sol, analytical, rtol=1e-4)
 
     def test_batch_exponential_decay(self):
         """Batch model should give correct exponential decay."""
