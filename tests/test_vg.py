@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from porousmedialab.vg import (
-    thetaFun, CFun, KFun,
+    thetaFun, CFun, KFun, _create_soil_params,
     HygieneSandstone, TouchetSiltLoam, SiltLoamGE3,
     GuelphLoamDrying, GuelphLoamWetting, BeitNetofaClay
 )
@@ -225,3 +225,51 @@ class TestVanGenuchtenPhysics:
         K_dry = KFun(-50.0, pars)
         # K should decrease significantly
         assert K_dry < K_sat / 10  # At least one order of magnitude
+
+
+class TestCreateSoilParams:
+    """Tests for the _create_soil_params helper."""
+
+    def test_returns_all_required_keys(self):
+        """Helper should return dict with all 8 required keys."""
+        pars = _create_soil_params(0.1, 0.4, 0.5, 2.0, 1.0)
+        required_keys = {'thetaR', 'thetaS', 'alpha', 'n', 'm', 'Ks', 'neta', 'Ss'}
+        assert set(pars.keys()) == required_keys
+
+    def test_computes_m_correctly(self):
+        """Helper should compute m = 1 - 1/n."""
+        pars = _create_soil_params(0.1, 0.4, 0.5, 2.0, 1.0)
+        assert_allclose(pars['m'], 1 - 1 / 2.0)
+
+    def test_default_neta_and_ss(self):
+        """Helper should use default neta=0.5 and Ss=1e-6."""
+        pars = _create_soil_params(0.1, 0.4, 0.5, 2.0, 1.0)
+        assert pars['neta'] == 0.5
+        assert pars['Ss'] == 1e-6
+
+    def test_custom_neta_and_ss(self):
+        """Helper should accept custom neta and Ss."""
+        pars = _create_soil_params(0.1, 0.4, 0.5, 2.0, 1.0, neta=0.8, Ss=1e-4)
+        assert pars['neta'] == 0.8
+        assert pars['Ss'] == 1e-4
+
+
+class TestRichardsModelUsesVg:
+    """Test that RichardsModel uses vg module functions (not local copies)."""
+
+    def test_richardsmodel_no_local_vg_functions(self):
+        """RichardsModel should not define its own thetaFun/CFun/KFun."""
+        import inspect
+        from porousmedialab.richardsmodel import RichardsModel
+        source = inspect.getsource(RichardsModel)
+        assert 'def thetaFun' not in source
+        assert 'def CFun' not in source
+        assert 'def KFun' not in source
+
+    def test_richardsmodel_can_instantiate(self):
+        """RichardsModel should instantiate without errors."""
+        from porousmedialab.richardsmodel import RichardsModel
+        z = np.arange(0.05, 5, 0.1)
+        psi0 = np.ones(z.size) * -2.0
+        model = RichardsModel(z, 1.0, psi0)
+        assert model.n == z.size
