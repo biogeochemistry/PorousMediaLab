@@ -22,6 +22,11 @@ class TestBatchInitialization:
         batch = Batch(tend=1.0, dt=0.01)
         assert batch.N == 1
 
+    def test_init_accepts_ode_method(self):
+        """Batch should store the requested ODE method."""
+        batch = Batch(tend=1.0, dt=0.01, ode_method='rk4')
+        assert batch.ode_method == 'rk4'
+
     def test_time_array_correct_length(self):
         """Time array should have correct number of points."""
         batch = Batch(tend=1.0, dt=0.01)
@@ -95,6 +100,32 @@ class TestBatchSimpleReactions:
         expected = np.exp(-1.0)
         actual = batch.species['A']['concentration'][0, -1]
         assert_allclose(actual, expected, rtol=0.01)
+
+    def test_rk4_solver_dispatch(self):
+        """Batch should route rk4 through the explicit solver."""
+        batch = Batch(tend=1.0, dt=0.001, ode_method='rk4')
+        batch.add_species(name='A', init_conc=1.0)
+        batch.constants['k'] = 1.0
+        batch.rates['R'] = 'k * A'
+        batch.dcdt['A'] = '-R'
+
+        batch.solve(verbose=False)
+
+        assert_allclose(
+            batch.species['A']['concentration'][0, -1],
+            np.exp(-1.0),
+            rtol=0.01)
+
+    def test_scipy_solver_supports_documented_math_functions(self):
+        """Default SciPy-generated expressions should expose documented math functions."""
+        batch = Batch(tend=0.01, dt=0.01)
+        batch.add_species(name='A', init_conc=1.0)
+        batch.rates['R'] = 'exp(-A)'
+        batch.dcdt['A'] = '-R'
+
+        batch.solve(verbose=False)
+
+        assert batch.species['A']['concentration'][0, -1] < 1.0
 
     def test_zero_order_production(self):
         """Test zero-order production: dA/dt = k."""

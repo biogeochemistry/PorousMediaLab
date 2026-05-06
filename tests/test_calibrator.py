@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 from porousmedialab.calibrator import Calibrator, find_indexes_of_intersections
 from porousmedialab.batch import Batch
+from porousmedialab.column import Column
 
 
 class TestFindIndexesOfIntersections:
@@ -280,6 +281,25 @@ class TestCalibratorEstimateError:
         cal.estimate_error(metric_fun=rmse, disp=False)
 
         assert cal.error < 1e-6
+
+    def test_estimate_error_uses_measurement_depth_for_columns(self):
+        """Column calibration should compare the requested depth, not the full grid."""
+        from porousmedialab.metrics import rmse
+
+        col = Column(length=10, dx=1, tend=0.1, dt=0.1)
+        col.add_species(
+            theta=1, name='A', D=0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet',
+            int_transport=False
+        )
+        col.species['A']['concentration'][5, 1] = 42.0
+
+        cal = Calibrator(col)
+        cal.add_measurement('A', np.array([42.0]), np.array([0.1]), depth=5)
+        cal.estimate_error(metric_fun=rmse, disp=False)
+
+        assert cal.error == 0
 
 
 class TestCalibratorIntegration:

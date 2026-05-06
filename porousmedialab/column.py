@@ -1,18 +1,20 @@
 import numpy as np
 import numexpr as ne
+from pathlib import Path
 
 import porousmedialab.desolver as desolver
 import porousmedialab.phcalc as phcalc
 import porousmedialab.plotter as plotter
 from porousmedialab.dotdict import DotDict
-from porousmedialab.lab import Lab
+from porousmedialab.lab import Lab, build_regular_grid
 
 
 class Column(Lab):
     """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
-    def __init__(self, length, dx, tend, dt, w=0, ode_method='scipy'):
+    def __init__(self, length, dx, tend, dt, w=0, ode_method='scipy',
+                 numexpr_threads=None):
         """ initializing the domain of the column model
 
         Arguments:
@@ -23,11 +25,17 @@ class Column(Lab):
 
         Keyword Arguments:
             w {float} -- default advective flux for all species (default: {0})
-            ode_method {str} -- method to solve ode (default: {'rk4'})
+            ode_method {str} -- method to solve ode (default: {'scipy'})
+            numexpr_threads {int} -- optional numexpr thread count
         """
-        ne.set_num_threads(ne.detect_number_of_cores())
+        if numexpr_threads is not None:
+            if numexpr_threads <= 0:
+                raise ValueError(
+                    f"numexpr_threads must be positive, got {numexpr_threads}"
+                )
+            ne.set_num_threads(numexpr_threads)
         super().__init__(tend, dt)
-        self.x = np.linspace(0, length, int(length / dx) + 1)
+        self.x = build_regular_grid(0, length, dx, "space")
         self.N = self.x.size
         self.length = length
         self.dx = dx
@@ -43,7 +51,7 @@ class Column(Lab):
                     bc_top_type,
                     bc_bot_value,
                     bc_bot_type,
-                    w=False,
+                    w=None,
                     int_transport=True):
         """add chemical compund to the column model with boundary
         conditions
@@ -59,7 +67,7 @@ class Column(Lab):
             bc_bot_type {str} -- type of bottom boundary
 
         Keyword Arguments:
-            w {float} -- advective term for this element (default: {False})
+            w {float} -- advective term for this element (default: column value)
             int_transport {bool} -- integrate transport? (default: {True})
         """
         self.species[name] = DotDict({})
@@ -76,29 +84,35 @@ class Column(Lab):
         self.species[name]['concentration'][:, 0] = self.species[name][
             'init_conc']
         self.profiles[name] = self.species[name]['concentration'][:, 0]
-        if w:
-            self.species[name]['w'] = w
-        else:
+        if w is None or w is False:
             self.species[name]['w'] = self.w
+        else:
+            self.species[name]['w'] = w
         self.species[name]['int_transport'] = int_transport
         if int_transport:
             self.template_AL_AR(name)
             self.update_matrices_due_to_bc(name, 0)
         self.dcdt[name] = '0'
 
-    def save_final_profiles(self):
+    def save_final_profiles(self, directory='.'):
         """Saves init conditons from profiles of all species in the
         current folder in CSV file with the name of species
         """
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
         for p in self.profiles:
-            np.savetxt(p + '.csv', np.array([self.x, self.profiles[p]]).T, delimiter=',')
+            np.savetxt(
+                directory / f'{p}.csv',
+                np.array([self.x, self.profiles[p]]).T,
+                delimiter=',')
 
-    def load_initial_conditions(self):
+    def load_initial_conditions(self, directory='.'):
         """Loads init conditons from profiles of all species in the
         current folder in CSV file with the name of species
         """
+        directory = Path(directory)
         for elem in self.species:
-            init_values = np.loadtxt(elem + '.csv', delimiter=',')
+            init_values = np.loadtxt(directory / f'{elem}.csv', delimiter=',')
             init_conc_at_x = init_values[:, 1]
             x = init_values[:, 0]
             init_conc = np.interp(self.x, x, init_conc_at_x)
@@ -174,7 +188,7 @@ class Column(Lab):
             bc_top_type='dirichlet',
             bc_bot_value=7,
             bc_bot_type='dirichlet',
-            w=False,
+            w=None,
             int_transport=False)
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
@@ -209,34 +223,6 @@ class Column(Lab):
             else:
                 self.reactions_integrate(i)
 
-    def reactions_integrate(self, i):
-        C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(
-            self.profiles,
-            self.dcdt,
-            self.rates,
-            self.constants,
-            self.dt,
-            solver=self.ode_method)
-
-        try:
-            for rate_name, rate in rates_per_rate.items():
-                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[
-                    rate_name]
-        except (KeyError, AttributeError):
-            pass
-
-        for element in C_new:
-            if element != 'Temperature':
-                # the concentration should be positive
-                C_new[element][C_new[element] < 0] = 0
-            self.profiles[element] = C_new[element]
-            self.species[element]['concentration'][:, i] = self.profiles[
-                element]
-            self.species[element]['rates'][:, i] = rates_per_elem[
-                element] / self.dt
-            if self.species[element]['int_transport']:
-                self.update_matrices_due_to_bc(element, i)
-
     def transport_integrate(self, i):
         """ Integrates transport equations
         """
@@ -265,22 +251,25 @@ class Column(Lab):
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
         theta = self.species[elem]['theta']
+        w = self.species[elem]['w']
 
         if order == 4:
             flux = D * (-25 * theta[1] * C[1, idx] + 48 * theta[2] * C[2, idx] - 36 * theta[3] * C[
                 3, idx] + 16 * theta[4] * C[4, idx] - 3 * theta[5] * C[5, idx]) / self.dx / 12 \
-                - theta[0] * self.species[elem]['w'] * C[0]
-        if order == 3:
+                - theta[0] * w * C[0, idx]
+        elif order == 3:
             flux = D * (-11 * theta[1] * C[1, idx] + 18 * theta[2] * C[2, idx] -
                         9 * theta[3] * C[3, idx] + 2 * theta[4] * C[4, idx]) / self.dx / 6 \
-                - theta[0] * self.species[elem]['w'] * C[0]
-        if order == 2:
+                - theta[0] * w * C[0, idx]
+        elif order == 2:
             flux = D * (-3 * theta[1] * C[1, idx] + 4 *
                         theta[2] * C[2, idx] - theta[3] * C[3, idx]) / self.dx / 2 \
-                - theta[0] * self.species[elem]['w'] * C[0]
-        if order == 1:
+                - theta[0] * w * C[0, idx]
+        elif order == 1:
             flux = - D * (theta[0] * C[0, idx] - theta[2] * C[2, idx]) / 2 / self.dx \
-                - theta[0] * self.species[elem]['w'] * C[0]
+                - theta[0] * w * C[0, idx]
+        else:
+            raise ValueError("order must be one of 1, 2, 3, or 4")
 
         return flux
 
@@ -303,22 +292,25 @@ class Column(Lab):
         C = self.species[elem]['concentration']
         D = self.species[elem]['D']
         theta = self.species[elem]['theta']
+        w = self.species[elem]['w']
 
         if order == 4:
             flux = D * (-25 * theta[-2] * C[-2, idx] + 48 * theta[-3] * C[-3, idx] - 36 *
                         theta[-4] * C[-4, idx] + 16 * theta[-5] * C[-5, idx] - 3 * theta[-6] * C[-6, idx]) / self.dx / 12 \
-                + theta[-1] * self.species[elem]['w'] * C[0]
-        if order == 3:
+                + theta[-1] * w * C[-1, idx]
+        elif order == 3:
             flux = D * (-11 * theta[-2] * C[-2, idx] + 18 * theta[-3] * C[-3, idx] -
                         9 * theta[-4] * C[-4, idx] + 2 * theta[-5] * C[-5, idx]) / self.dx / 6 \
-                + theta[-1] * self.species[elem]['w'] * C[0]
-        if order == 2:
+                + theta[-1] * w * C[-1, idx]
+        elif order == 2:
             flux = D * (-3 * theta[-2] * C[-2, idx] + 4 *
                         theta[-3] * C[-3, idx] - theta[-4] * C[-4, idx]) / self.dx / 2 \
-                + theta[-1] * self.species[elem]['w'] * C[0]
-        if order == 1:
+                + theta[-1] * w * C[-1, idx]
+        elif order == 1:
             flux = - D * (theta[-1] * C[-1, idx] - theta[-3] * C[-3, idx]) / 2 / self.dx \
-                + theta[-1] * self.species[elem]['w'] * C[0]
+                + theta[-1] * w * C[-1, idx]
+        else:
+            raise ValueError("order must be one of 1, 2, 3, or 4")
 
         return flux
 

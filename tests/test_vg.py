@@ -273,3 +273,21 @@ class TestRichardsModelUsesVg:
         psi0 = np.ones(z.size) * -2.0
         model = RichardsModel(z, 1.0, psi0)
         assert model.n == z.size
+
+    def test_richardsmodel_preserves_constructor_arguments(self):
+        """Boundary arguments should not be overwritten by defaults."""
+        from porousmedialab.richardsmodel import RichardsModel
+        z = np.arange(0.05, 5, 0.1)
+        psi0 = np.ones(z.size) * -2.0
+        model = RichardsModel(
+            z, 1.0, psi0,
+            qTop=-0.02,
+            qBot=0.01,
+            psiTop=-1.0,
+            psiBot=-3.0)
+
+        assert model.qTop == -0.02
+        assert model.qBot == 0.01
+        assert model.psiTop == -1.0
+        assert model.psiBot == -3.0
+        assert_allclose(model.dz, 0.1)

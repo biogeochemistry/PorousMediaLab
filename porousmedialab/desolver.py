@@ -7,6 +7,24 @@ from scipy.sparse import spdiags
 from scipy.integrate import ode, solve_ivp
 
 
+def expression_namespace():
+    """Namespace available to generated expression functions."""
+    return {
+        'np': np,
+        'ne': ne,
+        'exp': np.exp,
+        'log': np.log,
+        'log10': np.log10,
+        'sqrt': np.sqrt,
+        'sin': np.sin,
+        'cos': np.cos,
+        'tan': np.tan,
+        'abs': np.abs,
+        'where': np.where,
+        '__builtins__': {'len': len, 'range': range},
+    }
+
+
 class InvalidBoundaryConditionError(ValueError):
     """Raised when an invalid boundary condition type is provided."""
     pass
@@ -270,6 +288,17 @@ def _append_functions_constants_rates(body, functions, constants, rates, non_neg
     return body
 
 
+def _validate_dcdt_species(species, dcdt):
+    species_names = set(species)
+    dcdt_names = set(dcdt)
+    missing = species_names - dcdt_names
+    extra = dcdt_names - species_names
+    if missing:
+        raise ValueError(f"Missing dcdt expressions for species: {sorted(missing)}")
+    if extra:
+        raise ValueError(f"dcdt contains unknown species: {sorted(extra)}")
+
+
 def create_ode_function(species,
                         functions,
                         constants,
@@ -289,18 +318,21 @@ def create_ode_function(species,
     Returns:
         String representation of the ODE function
     """
+    _validate_dcdt_species(species, dcdt)
+    species_list = list(species.keys())
+
     body = "def f(t, y):\n"
     body += "\t dydt = np.zeros(len(y))"
 
     # Extract species with clipping
-    for i, s in enumerate(species):
+    for i, s in enumerate(species_list):
         body += f'\n\t {s} = np.clip(y[{i}], 1e-16, 1e+16)'
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
 
     # Add dcdt assignments
-    for i, s in enumerate(dcdt):
+    for i, s in enumerate(species_list):
         body += f'\n\t dydt[{i}] = {dcdt[s]}  # {s}'
 
     body += "\n\t return dydt"
@@ -333,6 +365,7 @@ def create_vectorized_ode_function(species,
     """
     num_species = len(species)
     species_list = list(species.keys())
+    _validate_dcdt_species(species, dcdt)
 
     body = "def f_vectorized(t, y):\n"
     body += f"\t y_2d = y.reshape({num_species}, {N})\n"
@@ -347,8 +380,7 @@ def create_vectorized_ode_function(species,
 
     # Add dcdt assignments
     for i, s in enumerate(species_list):
-        if s in dcdt:
-            body += f'\n\t dydt_2d[{i}, :] = {dcdt[s]}  # {s}'
+        body += f'\n\t dydt_2d[{i}, :] = {dcdt[s]}  # {s}'
 
     body += "\n\t return dydt_2d.ravel()"
     return body

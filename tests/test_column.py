@@ -32,6 +32,11 @@ class TestColumnInitialization:
         col = Column(length=10, dx=0.5, tend=1.0, dt=0.001)
         assert col.N == 21  # 10/0.5 + 1
 
+    def test_init_rejects_non_divisible_spatial_grid(self):
+        """Spatial grid should not silently change the requested dx."""
+        with pytest.raises(ValueError, match="space range must be divisible"):
+            Column(length=10, dx=3, tend=1.0, dt=0.001)
+
     def test_init_default_advection_zero(self):
         """Default advection should be 0."""
         col = Column(length=10, dx=0.1, tend=1.0, dt=0.001)
@@ -133,6 +138,17 @@ class TestColumnAddSpecies:
             bc_bot_value=0, bc_bot_type='flux'
         )
         assert col.species['O2']['w'] == 0.5
+
+    def test_add_species_explicit_zero_advection(self):
+        """Explicit w=0 should override a nonzero column default."""
+        col = Column(length=10, dx=1, tend=1.0, dt=0.001, w=0.5)
+        col.add_species(
+            theta=1, name='O2', D=1e-5, init_conc=0,
+            bc_top_value=1, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='flux',
+            w=0
+        )
+        assert col.species['O2']['w'] == 0
 
 
 class TestColumnTransport:
@@ -348,6 +364,37 @@ class TestColumnFluxEstimation:
         flux = col.estimate_flux_at_bottom('C', order=2)
         assert len(flux) == len(col.time)
 
+    def test_flux_estimators_apply_idx_to_advective_term(self):
+        """Flux estimators should slice advective concentrations consistently."""
+        col = Column(length=10, dx=1, tend=0.2, dt=0.1, w=0)
+        col.add_species(
+            theta=1, name='C', D=0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet',
+            w=2,
+            int_transport=False
+        )
+        col.species['C']['concentration'][0, :] = [1.0, 2.0, 3.0]
+        col.species['C']['concentration'][-1, :] = [4.0, 5.0, 6.0]
+
+        idx = slice(1, None)
+        assert_allclose(col.estimate_flux_at_top('C', idx=idx, order=1),
+                        [-4.0, -6.0])
+        assert_allclose(col.estimate_flux_at_bottom('C', idx=idx, order=1),
+                        [10.0, 12.0])
+
+    def test_flux_estimators_reject_invalid_order(self):
+        """Only implemented finite-difference orders should be accepted."""
+        col = Column(length=10, dx=1, tend=0.1, dt=0.1, w=0)
+        col.add_species(
+            theta=1, name='C', D=0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet',
+            int_transport=False
+        )
+        with pytest.raises(ValueError, match="order must be"):
+            col.estimate_flux_at_top('C', order=5)
+
 
 class TestColumnPlotMethods:
     """Tests that plot methods exist (smoke tests)."""
@@ -367,20 +414,33 @@ class TestColumnSaveLoad:
 
     def test_save_final_profiles(self, tmp_path):
         """save_final_profiles should create CSV files."""
-        import os
-        original_cwd = os.getcwd()
-        os.chdir(tmp_path)
+        col = Column(length=10, dx=1, tend=0.01, dt=0.001, w=0)
+        col.add_species(
+            theta=1, name='C', D=1.0, init_conc=1.0,
+            bc_top_value=1, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet'
+        )
+        col.solve(verbose=False)
+        col.save_final_profiles(directory=tmp_path)
 
-        try:
-            col = Column(length=10, dx=1, tend=0.01, dt=0.001, w=0)
-            col.add_species(
-                theta=1, name='C', D=1.0, init_conc=1.0,
-                bc_top_value=1, bc_top_type='dirichlet',
-                bc_bot_value=0, bc_bot_type='dirichlet'
-            )
-            col.solve(verbose=False)
-            col.save_final_profiles()
+        assert (tmp_path / 'C.csv').exists()
 
-            assert (tmp_path / 'C.csv').exists()
-        finally:
-            os.chdir(original_cwd)
+    def test_load_initial_conditions_from_directory(self, tmp_path):
+        """load_initial_conditions should read profiles from the requested directory."""
+        source = Column(length=10, dx=1, tend=0.01, dt=0.001, w=0)
+        source.add_species(
+            theta=1, name='C', D=1.0, init_conc=np.linspace(0, 1, 11),
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=1, bc_bot_type='dirichlet'
+        )
+        source.save_final_profiles(directory=tmp_path)
+
+        target = Column(length=10, dx=1, tend=0.01, dt=0.001, w=0)
+        target.add_species(
+            theta=1, name='C', D=1.0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=1, bc_bot_type='dirichlet'
+        )
+        target.load_initial_conditions(directory=tmp_path)
+
+        assert_allclose(target.species['C']['init_conc'], source.profiles['C'])
