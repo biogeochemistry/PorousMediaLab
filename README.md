@@ -10,6 +10,14 @@
 
 The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
+## What's New in v2.1.1
+
+**Correctness and packaging hardening** for solver setup and release artifacts:
+
+- Validates time and spatial grids to prevent silently shifted `dt` and `dx`
+- Fixes ODE derivative ordering, `Batch` solver dispatch, flux estimators, and calibration depth comparisons
+- Removes obsolete binary build artifacts and legacy upload scripts from the source distribution
+
 ## What's New in v2.1.0
 
 **2.4x overall performance improvement** with optimized rate reconstruction:
