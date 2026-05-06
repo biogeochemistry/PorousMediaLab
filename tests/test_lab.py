@@ -29,6 +29,18 @@ class TestLabInitialization:
         lab = Lab(tend=2.0, dt=0.1, tstart=1.0)
         assert_allclose(lab.time[0], 1.0)
         assert_allclose(lab.time[-1], 2.0)
+        assert len(lab.time) == 11
+        assert_allclose(np.diff(lab.time), 0.1)
+
+    def test_init_rejects_non_divisible_time_grid(self):
+        """Time grid should not silently change the requested dt."""
+        with pytest.raises(ValueError, match="time range must be divisible"):
+            Lab(tend=1.0, dt=0.3)
+
+    def test_init_rejects_non_positive_dt(self):
+        """dt must be positive."""
+        with pytest.raises(ValueError, match="time step must be positive"):
+            Lab(tend=1.0, dt=0)
 
     def test_init_creates_empty_containers(self):
         """Lab should initialize empty DotDict containers."""

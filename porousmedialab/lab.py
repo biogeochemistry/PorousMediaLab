@@ -1,9 +1,7 @@
 """ PorousMediaLab super class. Contains all the main methods.
 """
 
-import sys
 import time
-import traceback
 
 import numexpr as ne
 import numpy as np
@@ -13,6 +11,31 @@ import porousmedialab.equilibriumsolver as equilibriumsolver
 import porousmedialab.phcalc as phcalc
 from porousmedialab.dotdict import DotDict
 import porousmedialab.saver as saver
+
+
+class NumericalInstabilityError(RuntimeError):
+    """Raised when a simulation hits a floating point instability."""
+
+
+def build_regular_grid(start, end, step, name):
+    """Create an inclusive regular grid and reject silently shifted spacing."""
+    if step <= 0:
+        raise ValueError(f"{name} step must be positive, got {step}")
+    if end < start:
+        raise ValueError(f"{name} end must be greater than or equal to start")
+
+    span = end - start
+    steps_float = span / step
+    steps = int(round(steps_float))
+    if not np.isclose(steps_float, steps, rtol=1e-10, atol=1e-12):
+        raise ValueError(
+            f"{name} range must be divisible by step: start={start}, "
+            f"end={end}, step={step}"
+        )
+
+    grid = start + np.arange(steps + 1) * step
+    grid[-1] = end
+    return grid
 
 
 class Lab:
@@ -33,7 +56,7 @@ class Lab:
 
         self.tend = tend
         self.dt = dt
-        self.time = np.linspace(tstart, tend, round(tend / dt) + 1)
+        self.time = build_regular_grid(tstart, tend, dt, "time")
         self.species = DotDict({})
         self.dynamic_functions = DotDict({})
         self.profiles = DotDict({})
@@ -62,7 +85,7 @@ class Lab:
 
         return self.species[attr]
 
-    def save_results_in_hdf5(self):
+    def save_results_in_hdf5(self, filename='results.h5'):
         """concentrations and rate profiles in the
         hdf5 files
         """
@@ -76,7 +99,7 @@ class Lab:
         results['rates'] = self.rates
         results['parameters'] = {k: str(v) for k, v in self.constants.items()}
 
-        saver.save_dict_to_hdf5(results, 'results.h5')
+        saver.save_dict_to_hdf5(results, filename)
 
     def solve(self, verbose=True):
         """ solves coupled PDEs
@@ -88,17 +111,15 @@ class Lab:
 
         self.reset()
         with np.errstate(invalid='raise'):
-            for i in np.arange(1, len(self.time)):
+            for i in range(1, len(self.time)):
                 try:
                     self.integrate_one_timestep(i)
                     if verbose:
                         self.estimate_time_of_computation(i)
                 except FloatingPointError as inst:
-                    print(
-                        '\nABORT!!!: Numerical instability... Please, adjust dt and dx manually...'
-                    )
-                    traceback.print_exc()
-                    sys.exit()
+                    raise NumericalInstabilityError(
+                        "Numerical instability. Adjust dt and dx manually."
+                    ) from inst
 
         # temporal hack for time dependent variables
         if 'TIME' in self.species:
@@ -263,8 +284,8 @@ class Lab:
         Returns:
             The compiled function object
         """
-        safe_globals = {'np': np, 'ne': ne, '__builtins__': {'len': len, 'range': range}}
-        local_vars = {'np': np, 'ne': ne}
+        safe_globals = desolver.expression_namespace()
+        local_vars = {}
         exec(func_str, safe_globals, local_vars)
         return local_vars[func_name]
 
@@ -320,6 +341,34 @@ class Lab:
 
         self.profiles[element] = new_profile
         self.update_matrices_due_to_bc(element, i)
+
+    def reactions_integrate(self, i):
+        C_new, rates_per_elem, rates_per_rate = desolver.ode_integrate(
+            self.profiles,
+            self.dcdt,
+            self.rates,
+            self.constants,
+            self.dt,
+            solver=self.ode_method)
+
+        try:
+            for rate_name, rate in rates_per_rate.items():
+                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[
+                    rate_name]
+        except (KeyError, AttributeError):
+            pass
+
+        for element in C_new:
+            if element != 'Temperature':
+                # the concentration should be positive
+                C_new[element][C_new[element] < 0] = 0
+            self.profiles[element] = C_new[element]
+            self.species[element]['concentration'][:, i] = self.profiles[
+                element]
+            self.species[element]['rates'][:, i] = rates_per_elem[
+                element] / self.dt
+            if self.species[element]['int_transport']:
+                self.update_matrices_due_to_bc(element, i)
 
     def reactions_integrate_scipy(self, i):
         """integrates ODE of reactions
@@ -390,9 +439,9 @@ class Lab:
             # Use vectorized rate function - processes all N spatial points at once
             rates_vec_str = desolver.create_vectorized_rate_function(
                 self.species, self.functions, self.constants, self.rates,
-                self.N)
-            safe_globals = {'np': np, 'ne': ne, '__builtins__': {'len': len, 'range': range}}
-            local_vars = {'np': np, 'ne': ne}
+                self.N, non_negative_rates=True)
+            safe_globals = desolver.expression_namespace()
+            local_vars = {}
             exec(rates_vec_str, safe_globals, local_vars)
             self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
             self.dynamic_functions['rates_vectorized'] = local_vars['rates_vectorized']

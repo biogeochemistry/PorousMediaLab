@@ -134,6 +134,12 @@ This creates `results.h5` containing:
 - `estimated_rates`: Calculated rates
 - `parameters`: Constants used
 
+Pass a filename to write somewhere else:
+
+```python
+batch.save_results_in_hdf5('outputs/batch-results.h5')
+```
+
 ## Advanced: Henry Equilibrium
 
 For gas-liquid partitioning:

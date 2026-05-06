@@ -23,15 +23,17 @@ class Batch(Lab):
         plot_rates (TYPE): Description
     """
 
-    def __init__(self, tend, dt):
+    def __init__(self, tend, dt, ode_method='scipy'):
         """Summary
 
         Args:
             tend (TYPE): Description
             dt (TYPE): Description
+            ode_method (str): ODE solver method
         """
         super().__init__(tend, dt)
         self.N = 1
+        self.ode_method = ode_method
 
     def add_species(self, name, init_conc):
         """Summary
@@ -60,7 +62,12 @@ class Batch(Lab):
         """
         if i == 1:
             self.pre_run_methods()
-        self.reactions_integrate_scipy(i)
+        if self.ode_method == 'scipy':
+            self.reactions_integrate_vectorized(i)
+        elif self.ode_method == 'scipy_sequential':
+            self.reactions_integrate_scipy(i)
+        else:
+            self.reactions_integrate(i)
         if self.henry_law_equations:
             self.henry_equilibrium_integrate(i)
         if self.acid_base_components:

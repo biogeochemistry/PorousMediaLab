@@ -87,11 +87,18 @@ class Calibrator:
         for m in self.measurements:
             idxs = find_indexes_of_intersections(
                 self.lab.time, self.measurements[m]['time'], self.lab.dt / 2)
-            err += metric_fun(self.lab.species[m]['concentration'][:, idxs],
-                              self.measurements[m]['values'])
+            depth_idx = self._depth_index(self.measurements[m]['depth'])
+            simulated = self.lab.species[m]['concentration'][depth_idx, idxs]
+            err += metric_fun(simulated, self.measurements[m]['values'])
         if disp:
             print('::::: {} = {: .4e}'.format(metric_fun.__name__, err))
         self.error = err
+
+    def _depth_index(self, depth):
+        x = self.lab.__dict__.get('x')
+        if x is None:
+            return 0
+        return int(np.abs(x - depth).argmin())
 
     def min_function(self, x):
         """minimization function f(x) where x are
@@ -156,14 +163,13 @@ class Calibrator:
         self.verbose = verbose
         x0, bnds = self.iter_params()
 
+        options = {'maxfun': 500} if method.upper() == 'TNC' else {'maxiter': 100}
+
         self.res = minimize(
             self.min_function,
             x0,
             method=method,
             bounds=bnds,
-            options={
-                'maxiter': 100,
-                'maxfun': 500
-            })
+            options=options)
 
         self.print_final_results()

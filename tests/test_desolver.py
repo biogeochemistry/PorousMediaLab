@@ -15,6 +15,7 @@ from porousmedialab.desolver import (
     create_solver,
     ode_integrate_scipy,
     ode_integrate_vectorized,
+    expression_namespace,
     InvalidBoundaryConditionError,
     ODESolverError
 )
@@ -472,6 +473,31 @@ class TestCreateOdeFunction:
         func_str = create_ode_function(
             species, functions, constants, rates, dcdt, non_negative_rates=True)
         assert 'R = R*(R>0)' in func_str
+
+    def test_dcdt_assignment_follows_species_order(self):
+        """Generated derivative indexes should not depend on dcdt insertion order."""
+        species = {'A': None, 'B': None}
+        functions = {}
+        constants = {'k': 1.0}
+        rates = {'R': 'k*A'}
+        dcdt = {'B': 'R', 'A': '-R'}
+
+        func_str = create_ode_function(species, functions, constants, rates, dcdt)
+        local_vars = {}
+        exec(func_str, expression_namespace(), local_vars)
+        dydt = local_vars['f'](0, np.array([1.0, 0.0]))
+
+        assert_allclose(dydt, [-1.0, 1.0])
+
+    def test_missing_dcdt_raises_error(self):
+        """Every species should have an explicit derivative expression."""
+        with pytest.raises(ValueError, match="Missing dcdt"):
+            create_ode_function(
+                {'A': None, 'B': None},
+                {},
+                {},
+                {},
+                {'A': '0'})
 
 
 class TestCreateRateFunction:

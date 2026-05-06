@@ -166,10 +166,22 @@ column.save_final_profiles()
 # Creates CSV files: O2.csv, OM.csv, etc.
 ```
 
+Profiles can also be written to a specific directory:
+
+```python
+column.save_final_profiles(directory='restart_profiles')
+```
+
 Load profiles as initial conditions:
 ```python
 column.load_initial_conditions()
 # Loads from CSV files in current directory
+```
+
+To load from a directory:
+
+```python
+column.load_initial_conditions(directory='restart_profiles')
 ```
 
 ## Changing Boundary Conditions
