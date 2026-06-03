@@ -395,6 +395,160 @@ class TestColumnFluxEstimation:
         with pytest.raises(ValueError, match="order must be"):
             col.estimate_flux_at_top('C', order=5)
 
+    def test_flux_estimators_match_prerefactor_snapshot(self):
+        """Lock exact finite-difference flux outputs (orders 1-4, top & bottom)
+        on a fixture with D!=0, w!=0 and non-uniform theta, so the flux
+        de-duplication cannot change numerical behavior. Snapshot captured from
+        the pre-refactor implementation."""
+        col = Column(length=6, dx=1.0, tend=0.2, dt=0.1, w=0.5)
+        col.add_species(
+            theta=1, name='C', D=2.0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet',
+            w=0.5, int_transport=False
+        )
+        col.species['C']['theta'] = np.array(
+            [1.0, 0.9, 0.8, 0.85, 0.95, 0.7, 0.75])
+        col.species['C']['concentration'] = (
+            (np.arange(7)[:, None] + 1.0) + np.array([0.0, 0.5, 1.0])[None, :])
+
+        expected_top = {
+            1: [0.9000000000000004, 0.5500000000000003, 0.20000000000000018],
+            2: [0.30000000000000115, -0.12499999999999867, -0.5500000000000007],
+            3: [0.26666666666666805, -0.19166666666666643, -0.650000000000001],
+            4: [1.3666666666666714, 0.9833333333333403, 0.6000000000000023],
+        }
+        expected_bottom = {
+            1: [2.125, 2.4124999999999996, 2.6999999999999993],
+            2: [5.625000000000002, 6.237500000000001, 6.85],
+            3: [7.124999999999997, 7.87083333333333, 8.616666666666667],
+            4: [8.224999999999998, 9.045833333333327, 9.86666666666666],
+        }
+        idx = slice(1, None)
+        for order in (1, 2, 3, 4):
+            assert_allclose(col.estimate_flux_at_top('C', order=order),
+                            expected_top[order])
+            assert_allclose(col.estimate_flux_at_bottom('C', order=order),
+                            expected_bottom[order])
+            # idx slicing must select the matching time columns.
+            assert_allclose(col.estimate_flux_at_top('C', idx=idx, order=order),
+                            expected_top[order][1:])
+            assert_allclose(
+                col.estimate_flux_at_bottom('C', idx=idx, order=order),
+                expected_bottom[order][1:])
+
+    def test_flux_estimators_match_prerefactor_snapshot_non_unit_dx(self):
+        """Same flux characterization at dx=0.5, so the /self.dx factor is
+        actually exercised (the dx=1.0 snapshot cannot catch a dropped or
+        misplaced dx). Snapshot captured from the refactored implementation."""
+        col = Column(length=3, dx=0.5, tend=0.2, dt=0.1, w=0.5)
+        col.add_species(
+            theta=1, name='C', D=2.0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=0, bc_bot_type='dirichlet',
+            w=0.5, int_transport=False
+        )
+        col.species['C']['theta'] = np.array(
+            [1.0, 0.9, 0.8, 0.85, 0.95, 0.7, 0.75])
+        col.species['C']['concentration'] = (
+            (np.arange(7)[:, None] + 1.0) + np.array([0.0, 0.5, 1.0])[None, :])
+
+        expected_top = {
+            1: [2.3000000000000007, 1.8500000000000005, 1.4000000000000004],
+            2: [1.1000000000000023, 0.5000000000000027, -0.10000000000000142],
+            3: [1.033333333333336, 0.36666666666666714, -0.30000000000000193],
+            4: [3.2333333333333427, 2.7166666666666806, 2.2000000000000046],
+        }
+        expected_bottom = {
+            1: [1.625, 2.0124999999999993, 2.3999999999999986],
+            2: [8.625000000000004, 9.662500000000001, 10.7],
+            3: [11.624999999999995, 12.92916666666666, 14.233333333333334],
+            4: [13.824999999999996, 15.279166666666656, 16.73333333333332],
+        }
+        for order in (1, 2, 3, 4):
+            assert_allclose(col.estimate_flux_at_top('C', order=order),
+                            expected_top[order])
+            assert_allclose(col.estimate_flux_at_bottom('C', order=order),
+                            expected_bottom[order])
+
+
+class TestColumnAcidBase:
+    """Tests for acid-base equilibrium concentration updates in Column."""
+
+    def test_acid_base_update_concentrations_redistributes_by_alpha(self):
+        """Column.acid_base_update_concentrations should redistribute each
+        component's total across its species by the per-depth speciation
+        fractions (2D alpha path), leave neutral ions unchanged, and NOT store
+        an alpha field (Column species have none). Snapshot from the
+        pre-refactor implementation (N>1, varying pH profile)."""
+        col = Column(length=2, dx=1, tend=0.02, dt=0.01, w=0)
+        common = dict(bc_top_value=0, bc_top_type='dirichlet',
+                      bc_bot_value=0, bc_bot_type='dirichlet',
+                      int_transport=False)
+        col.add_species(theta=1, name='HAc', D=0, init_conc=0.1, **common)
+        col.add_species(theta=1, name='Ac', D=0, init_conc=0.0, **common)
+        col.add_acid(['HAc', 'Ac'], pKa=[4.76], charge=0)
+        col.add_species(theta=1, name='Na', D=0, init_conc=0.05, **common)
+        col.add_ion(name='Na', charge=1)
+        col.create_acid_base_system()
+
+        i = 1
+        col.species['pH']['concentration'][:, i] = [4.0, 4.76, 5.5]
+        col.species['HAc']['concentration'][:, i] = [0.08, 0.05, 0.03]
+        col.species['Ac']['concentration'][:, i] = [0.02, 0.05, 0.07]
+        col.species['Na']['concentration'][:, i] = [0.05, 0.05, 0.05]
+        col.acid_base_update_concentrations(i)
+
+        assert_allclose(
+            col.species['HAc']['concentration'][:, i],
+            [0.08519483458525738, 0.05, 0.015395489956790518])
+        assert_allclose(
+            col.species['Ac']['concentration'][:, i],
+            [0.014805165414742631, 0.05, 0.08460451004320949])
+        assert_allclose(col.species['Na']['concentration'][:, i],
+                        [0.05, 0.05, 0.05])
+        # total acid concentration is conserved per depth
+        assert_allclose(
+            col.species['HAc']['concentration'][:, i]
+            + col.species['Ac']['concentration'][:, i], [0.1, 0.1, 0.1])
+        assert 'alpha' not in col.species['HAc']
+
+    def test_solve_end_to_end_acid_base_speciation(self):
+        """End-to-end: Column.solve() (N>1, with transport) drives the real
+        dispatch onto the inherited acid_base_update_concentrations and yields
+        pH-consistent per-depth speciation with a conserved total. Guards the
+        unified base method through solve() for the spatial case."""
+        col = Column(length=2, dx=1, tend=0.03, dt=0.01, w=0)
+
+        def add_acid_species(name, init):
+            # int_transport=True so solve() propagates concentrations; Dirichlet
+            # BCs equal to init keep the profile steady for transport.
+            col.add_species(theta=1, name=name, D=0.01, init_conc=init,
+                            bc_top_value=init, bc_top_type='dirichlet',
+                            bc_bot_value=init, bc_bot_type='dirichlet',
+                            int_transport=True)
+
+        add_acid_species('HAc', 0.08)
+        add_acid_species('Ac', 0.02)
+        col.add_acid(['HAc', 'Ac'], pKa=[4.76], charge=0)
+        add_acid_species('Na', 0.05)
+        col.add_ion(name='Na', charge=1)
+        col.create_acid_base_system()
+        col.solve(verbose=False)
+
+        pH = col.species['pH']['concentration'][:, -1]
+        HAc = col.species['HAc']['concentration'][:, -1]
+        Ac = col.species['Ac']['concentration'][:, -1]
+        # pH solved at every depth (off the default 7.0)
+        assert np.all(pH < 6.0)
+        # total conserved per depth
+        assert_allclose(HAc + Ac, 0.10, rtol=1e-6)
+        # speciation consistent with the solved pH per depth (Henderson-Hasselbalch)
+        ratio = 10.0 ** (pH - 4.76)
+        assert_allclose(HAc, (HAc + Ac) / (1.0 + ratio), rtol=1e-6)
+        # Column does not store alpha
+        assert 'alpha' not in col.species['HAc']
+
 
 class TestColumnPlotMethods:
     """Tests that plot methods exist (smoke tests)."""

@@ -9,6 +9,24 @@ from porousmedialab.dotdict import DotDict
 from porousmedialab.lab import Lab, build_regular_grid
 
 
+# Finite-difference flux stencils keyed by derivative order. Each entry is
+# (indices, coefficients, divisor) for the diffusive term. Top and bottom share
+# the coefficients/divisor but mirror the index map; order 1 uses an irregular
+# stencil that skips the first interior point.
+_FLUX_STENCIL_TOP = {
+    4: ((1, 2, 3, 4, 5), (-25, 48, -36, 16, -3), 12),
+    3: ((1, 2, 3, 4), (-11, 18, -9, 2), 6),
+    2: ((1, 2, 3), (-3, 4, -1), 2),
+    1: ((0, 2), (-1, 1), 2),
+}
+_FLUX_STENCIL_BOTTOM = {
+    4: ((-2, -3, -4, -5, -6), (-25, 48, -36, 16, -3), 12),
+    3: ((-2, -3, -4, -5), (-11, 18, -9, 2), 6),
+    2: ((-2, -3, -4), (-3, 4, -1), 2),
+    1: ((-1, -3), (-1, 1), 2),
+}
+
+
 class Column(Lab):
     """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
@@ -193,20 +211,6 @@ class Column(Lab):
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
-    def acid_base_update_concentrations(self, i):
-        for component in self.acid_base_components:
-            init_conc = 0
-            alphas = component['pH_object'].alpha(
-                self.species['pH']['concentration'][:, i])
-            for idx in range(len(component['species'])):
-                init_conc += self.species[component['species'][idx]][
-                    'concentration'][:, i]
-            for idx in range(len(component['species'])):
-                self.species[component['species'][idx]][
-                    'concentration'][:, i] = init_conc * alphas[:, idx]
-                self.profiles[component['species'][idx]] = self.species[
-                    component['species'][idx]]['concentration'][:, i]
-
     def integrate_one_timestep(self, i):
         if i < 2:
             self.pre_run_methods()
@@ -236,6 +240,31 @@ class Column(Lab):
         self.species[element]['concentration'][:, i] = self.profiles[element]
         self.update_matrices_due_to_bc(element, i)
 
+    def _estimate_flux(self, elem, idx, order, at_top):
+        """Finite-difference flux estimator shared by the top and bottom BCs.
+
+        ``estimate_flux_at_top`` and ``estimate_flux_at_bottom`` differ only in
+        the stencil index map and the sign of the advective term, so both
+        delegate here. The diffusive sum keeps the original scalar
+        multiply / left-to-right addition order to avoid floating-point drift.
+        """
+        C = self.species[elem]['concentration']
+        D = self.species[elem]['D']
+        theta = self.species[elem]['theta']
+        w = self.species[elem]['w']
+
+        stencils = _FLUX_STENCIL_TOP if at_top else _FLUX_STENCIL_BOTTOM
+        if order not in stencils:
+            raise ValueError("order must be one of 1, 2, 3, or 4")
+        indices, coeffs, divisor = stencils[order]
+        bc_index, advective_sign = (0, -1) if at_top else (-1, 1)
+
+        diffusive = D * sum(
+            coeff * theta[k] * C[k, idx]
+            for coeff, k in zip(coeffs, indices)) / self.dx / divisor
+        advective = theta[bc_index] * w * C[bc_index, idx]
+        return diffusive + advective_sign * advective
+
     def estimate_flux_at_top(self, elem, idx=slice(None, None, None), order=4):
         """
         Function estimates flux at the top BC
@@ -248,30 +277,7 @@ class Column(Lab):
             TYPE: estimated flux in time
 
         """
-        C = self.species[elem]['concentration']
-        D = self.species[elem]['D']
-        theta = self.species[elem]['theta']
-        w = self.species[elem]['w']
-
-        if order == 4:
-            flux = D * (-25 * theta[1] * C[1, idx] + 48 * theta[2] * C[2, idx] - 36 * theta[3] * C[
-                3, idx] + 16 * theta[4] * C[4, idx] - 3 * theta[5] * C[5, idx]) / self.dx / 12 \
-                - theta[0] * w * C[0, idx]
-        elif order == 3:
-            flux = D * (-11 * theta[1] * C[1, idx] + 18 * theta[2] * C[2, idx] -
-                        9 * theta[3] * C[3, idx] + 2 * theta[4] * C[4, idx]) / self.dx / 6 \
-                - theta[0] * w * C[0, idx]
-        elif order == 2:
-            flux = D * (-3 * theta[1] * C[1, idx] + 4 *
-                        theta[2] * C[2, idx] - theta[3] * C[3, idx]) / self.dx / 2 \
-                - theta[0] * w * C[0, idx]
-        elif order == 1:
-            flux = - D * (theta[0] * C[0, idx] - theta[2] * C[2, idx]) / 2 / self.dx \
-                - theta[0] * w * C[0, idx]
-        else:
-            raise ValueError("order must be one of 1, 2, 3, or 4")
-
-        return flux
+        return self._estimate_flux(elem, idx, order, at_top=True)
 
     def estimate_flux_at_bottom(self,
                                 elem,
@@ -288,31 +294,7 @@ class Column(Lab):
             TYPE: estimated flux in time
 
         """
-
-        C = self.species[elem]['concentration']
-        D = self.species[elem]['D']
-        theta = self.species[elem]['theta']
-        w = self.species[elem]['w']
-
-        if order == 4:
-            flux = D * (-25 * theta[-2] * C[-2, idx] + 48 * theta[-3] * C[-3, idx] - 36 *
-                        theta[-4] * C[-4, idx] + 16 * theta[-5] * C[-5, idx] - 3 * theta[-6] * C[-6, idx]) / self.dx / 12 \
-                + theta[-1] * w * C[-1, idx]
-        elif order == 3:
-            flux = D * (-11 * theta[-2] * C[-2, idx] + 18 * theta[-3] * C[-3, idx] -
-                        9 * theta[-4] * C[-4, idx] + 2 * theta[-5] * C[-5, idx]) / self.dx / 6 \
-                + theta[-1] * w * C[-1, idx]
-        elif order == 2:
-            flux = D * (-3 * theta[-2] * C[-2, idx] + 4 *
-                        theta[-3] * C[-3, idx] - theta[-4] * C[-4, idx]) / self.dx / 2 \
-                + theta[-1] * w * C[-1, idx]
-        elif order == 1:
-            flux = - D * (theta[-1] * C[-1, idx] - theta[-3] * C[-3, idx]) / 2 / self.dx \
-                + theta[-1] * w * C[-1, idx]
-        else:
-            raise ValueError("order must be one of 1, 2, 3, or 4")
-
-        return flux
+        return self._estimate_flux(elem, idx, order, at_top=False)
 
     """Mapping of plotting methods from plotter module"""
 
