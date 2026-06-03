@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-06-03
+
 ### Added
 - Input validation for numerical stability:
   - Division-by-zero guards in `desolver.py` (dx, phi, diff_coef)
@@ -14,11 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Henry's constant validation in `equilibriumsolver.py`
 - CFL stability warning when coefficient exceeds 0.25
 
+### Changed
+- Behavior-preserving structural refactor of the core solver and class contracts (ODE integration output is bit-for-bit identical):
+  - Replaced string-based boundary-condition handling in `desolver.py` with a `BoundaryConditionType` enum (public string API and constant/flux aliases preserved)
+  - Decomposed `ode_integrate` into focused module-level helpers (`_k_loop`, `_rk4_step`, `_butcher5_step`)
+  - De-duplicated `Column` top/bottom flux estimators and unified `Batch`/`Column` acid-base concentration updates into `Lab`
+  - Moved `Batch`/`Column` plotter aliases into mixins in `plotting_mixins.py`
+
 ### Fixed
 - Global namespace pollution in `lab.py` when using `exec()` for rate functions
 
 ### Removed
 - `sensitivity.py` module (contained only unimplemented stubs)
+- Dead `element.py` module and legacy Python 2 compatibility code
 
 ### Tests
 - Added comprehensive tests for all new input validation
@@ -31,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Column transport with Dirichlet BCs
   - Advection pulse transport
   - Timestep convergence
+- Characterization, golden-value, and contract tests added alongside the refactor (test suite now 389 passing)
 
 ## [2.1.0] - 2026-01-30
 
