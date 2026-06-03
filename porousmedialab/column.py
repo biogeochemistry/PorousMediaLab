@@ -4,9 +4,9 @@ from pathlib import Path
 
 import porousmedialab.desolver as desolver
 import porousmedialab.phcalc as phcalc
-import porousmedialab.plotter as plotter
 from porousmedialab.dotdict import DotDict
 from porousmedialab.lab import Lab, build_regular_grid
+from porousmedialab.plotting_mixins import ColumnPlottingMixin
 
 
 # Finite-difference flux stencils keyed by derivative order. Each entry is
@@ -27,7 +27,7 @@ _FLUX_STENCIL_BOTTOM = {
 }
 
 
-class Column(Lab):
+class Column(ColumnPlottingMixin, Lab):
     """Column module solves Advection-Diffusion-Reaction Equation
     in porous media"""
 
@@ -295,18 +295,3 @@ class Column(Lab):
 
         """
         return self._estimate_flux(elem, idx, order, at_top=False)
-
-    """Mapping of plotting methods from plotter module"""
-
-    custom_plot = plotter.custom_plot
-    plot_depths = plotter.plot_depths
-    plot_times = plotter.plot_times
-    plot_profiles = plotter.plot_profiles
-    plot_profile = plotter.plot_profile
-    plot_contourplots = plotter.plot_contourplots
-    contour_plot = plotter.contour_plot
-    plot_contourplots_of_rates = plotter.plot_contourplots_of_rates
-    contour_plot_of_rates = plotter.contour_plot_of_rates
-    plot_contourplots_of_deltas = plotter.plot_contourplots_of_deltas
-    contour_plot_of_delta = plotter.contour_plot_of_delta
-    plot_saturation_index = plotter.saturation_index_countour

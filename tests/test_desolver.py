@@ -760,3 +760,210 @@ class TestInputValidation:
             # Check that no CFL warning was issued
             cfl_warnings = [warning for warning in w if "CFL" in str(warning.message)]
             assert len(cfl_warnings) == 0, "Unexpected CFL warning was issued"
+
+
+class TestBoundaryConditionCombinations:
+    """Parametrized coverage of the 4-way (top, bottom) boundary-condition
+    combinations exercised through the BoundaryConditionType enum dispatch."""
+
+    BC_COMBINATIONS = [
+        ('dirichlet', 'dirichlet'),
+        ('dirichlet', 'neumann'),
+        ('neumann', 'dirichlet'),
+        ('neumann', 'neumann'),
+    ]
+
+    @pytest.mark.parametrize("bc_top_type,bc_bot_type", BC_COMBINATIONS)
+    def test_create_template_four_way(self, bc_top_type, bc_bot_type):
+        """Each combination builds matrices with the correct boundary coupling:
+        Dirichlet rows decouple from the neighbour, Neumann rows stay coupled."""
+        phi = np.ones(5)
+        AL, AR = create_template_AL_AR(
+            phi, diff_coef=1.0, adv_coef=0.0,
+            bc_top_type=bc_top_type, bc_bot_type=bc_bot_type,
+            dt=0.01, dx=0.1, N=5
+        )
+        AL_dense = AL.toarray()
+        if bc_top_type == 'dirichlet':
+            assert AL_dense[0, 1] == 0
+        else:
+            assert AL_dense[0, 1] != 0
+        if bc_bot_type == 'dirichlet':
+            assert AL_dense[-1, -2] == 0
+        else:
+            assert AL_dense[-1, -2] != 0
+
+    @pytest.mark.parametrize("bc_top_type,bc_bot_type", BC_COMBINATIONS)
+    def test_update_matrices_four_way(self, bc_top_type, bc_bot_type):
+        """Each combination returns a length-N B vector and writes Dirichlet
+        boundary values into the profile endpoints. Explicitly covers the
+        neumann/dirichlet and dirichlet/neumann update arms."""
+        N = 5
+        phi = np.ones(N)
+        AL, AR = create_template_AL_AR(
+            phi, diff_coef=1.0, adv_coef=0.0,
+            bc_top_type=bc_top_type, bc_bot_type=bc_bot_type,
+            dt=0.01, dx=0.1, N=N
+        )
+        bc_top, bc_bot = 1.0, 0.5
+        profile, B = update_matrices_due_to_bc(
+            AR, np.zeros(N), phi, diff_coef=1.0, adv_coef=0.0,
+            bc_top_type=bc_top_type, bc_top=bc_top,
+            bc_bot_type=bc_bot_type, bc_bot=bc_bot,
+            dt=0.01, dx=0.1, N=N
+        )
+        assert len(B) == N
+        if bc_top_type == 'dirichlet':
+            assert profile[0] == bc_top
+        if bc_bot_type == 'dirichlet':
+            assert profile[-1] == bc_bot
+
+    @pytest.mark.parametrize("alias,canonical", [
+        ('constant', 'dirichlet'),
+        ('flux', 'neumann'),
+    ])
+    def test_update_matrices_alias_equivalence(self, alias, canonical):
+        """'constant'/'flux' aliases yield identical update output to their
+        canonical 'dirichlet'/'neumann' types."""
+        N = 5
+        phi = np.ones(N)
+
+        def run(bc_type):
+            _, AR = create_template_AL_AR(
+                phi, diff_coef=1.0, adv_coef=0.0,
+                bc_top_type=bc_type, bc_bot_type=bc_type,
+                dt=0.01, dx=0.1, N=N
+            )
+            return update_matrices_due_to_bc(
+                AR, np.linspace(1.0, 0.0, N), phi, diff_coef=1.0, adv_coef=0.0,
+                bc_top_type=bc_type, bc_top=1.0,
+                bc_bot_type=bc_type, bc_bot=0.0,
+                dt=0.01, dx=0.1, N=N
+            )
+
+        p_alias, B_alias = run(alias)
+        p_canon, B_canon = run(canonical)
+        assert_allclose(p_alias, p_canon)
+        assert_allclose(B_alias, B_canon)
+
+    def test_update_matrices_invalid_type_raises_top_first(self):
+        """Invalid BC types passed to update_matrices_due_to_bc raise
+        InvalidBoundaryConditionError, reporting the top boundary first."""
+        N = 5
+        phi = np.ones(N)
+        _, AR = create_template_AL_AR(
+            phi, diff_coef=1.0, adv_coef=0.0,
+            bc_top_type='dirichlet', bc_bot_type='dirichlet',
+            dt=0.01, dx=0.1, N=N
+        )
+        with pytest.raises(InvalidBoundaryConditionError, match="top boundary"):
+            update_matrices_due_to_bc(
+                AR, np.zeros(N), phi, diff_coef=1.0, adv_coef=0.0,
+                bc_top_type='bogus', bc_top=1.0,
+                bc_bot_type='also_bogus', bc_bot=0.0,
+                dt=0.01, dx=0.1, N=N
+            )
+
+
+class TestOdeIntegrateRefactor:
+    """Regression coverage for the ode_integrate module-level helper extraction
+    (_k_loop/_sum_k/_rk4_step/_butcher5_step). The decomposition is meant to be
+    bit-for-bit behavior-preserving, so these use exact / very tight checks."""
+
+    # One-step golden outputs captured from the reference implementation for
+    # C0={'C': 1.0}, k=2.0, R='k*C', dcdt={'C': '-R'}, dt=0.01.
+    GOLDEN_C_NEW = {
+        'rk4': 0.9800019998666734,
+        'butcher5': 0.9800019998666734,
+    }
+
+    @pytest.mark.parametrize("solver", ['rk4', 'butcher5'])
+    def test_single_step_golden_value(self, solver):
+        """A single integration step reproduces the captured golden value."""
+        C_new, _, _ = ode_integrate(
+            {'C': 1.0}, {'C': '-R'}, {'R': 'k*C'}, {'k': 2.0}, 0.01, solver=solver)
+        assert_allclose(float(C_new['C']), self.GOLDEN_C_NEW[solver],
+                        rtol=1e-12, atol=0)
+
+    @pytest.mark.parametrize("solver", ['rk4', 'butcher5'])
+    def test_deterministic_vector_input(self, solver):
+        """Two identical calls on a multi-species vector input return
+        bit-identical results (no hidden state or ordering nondeterminism)."""
+        def make_inputs():
+            C0 = {'A': np.array([1.0, 0.5, 0.2]),
+                  'B': np.array([0.0, 0.1, 0.3])}
+            return C0, {'A': '-R1', 'B': 'R1-R2'}, \
+                {'R1': 'k1*A', 'R2': 'k2*B'}, {'k1': 1.0, 'k2': 0.5}
+
+        C0a, dcdt, rates, coef = make_inputs()
+        C0b, _, _, _ = make_inputs()
+        res_a = ode_integrate(C0a, dcdt, rates, coef, 0.01, solver=solver)
+        res_b = ode_integrate(C0b, dcdt, rates, coef, 0.01, solver=solver)
+        for da, db in zip(res_a, res_b):
+            assert set(da.keys()) == set(db.keys())
+            for key in da:
+                np.testing.assert_array_equal(da[key], db[key])
+
+    @pytest.mark.parametrize("solver", ['rk4', 'butcher5'])
+    def test_vector_multispecies_matches_analytical_decay(self, solver):
+        """Vectorized multi-point integration of independent decay matches the
+        analytical exponential solution at each spatial point (both solvers)."""
+        C0 = {'A': np.array([1.0, 2.0, 0.5])}
+        coef = {'k': 1.0}
+        rates = {'R': 'k*A'}
+        dcdt = {'A': '-R'}
+        dt, T = 0.0001, 0.01
+        steps = int(T / dt)
+        init = C0['A'].copy()
+        for _ in range(steps):
+            C0, _, _ = ode_integrate(C0, dcdt, rates, coef, dt, solver=solver)
+        analytical = init * np.exp(-coef['k'] * (steps * dt))
+        assert_allclose(C0['A'], analytical, rtol=1e-4)
+
+    # Exact one-step outputs captured from the reference implementation for the
+    # nonlinear multi-species vector system below at dt=0.2, where rk4 and
+    # butcher5 diverge by ~1e-5 (far above the 1e-12 match tolerance) so the two
+    # solvers have DISTINCT goldens. A very tight rtol pins the exact post-refactor
+    # floats while tolerating last-ULP cross-platform noise; a real reorder/drift
+    # would be orders of magnitude larger.
+    _VEC_GOLDEN = {
+        'rk4': {
+            'A': [0.6412093379120267, 0.872633537000254, 0.35187582057209477],
+            'B': [0.6983876107655995, 1.1046371129728096, 0.9930332712162373],
+        },
+        'butcher5': {
+            'A': [0.6412092994793951, 0.8726357436056313, 0.351875797381931],
+            'B': [0.6983873476960852, 1.104626843092589, 0.9930332353237226],
+        },
+    }
+
+    @staticmethod
+    def _nonlinear_vector_system():
+        """Fresh nonlinear coupled multi-species vector system (3 spatial points)."""
+        return (
+            {'A': np.array([1.0, 2.0, 0.5]), 'B': np.array([0.5, 0.1, 1.0])},
+            {'A': '-R1 - R2', 'B': 'R1 - R2'},
+            {'R1': 'k1*A*A', 'R2': 'k2*A*B'},
+            {'k1': 1.5, 'k2': 0.8},
+        )
+
+    @pytest.mark.parametrize("solver", ['rk4', 'butcher5'])
+    def test_vector_golden_matches_reference(self, solver):
+        """One step on a nonlinear multi-species vector input reproduces the exact
+        per-solver reference output, locking in the post-refactor floats. Because
+        the rk4 and butcher5 goldens differ (see next test), this fails if the
+        solver dispatch or a stage weight were changed."""
+        C0, dcdt, rates, coef = self._nonlinear_vector_system()
+        C_new, _, _ = ode_integrate(C0, dcdt, rates, coef, 0.2, solver=solver)
+        for species, expected in self._VEC_GOLDEN[solver].items():
+            assert_allclose(C_new[species], expected, rtol=1e-12, atol=1e-15)
+
+    def test_rk4_and_butcher5_differ_on_nonlinear_system(self):
+        """rk4 and butcher5 produce distinct results on this system, so the golden
+        test above is solver-distinguishing (a rk4<->butcher5 dispatch swap fails)."""
+        C0r, dcdt, rates, coef = self._nonlinear_vector_system()
+        C0b, _, _, _ = self._nonlinear_vector_system()
+        rk4_out, _, _ = ode_integrate(C0r, dcdt, rates, coef, 0.2, solver='rk4')
+        but_out, _, _ = ode_integrate(C0b, dcdt, rates, coef, 0.2, solver='butcher5')
+        max_diff = max(float(np.max(np.abs(rk4_out[k] - but_out[k]))) for k in rk4_out)
+        assert max_diff > 1e-9
