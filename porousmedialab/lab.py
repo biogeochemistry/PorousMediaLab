@@ -69,6 +69,8 @@ class Lab:
         self.acid_base_components = []
         self.acid_base_system = phcalc.System()
         self.ode_method = 'scipy'
+        # Default spatial resolution; subclasses (Column, Batch) override this.
+        self.N = 1
 
     def __getattr__(self, attr):
         """dot notation for species
@@ -267,6 +269,33 @@ class Lab:
         self.acid_base_solve_ph(i)
         self.acid_base_update_concentrations(i)
 
+    def acid_base_update_concentrations(self, i):
+        """Redistribute each acid-base component's total concentration across
+        its species using the speciation fractions (alpha) at the current pH.
+
+        Shared by Batch (N=1) and Column (N>1). ``np.atleast_2d`` normalises the
+        alpha array so the same column indexing works whether ``alpha`` returns
+        a 1-D array (single pH value, Batch) or a 2-D array (pH profile,
+        Column). Components whose species allocate an ``alpha`` field (Batch)
+        also get the fractions stored there.
+
+        Arguments:
+            i {int} -- step in time
+        """
+        for component in self.acid_base_components:
+            species = component['species']
+            alphas = np.atleast_2d(
+                component['pH_object'].alpha(
+                    self.species['pH']['concentration'][:, i]))
+            total = 0
+            for name in species:
+                total += self.species[name]['concentration'][:, i]
+            for idx, name in enumerate(species):
+                self.species[name]['concentration'][:, i] = total * alphas[:, idx]
+                self.profiles[name] = self.species[name]['concentration'][:, i]
+                if 'alpha' in self.species[name]:
+                    self.species[name]['alpha'][:, i] = alphas[:, idx]
+
     def init_rates_arrays(self):
         """allocates zero matrices for rates
         """
@@ -419,7 +448,9 @@ class Lab:
         )
 
         # Reshape and clip to valid concentration range
-        result = np.clip(result_flat.reshape(num_species, self.N), 1e-16, 1e+16)
+        result = np.clip(result_flat.reshape(num_species, self.N),
+                         desolver.CONCENTRATION_CLIP_MIN,
+                         desolver.CONCENTRATION_CLIP_MAX)
 
         # Update species dictionaries with new concentrations
         for idx, name in enumerate(species_names):
@@ -436,51 +467,63 @@ class Lab:
         only with rk4 and butcher 5?
         """
         if self.ode_method in ('scipy', 'scipy_sequential'):
-            # Use vectorized rate function - processes all N spatial points at once
-            rates_vec_str = desolver.create_vectorized_rate_function(
-                self.species, self.functions, self.constants, self.rates,
-                self.N, non_negative_rates=True)
-            safe_globals = desolver.expression_namespace()
-            local_vars = {}
-            exec(rates_vec_str, safe_globals, local_vars)
-            self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
-            self.dynamic_functions['rates_vectorized'] = local_vars['rates_vectorized']
-
-            # Pre-compute arrays outside loop
-            num_species = len(self.species)
-            species_list = list(self.species.keys())
-            rate_names = list(self.rates.keys())
-            num_timesteps = len(self.time)
-            rate_func = self.dynamic_functions['rates_vectorized']
-
-            # Build concentration array: (num_species, N, num_timesteps)
-            conc_3d = np.zeros((num_species, self.N, num_timesteps))
-            for idx, name in enumerate(species_list):
-                conc_3d[idx, :, :] = self.species[name]['concentration']
-
-            # Process all N points at once per timestep
-            is_single_rate = len(self.rates) == 1
-            if is_single_rate:
-                rate_name = rate_names[0]
-                for idx_t in range(num_timesteps):
-                    # conc_2d shape: (num_species, N)
-                    self.estimated_rates[rate_name][:, idx_t] = rate_func(conc_3d[:, :, idx_t])
-            else:
-                for idx_t in range(num_timesteps):
-                    # rates shape: (num_rates, N)
-                    rates = rate_func(conc_3d[:, :, idx_t])
-                    for idx, rate_name in enumerate(rate_names):
-                        self.estimated_rates[rate_name][:, idx_t] = rates[idx, :]
+            self._reconstruct_rates_scipy()
         else:
-            for idx_t in range(len(self.time)):
-                for name, rate in self.rates.items():
-                    conc = {}
-                    for spc in self.species:
-                        conc[spc] = self.species[spc]['concentration'][:, idx_t]
-                    r = ne.evaluate(rate, {**self.constants, **conc})
-                    self.estimated_rates[name][:, idx_t] = r * (r > 0)
+            self._reconstruct_rates_numexpr()
 
         for spc in self.species:
             self.species[spc]['rates'] = (
                 self.species[spc]['concentration'][:, 1:] -
                 self.species[spc]['concentration'][:, :-1]) / self.dt
+
+    def _reconstruct_rates_scipy(self):
+        """Reconstruct rates for the scipy / scipy_sequential solvers using the
+        vectorized generated rate function over all N points per timestep.
+        """
+        # Use vectorized rate function - processes all N spatial points at once
+        rates_vec_str = desolver.create_vectorized_rate_function(
+            self.species, self.functions, self.constants, self.rates,
+            self.N, non_negative_rates=True)
+        safe_globals = desolver.expression_namespace()
+        local_vars = {}
+        exec(rates_vec_str, safe_globals, local_vars)
+        self.dynamic_functions['rates_vectorized_str'] = rates_vec_str
+        self.dynamic_functions['rates_vectorized'] = local_vars['rates_vectorized']
+
+        # Pre-compute arrays outside loop
+        num_species = len(self.species)
+        species_list = list(self.species.keys())
+        rate_names = list(self.rates.keys())
+        num_timesteps = len(self.time)
+        rate_func = self.dynamic_functions['rates_vectorized']
+
+        # Build concentration array: (num_species, N, num_timesteps)
+        conc_3d = np.zeros((num_species, self.N, num_timesteps))
+        for idx, name in enumerate(species_list):
+            conc_3d[idx, :, :] = self.species[name]['concentration']
+
+        # Process all N points at once per timestep
+        is_single_rate = len(self.rates) == 1
+        if is_single_rate:
+            rate_name = rate_names[0]
+            for idx_t in range(num_timesteps):
+                # conc_2d shape: (num_species, N)
+                self.estimated_rates[rate_name][:, idx_t] = rate_func(conc_3d[:, :, idx_t])
+        else:
+            for idx_t in range(num_timesteps):
+                # rates shape: (num_rates, N)
+                rates = rate_func(conc_3d[:, :, idx_t])
+                for idx, rate_name in enumerate(rate_names):
+                    self.estimated_rates[rate_name][:, idx_t] = rates[idx, :]
+
+    def _reconstruct_rates_numexpr(self):
+        """Reconstruct rates for the explicit (rk4 / butcher5) solvers by
+        evaluating each rate expression with numexpr, clamped to non-negative.
+        """
+        for idx_t in range(len(self.time)):
+            for name, rate in self.rates.items():
+                conc = {}
+                for spc in self.species:
+                    conc[spc] = self.species[spc]['concentration'][:, idx_t]
+                r = ne.evaluate(rate, {**self.constants, **conc})
+                self.estimated_rates[name][:, idx_t] = r * (r > 0)

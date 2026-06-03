@@ -88,27 +88,6 @@ class Batch(Lab):
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
 
-    def acid_base_update_concentrations(self, i):
-        """Summary
-
-        Args:
-            i (TYPE): Description
-        """
-        for component in self.acid_base_components:
-            init_conc = 0
-            alphas = component['pH_object'].alpha(
-                self.species['pH']['concentration'][:, i])
-            for idx in range(len(component['species'])):
-                init_conc += self.species[component['species'][idx]][
-                    'concentration'][:, i]
-            for idx in range(len(component['species'])):
-                self.species[component['species'][idx]][
-                    'concentration'][:, i] = init_conc * alphas[idx]
-                self.profiles[component['species'][idx]] = self.species[
-                    component['species'][idx]]['concentration'][:, i]
-                self.species[component['species'][idx]]['alpha'][:, i] = alphas[
-                    idx]
-
     plot = plotter.plot_depth_index
     plot_profiles = plotter.all_plot_depth_index
     plot_fractions = plotter.plot_fractions

@@ -59,6 +59,12 @@ class TestLabInitialization:
         assert lab.henry_law_equations == []
         assert lab.acid_base_components == []
 
+    def test_init_sets_default_spatial_resolution(self):
+        """Lab should default N to 1 so base methods relying on it do not
+        raise (Column and Batch override N in their own __init__)."""
+        lab = Lab(tend=1.0, dt=0.1)
+        assert lab.N == 1
+
 
 class TestLabGetattr:
     """Tests for dot notation access to species."""

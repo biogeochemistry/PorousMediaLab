@@ -246,6 +246,92 @@ class TestBatchAcidBase:
 
         assert 'pH' in batch.species
 
+    def test_acid_base_update_concentrations_redistributes_by_alpha(self):
+        """acid_base_update_concentrations should split each component's total
+        across its species by the speciation fractions at the current pH, store
+        alpha (Batch allocates an alpha field), and leave neutral ions
+        unchanged. Snapshot from the pre-refactor implementation (N=1)."""
+        batch = Batch(tend=0.02, dt=0.01)
+        batch.add_species(name='HAc', init_conc=0.1)
+        batch.add_species(name='Ac', init_conc=0.0)
+        batch.add_acid(['HAc', 'Ac'], pKa=[4.76], charge=0)
+        batch.add_species(name='Na', init_conc=0.05)
+        batch.add_ion(name='Na', charge=1)
+        batch.create_acid_base_system()
+
+        i = 1
+        batch.species['pH']['concentration'][:, i] = 4.76  # pH == pKa
+        batch.species['HAc']['concentration'][:, i] = 0.08
+        batch.species['Ac']['concentration'][:, i] = 0.02
+        batch.species['Na']['concentration'][:, i] = 0.05
+        batch.acid_base_update_concentrations(i)
+
+        assert_allclose(batch.species['HAc']['concentration'][:, i], [0.05])
+        assert_allclose(batch.species['Ac']['concentration'][:, i], [0.05])
+        assert_allclose(batch.species['Na']['concentration'][:, i], [0.05])
+        assert_allclose(batch.species['HAc']['alpha'][:, i], [0.5])
+        assert_allclose(batch.species['Ac']['alpha'][:, i], [0.5])
+        assert_allclose(batch.species['Na']['alpha'][:, i], [1.0])
+
+    def test_solve_end_to_end_acid_base_speciation(self):
+        """End-to-end: Batch.solve() with an acid-base system runs the real
+        dispatch (pre_run -> acid_base_equilibrium_solve -> inherited
+        acid_base_update_concentrations) and yields pH-consistent speciation
+        with a conserved total. Guards the unified base method through solve()."""
+        batch = Batch(tend=0.05, dt=0.01)
+        batch.add_species(name='HAc', init_conc=0.08)
+        batch.add_species(name='Ac', init_conc=0.02)
+        batch.add_acid(['HAc', 'Ac'], pKa=[4.76], charge=0)
+        batch.add_species(name='Na', init_conc=0.05)
+        batch.add_ion(name='Na', charge=1)
+        batch.create_acid_base_system()
+        batch.solve(verbose=False)
+
+        pH = batch.species['pH']['concentration'][0, -1]
+        HAc = batch.species['HAc']['concentration'][0, -1]
+        Ac = batch.species['Ac']['concentration'][0, -1]
+        # pH was actually solved (moved off the default 7.0 toward the buffer)
+        assert pH < 6.0
+        # total acetate conserved (redistribution only, no reactions)
+        assert_allclose(HAc + Ac, 0.10, rtol=1e-6)
+        # neutral ion untouched
+        assert_allclose(batch.species['Na']['concentration'][0, -1], 0.05,
+                        rtol=1e-9)
+        # speciation consistent with solved pH (Henderson-Hasselbalch)
+        ratio = 10.0 ** (pH - 4.76)
+        assert_allclose(HAc, 0.10 / (1.0 + ratio), rtol=1e-6)
+        assert_allclose(Ac, 0.10 * ratio / (1.0 + ratio), rtol=1e-6)
+        # Batch stores alpha; fractions sum to 1
+        assert_allclose(batch.species['HAc']['alpha'][0, -1]
+                        + batch.species['Ac']['alpha'][0, -1], 1.0, rtol=1e-9)
+
+    def test_acid_base_update_concentrations_polyprotic(self):
+        """A diprotic acid (3 species) exercises the np.atleast_2d(...)[:, idx]
+        mapping for a wider 1-D alpha vector at N=1. At pH == pKa1 the first two
+        species are equal and the third is ~0. Snapshot from pre-refactor."""
+        batch = Batch(tend=0.02, dt=0.01)
+        for nm in ('H2CO3', 'HCO3', 'CO3'):
+            batch.add_species(name=nm, init_conc=0.03)
+        batch.add_acid(['H2CO3', 'HCO3', 'CO3'], pKa=[6.35, 10.33], charge=0)
+        batch.create_acid_base_system()
+
+        i = 1
+        batch.species['pH']['concentration'][:, i] = 6.35  # == pKa1
+        for nm in ('H2CO3', 'HCO3', 'CO3'):
+            batch.species[nm]['concentration'][:, i] = 0.03
+        batch.acid_base_update_concentrations(i)
+
+        assert_allclose(batch.species['H2CO3']['concentration'][:, i],
+                        [0.044997644084114226])
+        assert_allclose(batch.species['HCO3']['concentration'][:, i],
+                        [0.044997644084114226])
+        assert_allclose(batch.species['CO3']['concentration'][:, i],
+                        [4.711831771550963e-06])
+        assert_allclose(sum(batch.species[nm]['concentration'][0, i]
+                            for nm in ('H2CO3', 'HCO3', 'CO3')), 0.09, rtol=1e-6)
+        assert_allclose(sum(batch.species[nm]['alpha'][0, i]
+                            for nm in ('H2CO3', 'HCO3', 'CO3')), 1.0, rtol=1e-9)
+
 
 class TestBatchReset:
     """Tests for resetting batch simulation."""

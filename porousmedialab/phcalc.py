@@ -305,9 +305,6 @@ class System(object):
             guess_idx = guesses.argmin()
             guess = phs[guess_idx]
 
-        # jac = lambda x, *args: scipy.optimize.approx_fprime(x, self._diff_pos_neg, 1e-16, *args)
-        # scipy.optimize.minimize(fun, x0, args, method='dogleg', jac=jac)
-
         self.pHsolution = spo.minimize(self._diff_pos_neg, guess,
                                        method='Nelder-Mead', tol=tol)
 

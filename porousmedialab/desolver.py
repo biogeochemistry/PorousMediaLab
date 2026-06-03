@@ -6,6 +6,11 @@ from scipy.sparse import linalg
 from scipy.sparse import spdiags
 from scipy.integrate import ode, solve_ivp
 
+# Concentration clipping bounds applied inside generated ODE/rate functions to
+# keep values within a numerically safe range and avoid overflow/underflow.
+CONCENTRATION_CLIP_MIN = 1e-16
+CONCENTRATION_CLIP_MAX = 1e+16
+
 
 def expression_namespace():
     """Namespace available to generated expression functions."""
@@ -326,7 +331,7 @@ def create_ode_function(species,
 
     # Extract species with clipping
     for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(y[{i}], 1e-16, 1e+16)'
+        body += f'\n\t {s} = np.clip(y[{i}], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -373,7 +378,7 @@ def create_vectorized_ode_function(species,
 
     # Extract species (each becomes array of shape (N,))
     for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(y_2d[{i}, :], 1e-16, 1e+16)'
+        body += f'\n\t {s} = np.clip(y_2d[{i}, :], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -409,7 +414,7 @@ def create_rate_function(species,
 
     # Extract species with clipping
     for i, s in enumerate(species):
-        body += f'\n\t {s} = np.clip(y[{i}], 1e-16, 1e+16)'
+        body += f'\n\t {s} = np.clip(y[{i}], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -455,7 +460,7 @@ def create_vectorized_rate_function(species,
 
     # Extract species (each becomes array of shape (N,))
     for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(conc_2d[{i}, :], 1e-16, 1e+16)'
+        body += f'\n\t {s} = np.clip(conc_2d[{i}, :], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)

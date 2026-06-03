@@ -213,3 +213,59 @@ class TestNumericalStability:
         # Errors should decrease with smaller timestep
         assert errors[1] < errors[0]
         assert errors[2] < errors[1]
+
+
+class TestReconstructRates:
+    """Reconstruct-rates behavior across ode_method branches (scipy single &
+    multi-rate, scipy_sequential, rk4, butcher5). Locks behavior before the
+    method is split into per-solver helpers."""
+
+    @pytest.mark.parametrize("method",
+                             ['scipy', 'scipy_sequential', 'rk4', 'butcher5'])
+    def test_reconstruct_single_rate(self, method):
+        """estimated_rates['R'] should equal k*A at every timestep and the
+        species delta-rates should be the backward difference / dt."""
+        batch = Batch(tend=1.0, dt=0.01, ode_method=method)
+        batch.add_species(name='A', init_conc=1.0)
+        batch.constants['k'] = 0.5
+        batch.rates['R'] = 'k * A'
+        batch.dcdt['A'] = '-R'
+        batch.solve(verbose=False)
+        batch.reconstruct_rates()
+
+        A = batch.species['A']['concentration'][0, :]
+        assert_allclose(batch.estimated_rates['R'][0, :], 0.5 * A, rtol=1e-7)
+        expected_delta = np.diff(A) / batch.dt
+        assert_allclose(batch.species['A']['rates'][0, :], expected_delta,
+                        rtol=1e-7)
+
+    @pytest.mark.parametrize("method",
+                             ['scipy', 'scipy_sequential', 'rk4', 'butcher5'])
+    def test_reconstruct_multi_rate(self, method):
+        """Multiple rates must each be reconstructed (exercises the stacked
+        scipy branch and the per-rate numexpr branch)."""
+        # Keep concentrations clear of the 1e-16 clip floor so the scipy
+        # (clipped) and numexpr (unclipped) rate paths agree on k*conc.
+        batch = Batch(tend=1.0, dt=0.01, ode_method=method)
+        batch.add_species(name='A', init_conc=1.0)
+        batch.add_species(name='B', init_conc=0.5)
+        batch.add_species(name='C', init_conc=0.0)
+        batch.constants['k1'] = 0.3
+        batch.constants['k2'] = 0.1
+        batch.rates['r1'] = 'k1 * A'
+        batch.rates['r2'] = 'k2 * B'
+        batch.dcdt['A'] = '-r1'
+        batch.dcdt['B'] = 'r1 - r2'
+        batch.dcdt['C'] = 'r2'
+        batch.solve(verbose=False)
+        batch.reconstruct_rates()
+
+        A = batch.species['A']['concentration'][0, :]
+        B = batch.species['B']['concentration'][0, :]
+        assert_allclose(batch.estimated_rates['r1'][0, :], 0.3 * A, rtol=1e-7)
+        assert_allclose(batch.estimated_rates['r2'][0, :], 0.1 * B, rtol=1e-7)
+        # species delta-rate arrays = backward difference / dt (inline delta loop)
+        for sp in ('A', 'B', 'C'):
+            conc = batch.species[sp]['concentration'][0, :]
+            assert_allclose(batch.species[sp]['rates'][0, :],
+                            np.diff(conc) / batch.dt, rtol=1e-7)
