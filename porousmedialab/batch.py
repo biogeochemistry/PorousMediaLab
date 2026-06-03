@@ -3,12 +3,12 @@ pH equlibrium simulations
 """
 import numpy as np
 import porousmedialab.phcalc as phcalc
-import porousmedialab.plotter as plotter
 from porousmedialab.dotdict import DotDict
 from porousmedialab.lab import Lab
+from porousmedialab.plotting_mixins import BatchPlottingMixin
 
 
-class Batch(Lab):
+class Batch(BatchPlottingMixin, Lab):
     """The batch experiments simulations
 
     Attributes:
@@ -87,11 +87,3 @@ class Batch(Lab):
         self.add_species(name='pH', init_conc=7)
         self.acid_base_system = phcalc.System(
             *[c['pH_object'] for c in self.acid_base_components])
-
-    plot = plotter.plot_depth_index
-    plot_profiles = plotter.all_plot_depth_index
-    plot_fractions = plotter.plot_fractions
-    plot_rates = plotter.plot_batch_rates
-    plot_rate = plotter.plot_batch_rate
-    plot_deltas = plotter.plot_batch_deltas
-    plot_delta = plotter.plot_batch_delta

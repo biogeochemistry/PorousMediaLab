@@ -87,6 +87,29 @@ class Lab:
 
         return self.species[attr]
 
+    def add_species(self, *args, **kwargs):
+        """Register a chemical species on the model.
+
+        Contract method: concrete subclasses must implement this. The
+        signature is intentionally permissive because subclass signatures
+        diverge (``Batch.add_species(name, init_conc)`` vs
+        ``Column.add_species(theta, name, D, init_conc, bc_top_value,
+        bc_top_type, bc_bot_value, bc_bot_type, ...)``).
+        """
+        raise NotImplementedError(
+            "add_species must be implemented by a Lab subclass (e.g. Batch, Column)"
+        )
+
+    def transport_integrate(self, i):
+        """Integrate the transport (advection-diffusion) step for timestep ``i``.
+
+        Contract method: implemented by spatial models (``Column``). Zero-D
+        models such as ``Batch`` have no transport and do not call this.
+        """
+        raise NotImplementedError(
+            "transport_integrate is only defined for spatial models (e.g. Column)"
+        )
+
     def save_results_in_hdf5(self, filename='results.h5'):
         """concentrations and rate profiles in the
         hdf5 files

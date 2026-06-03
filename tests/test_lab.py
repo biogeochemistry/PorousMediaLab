@@ -237,3 +237,21 @@ class TestLabEstimateTime:
         lab.estimate_time_of_computation(1)
         lab.estimate_time_of_computation(50)
         lab.estimate_time_of_computation(100)
+
+
+class TestLabContractStubs:
+    """Lab defines contract stubs that concrete subclasses (Batch, Column)
+    override. Bare Lab stays instantiable (it is constructed directly in many
+    tests), but calling an unimplemented contract method fails loudly."""
+
+    def test_add_species_stub_raises(self):
+        """Bare Lab.add_species raises NotImplementedError (subclasses override)."""
+        lab = Lab(tend=1.0, dt=0.1)
+        with pytest.raises(NotImplementedError, match="add_species"):
+            lab.add_species('X', 1.0)
+
+    def test_transport_integrate_stub_raises(self):
+        """Bare Lab.transport_integrate raises NotImplementedError (Column overrides)."""
+        lab = Lab(tend=1.0, dt=0.1)
+        with pytest.raises(NotImplementedError, match="transport_integrate"):
+            lab.transport_integrate(1)
