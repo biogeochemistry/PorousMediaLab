@@ -10,6 +10,15 @@
 
 The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
+## What's New in v2.2.0
+
+**Robustness and maintainability** improvements with expanded test coverage:
+
+- Input validation across the solver: division-by-zero guards and a CFL stability warning catch unstable grids early
+- Behavior-preserving refactor of the core ODE/PDE solver and class contracts (boundary conditions, flux estimators, acid-base updates)
+- Removed unused code (`sensitivity.py` stubs, dead `element.py`, legacy Python 2 compatibility)
+- Test suite expanded to 389 tests, including mathematical-correctness integration tests
+
 ## What's New in v2.1.1
 
 **Correctness and packaging hardening** for solver setup and release artifacts:
