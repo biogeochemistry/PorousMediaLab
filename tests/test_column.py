@@ -549,6 +549,42 @@ class TestColumnAcidBase:
         # Column does not store alpha
         assert 'alpha' not in col.species['HAc']
 
+    def test_ph_depth_scan_window_edge_fallback(self):
+        """When pH changes by more than the +/-0.1 depth-scan half-width between
+        adjacent depths, the scan argmin pins to a window edge; the PR5 fallback
+        must do a full solve so the deep pH is correct, not edge-pinned."""
+        import porousmedialab.phcalc as phcalc
+        col = Column(length=2, dx=1, tend=0.02, dt=0.01, w=0)
+        common = dict(D=0, bc_top_value=0, bc_top_type='dirichlet',
+                      bc_bot_value=0, bc_bot_type='dirichlet', int_transport=False)
+        col.add_species(theta=1, name='HA', init_conc=0.0, **common)
+        col.add_species(theta=1, name='A', init_conc=0.0, **common)
+        col.add_acid(['HA', 'A'], pKa=[2.0], charge=0)
+        col.add_species(theta=1, name='Na', init_conc=0.0, **common)
+        col.add_ion(name='Na', charge=1)
+        col.create_acid_base_system()
+
+        i = 1
+        totA = np.array([0.1, 0.1, 0.1])
+        Na = np.array([0.001, 0.05, 0.05])  # acidic at depth 0, near-pKa deeper
+        col.species['HA']['concentration'][:, i] = totA
+        col.species['A']['concentration'][:, i] = 0.0
+        col.species['Na']['concentration'][:, i] = Na
+        col.acid_base_solve_ph(i)
+        pH = col.species['pH']['concentration'][:, i]
+
+        def reference(tota, na):
+            system = phcalc.System(phcalc.Acid(pKa=[2.0], charge=0, conc=tota),
+                                   phcalc.Neutral(charge=1, conc=na))
+            system.pHsolve(guess_est=True)
+            return system.pH
+
+        expected = np.array([reference(totA[j], Na[j]) for j in range(3)])
+        assert_allclose(pH, expected, atol=1e-2)
+        # depth-1 pH lies OUTSIDE the +/-0.1 window centred on depth-0's pH, so a
+        # local scan alone could not yield it: the full-solve fallback must fire.
+        assert pH[1] > pH[0] + 0.1
+
 
 class TestColumnPlotMethods:
     """Tests that plot methods exist (smoke tests)."""
