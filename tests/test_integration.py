@@ -319,3 +319,27 @@ class TestAllowNegativeClipping:
         batch.dcdt['charge'] = '-Rc'
         batch.solve(verbose=False)
         assert batch.species['charge']['concentration'][0, -1] < -1.0
+
+
+class TestMixedScalarVectorRateReconstruction:
+    """Regression: a model mixing a constant-only (scalar) rate with a
+    species-dependent (vector) rate must reconstruct rates without a shape error.
+    Previously np.stack raised 'all input arrays must have the same shape' after
+    an otherwise successful solve (vectorized scipy / scipy_sequential)."""
+
+    @pytest.mark.parametrize("method", ['scipy', 'scipy_sequential'])
+    def test_mixed_rate_reconstruct(self, method):
+        batch = Batch(tend=0.5, dt=0.1, ode_method=method)
+        batch.add_species(name='A', init_conc=1.0)
+        batch.constants['k'] = 0.5
+        batch.constants['k0'] = 0.2
+        batch.rates['R0'] = 'k0'      # zero-order (scalar)
+        batch.rates['R1'] = 'k * A'   # first-order (vector)
+        batch.dcdt['A'] = '-R1 + R0'
+        batch.solve(verbose=False)
+        batch.reconstruct_rates()  # must not raise
+        # zero-order rate is constant k0 everywhere
+        assert_allclose(batch.estimated_rates['R0'][0, :], 0.2, rtol=1e-7)
+        # first-order rate equals k * A at each timestep
+        A = batch.species['A']['concentration'][0, :]
+        assert_allclose(batch.estimated_rates['R1'][0, :], 0.5 * A, rtol=1e-7)

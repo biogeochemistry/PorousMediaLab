@@ -588,11 +588,15 @@ def create_vectorized_rate_function(species,
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
 
-    # Return stacked rate arrays
+    # Return stacked rate arrays. Each rate is broadcast to shape (N,) first so
+    # that a constant-only (scalar) rate can be stacked alongside a
+    # species-dependent (vector) rate; without this, np.stack raises on the mixed
+    # shapes for a model that mixes zero-order and higher-order rates.
     if num_rates == 1:
-        body += f"\n\t return {rate_list[0]}"
+        body += f"\n\t return np.broadcast_to({rate_list[0]}, ({N},))"
     else:
-        body += f"\n\t return np.stack([{', '.join(rate_list)}], axis=0)"
+        stacked = ', '.join(f'np.broadcast_to({r}, ({N},))' for r in rate_list)
+        body += f"\n\t return np.stack([{stacked}], axis=0)"
 
     return body
 
