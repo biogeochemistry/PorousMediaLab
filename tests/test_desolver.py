@@ -866,15 +866,25 @@ class TestBoundaryConditionCombinations:
 
 
 class TestOdeIntegrateRefactor:
-    """Regression coverage for the ode_integrate module-level helper extraction
-    (_k_loop/_sum_k/_rk4_step/_butcher5_step). The decomposition is meant to be
-    bit-for-bit behavior-preserving, so these use exact / very tight checks."""
+    """Regression coverage for the ode_integrate module-level helpers
+    (_k_loop/_sum_k/_rk4_step/_butcher5_step), using exact / very tight checks.
 
-    # One-step golden outputs captured from the reference implementation for
-    # C0={'C': 1.0}, k=2.0, R='k*C', dcdt={'C': '-R'}, dt=0.01.
+    The golden values were regenerated after the Tier-4 fix that removed the
+    spurious second ``* dt`` in ``_sum_k`` (which had collapsed both solvers to
+    first-order Euler accuracy). They are captured exactly from the corrected
+    implementation; the companion convergence-order test
+    (test_solver_convergence_order) independently validates that rk4/butcher5
+    deliver their nominal high order, so a future reintroduction of the bug
+    fails even if someone re-captures a golden."""
+
+    # One-step golden outputs captured from the corrected implementation for
+    # C0={'C': 1.0}, k=2.0, R='k*C', dcdt={'C': '-R'}, dt=0.01. rk4 matches the
+    # exact e^-0.02 = 0.9801986733067553 to its 4th-order truncation residual
+    # (~2.7e-11); butcher5 matches to ~1e-14. The two are now distinct (the old
+    # shared value 0.9800019998666734 was an artifact of the Euler-collapse bug).
     GOLDEN_C_NEW = {
-        'rk4': 0.9800019998666734,
-        'butcher5': 0.9800019998666734,
+        'rk4': 0.9801986733333333,
+        'butcher5': 0.9801986733067667,
     }
 
     @pytest.mark.parametrize("solver", ['rk4', 'butcher5'])
@@ -920,20 +930,43 @@ class TestOdeIntegrateRefactor:
         analytical = init * np.exp(-coef['k'] * (steps * dt))
         assert_allclose(C0['A'], analytical, rtol=1e-4)
 
-    # Exact one-step outputs captured from the reference implementation for the
-    # nonlinear multi-species vector system below at dt=0.2, where rk4 and
-    # butcher5 diverge by ~1e-5 (far above the 1e-12 match tolerance) so the two
-    # solvers have DISTINCT goldens. A very tight rtol pins the exact post-refactor
-    # floats while tolerating last-ULP cross-platform noise; a real reorder/drift
-    # would be orders of magnitude larger.
+    @pytest.mark.parametrize("solver,min_order",
+                             [('rk4', 3.5), ('butcher5', 4.5)])
+    def test_solver_convergence_order(self, solver, min_order):
+        """Reference-free guard that rk4/butcher5 deliver their nominal high
+        order on dC/dt=-kC. This permanently locks out the first-order Euler
+        collapse caused by an erroneous extra ``* dt`` in ``_sum_k``: even if a
+        golden above were re-captured from buggy code, the measured order would
+        drop to ~1 and fail here."""
+        k = 2.0
+        exact = np.exp(-k)  # integrate from C0=1 over t in [0, 1]
+
+        def final_error(dt):
+            C = {'C': np.array([1.0])}
+            for _ in range(int(round(1.0 / dt))):
+                C, _, _ = ode_integrate(
+                    C, {'C': '-R'}, {'R': 'k*C'}, {'k': k}, dt, solver=solver)
+            return abs(float(C['C'][0]) - exact)
+
+        measured_order = np.log2(final_error(0.01) / final_error(0.005))
+        assert measured_order >= min_order, (
+            f"{solver} convergence order {measured_order:.2f} < {min_order} "
+            "(possible reintroduction of the _sum_k double-dt Euler bug)")
+
+    # Exact one-step outputs captured from the corrected implementation (Tier-4
+    # _sum_k fix) for the nonlinear multi-species vector system below at dt=0.2,
+    # where rk4 and butcher5 diverge by ~5e-3 (far above the 1e-12 match
+    # tolerance) so the two solvers have DISTINCT goldens. A very tight rtol pins
+    # the exact floats while tolerating last-ULP cross-platform noise; a real
+    # reorder/drift would be orders of magnitude larger.
     _VEC_GOLDEN = {
         'rk4': {
-            'A': [0.6412093379120267, 0.872633537000254, 0.35187582057209477],
-            'B': [0.6983876107655995, 1.1046371129728096, 0.9930332712162373],
+            'A': [0.7081414362939611, 1.1709248681758635, 0.37450940565395113],
+            'B': [0.63698576434565, 0.7141500797468379, 0.9876987081007542],
         },
         'butcher5': {
-            'A': [0.6412092994793951, 0.8726357436056313, 0.351875797381931],
-            'B': [0.6983873476960852, 1.104626843092589, 0.9930332353237226],
+            'A': [0.7081343485545629, 1.1714497516826388, 0.3745011010849979],
+            'B': [0.6368156451852285, 0.7089778108256812, 0.9876764815079293],
         },
     }
 

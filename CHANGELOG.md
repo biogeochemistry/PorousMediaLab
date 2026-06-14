@@ -5,7 +5,28 @@ All notable changes to PorousMediaLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] (3.0.0)
+
+### Fixed
+- **Restored 4th/5th-order accuracy of the `rk4` and `butcher5` ODE solvers.** A
+  spurious second `* dt` in the Runge-Kutta stage offset (`_sum_k`) had silently
+  collapsed both explicit solvers to first-order (Euler) accuracy. Output from
+  `ode_method='rk4'` and `'butcher5'` now changes (improves); the default
+  `ode_method='scipy'` reaction path was unaffected by this particular bug. A new
+  reference-free convergence-order test locks the corrected order in. Users who
+  tuned `dt` to the old behavior can increase `dt` for equivalent accuracy, or
+  pin `porousmedialab<3` for byte-identical legacy runs.
+
+### Changed
+- **Unified negative-value clipping across all ODE paths via a per-species
+  `allow_negative` flag.** Previously only the `rk4` path exempted `Temperature`
+  from the non-negativity floor, while the default `scipy` path silently clipped
+  any legitimately-negative variable to `1e-16`. `Batch.add_species` and
+  `Column.add_species` now accept `allow_negative=False`; the name `'Temperature'`
+  is auto-enrolled for backward compatibility. This changes the default `scipy`
+  path output only for signed variables.
+- Bumped to **3.0.0** (SemVer): the two changes above alter simulation output for
+  the affected solver/variable combinations.
 
 ## [2.2.0] - 2026-06-03
 

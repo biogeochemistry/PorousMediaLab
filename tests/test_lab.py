@@ -76,11 +76,27 @@ class TestLabGetattr:
         o2 = lab.O2
         assert 'concentration' in o2
 
-    def test_getattr_missing_species_raises_keyerror(self):
-        """Accessing non-existent species should raise KeyError."""
+    def test_getattr_missing_species_raises_attributeerror(self):
+        """Accessing a non-existent species raises AttributeError (Tier-4: was
+        KeyError) so typos surface clearly and hasattr() behaves correctly."""
         lab = Lab(tend=1.0, dt=0.1)
-        with pytest.raises(KeyError):
+        with pytest.raises(AttributeError):
             _ = lab.nonexistent_species
+
+    def test_hasattr_false_for_missing_species(self):
+        """hasattr returns False (not propagating an error) for unknown names."""
+        lab = Lab(tend=1.0, dt=0.1)
+        assert not hasattr(lab, 'nonexistent_species')
+
+    def test_contract_method_on_bare_lab_raises_notimplemented(self):
+        """Bare Lab contract methods raise NotImplementedError, not a confusing
+        attribute/KeyError, when invoked without a concrete subclass."""
+        lab = Lab(tend=1.0, dt=0.1)
+        for method in ('add_time_variable', 'create_acid_base_system',
+                       'integrate_one_timestep'):
+            with pytest.raises(NotImplementedError):
+                getattr(lab, method)(0) if method == 'integrate_one_timestep' \
+                    else getattr(lab, method)()
 
 
 class TestLabHenryEquilibrium:

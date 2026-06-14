@@ -58,6 +58,19 @@ class TestAcid:
         with pytest.raises(ValueError, match="charge.*must be defined"):
             Acid(pKa=[4.76], conc=0.1)
 
+    def test_acid_accepts_pka_zero(self):
+        """pKa=0.0 is a valid (strong) acid: the truthiness check used to treat
+        it as 'undefined'. Now handled via `is None` checks."""
+        acid = Acid(pKa=0.0, charge=0, conc=0.1)
+        assert_allclose(acid.Ka, [1.0], rtol=1e-12)  # Ka = 10**(-0) = 1
+        assert_allclose(acid.pKa, [0.0], atol=1e-12)
+
+    def test_acid_accepts_numpy_array_pka(self):
+        """A NumPy array of pKa values must not trip the ambiguous-truth-value
+        error that the old `not pKa` check raised."""
+        acid = Acid(pKa=np.array([2.0, 7.0]), charge=0, conc=0.1)
+        assert_allclose(acid.pKa, [2.0, 7.0], rtol=1e-12)
+
     def test_acid_pka_to_ka_conversion(self):
         """Verify pKa is correctly converted to Ka."""
         acid = Acid(pKa=[4.76], charge=0, conc=0.1)
@@ -233,6 +246,23 @@ class TestSystem:
         system.pHsolve(tol=1e-8)
         diff = system._diff_pos_neg(system.pH)
         assert diff < 1e-4  # Should be within tolerance
+
+    def test_pHsolve_honors_method_argument(self, monkeypatch):
+        """The `method` argument must be forwarded to scipy.optimize.minimize
+        (previously hardcoded to 'Nelder-Mead')."""
+        import porousmedialab.phcalc as phcalc
+        captured = {}
+        real_minimize = phcalc.spo.minimize
+
+        def spy(fun, x0, *args, **kwargs):
+            captured['method'] = kwargs.get('method')
+            return real_minimize(fun, x0, *args, **kwargs)
+
+        monkeypatch.setattr(phcalc.spo, 'minimize', spy)
+        acid = Acid(pKa=[4.76], charge=0, conc=0.1)
+        system = System(acid)
+        system.pHsolve(method='Powell', tol=1e-6)
+        assert captured['method'] == 'Powell'
 
 
 class TestAcidBaseIntegration:

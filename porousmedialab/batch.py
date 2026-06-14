@@ -35,12 +35,15 @@ class Batch(BatchPlottingMixin, Lab):
         self.N = 1
         self.ode_method = ode_method
 
-    def add_species(self, name, init_conc):
-        """Summary
+    def add_species(self, name, init_conc, allow_negative=False):
+        """Register a chemical species in the batch model.
 
         Args:
             name (string): name of the element
             init_conc (float): initial concentration
+            allow_negative (bool): if True, the species is exempt from the
+                non-negative concentration floor (it may stay below zero). The
+                name 'Temperature' is auto-enrolled for backward compatibility.
         """
         self.species[name] = DotDict({})
         self.species[name]['init_conc'] = init_conc
@@ -52,6 +55,7 @@ class Batch(BatchPlottingMixin, Lab):
             'init_conc']
         self.profiles[name] = self.species[name]['concentration'][:, 0]
         self.species[name]['int_transport'] = False
+        self.species[name]['allow_negative'] = allow_negative or (name == 'Temperature')
         self.dcdt[name] = '0'
 
     def integrate_one_timestep(self, i):

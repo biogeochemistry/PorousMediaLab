@@ -70,7 +70,8 @@ class Column(ColumnPlottingMixin, Lab):
                     bc_bot_value,
                     bc_bot_type,
                     w=None,
-                    int_transport=True):
+                    int_transport=True,
+                    allow_negative=False):
         """add chemical compund to the column model with boundary
         conditions
 
@@ -87,6 +88,8 @@ class Column(ColumnPlottingMixin, Lab):
         Keyword Arguments:
             w {float} -- advective term for this element (default: column value)
             int_transport {bool} -- integrate transport? (default: {True})
+            allow_negative {bool} -- exempt this species from the non-negative
+                concentration floor (default: False; 'Temperature' auto-enrolled)
         """
         self.species[name] = DotDict({})
         self.species[name]['bc_top_value'] = bc_top_value
@@ -107,6 +110,7 @@ class Column(ColumnPlottingMixin, Lab):
         else:
             self.species[name]['w'] = w
         self.species[name]['int_transport'] = int_transport
+        self.species[name]['allow_negative'] = allow_negative or (name == 'Temperature')
         if int_transport:
             self.template_AL_AR(name)
             self.update_matrices_due_to_bc(name, 0)
@@ -171,6 +175,11 @@ class Column(ColumnPlottingMixin, Lab):
                 self.species[element]['w'],
                 self.species[element]['bc_top_type'],
                 self.species[element]['bc_bot_type'], self.dt, self.dx, self.N)
+        # Cache the LU factorization of the (now-constant) AL. This single
+        # rebuild point is reached by add_species, load_initial_conditions, and
+        # change_boundary_conditions, so the cache stays consistent with AL.
+        self.species[element]['AL_lu'] = desolver.factorize_transport_matrix(
+            self.species[element]['AL'])
 
     def update_matrices_due_to_bc(self, element, i):
         """updating the matrices due to boundary conditions
@@ -198,7 +207,7 @@ class Column(ColumnPlottingMixin, Lab):
 
     def create_acid_base_system(self):
         self.add_species(
-            theta=True,
+            theta=1,
             name='pH',
             D=0,
             init_conc=7,
@@ -235,8 +244,10 @@ class Column(ColumnPlottingMixin, Lab):
                 self.transport_integrate_one_element(element, i)
 
     def transport_integrate_one_element(self, element, i):
-        self.profiles[element] = desolver.linear_alg_solver(
-            self.species[element]['AL'], self.species[element]['B'])
+        # Reuse the cached LU factorization of AL (see template_AL_AR) instead of
+        # re-factorizing every timestep; only the right-hand side B changes.
+        self.profiles[element] = self.species[element]['AL_lu'].solve(
+            self.species[element]['B'])
         self.species[element]['concentration'][:, i] = self.profiles[element]
         self.update_matrices_due_to_bc(element, i)
 

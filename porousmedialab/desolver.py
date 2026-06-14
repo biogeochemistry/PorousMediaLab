@@ -211,7 +211,24 @@ def update_matrices_due_to_bc(AR, profile, phi, diff_coef, adv_coef,
 
 
 def linear_alg_solver(A, B):
-    return linalg.spsolve(A, B, use_umfpack=True)
+    # use_umfpack was dropped: it is a silent no-op unless scikit-umfpack is
+    # installed (not a dependency). Cached callers should prefer
+    # factorize_transport_matrix(A).solve(B) to avoid re-factorizing per step.
+    return linalg.spsolve(A, B)
+
+
+def factorize_transport_matrix(AL):
+    """Pre-factorize the implicit transport matrix ``AL`` once.
+
+    ``AL`` is constant between ``create_template_AL_AR`` rebuilds (only the
+    right-hand side ``B`` changes per timestep), so caching its LU factorization
+    and reusing ``.solve(B)`` replaces a full ``spsolve`` every step — about a
+    10x speedup on the tridiagonal systems used here.
+
+    Returns:
+        A SuperLU object whose ``.solve(B)`` applies the cached factorization.
+    """
+    return linalg.splu(AL.tocsc())
 
 
 def _k_loop(conc, rates, dcdt, coef, dt, non_negative_rates=True):
@@ -235,16 +252,19 @@ def _k_loop(conc, rates, dcdt, coef, dt, non_negative_rates=True):
     return Kn, rates_per_rate
 
 
-def _sum_k(A, B, b, dt):
-    """Return ``{k: A[k] + b * B[k] * dt}`` for a Runge-Kutta stage offset.
+def _sum_k(A, B, b):
+    """Return ``{k: A[k] + b * B[k]}`` for a Runge-Kutta stage offset.
 
     ``B`` already carries a factor of ``dt`` from ``_k_loop`` (``Kn = dt *
-    ...``); multiplying by ``dt`` again here is intentional and reproduces the
-    original solver's arithmetic exactly.
+    ...``), so the stage offset must NOT multiply by ``dt`` again. A previous
+    implementation did, which collapsed every RK stage point to a first-order
+    perturbation and silently degraded both ``rk4`` and ``butcher5`` to Euler
+    accuracy. The ``dt`` parameter was removed so any stray caller fails loudly
+    instead of reintroducing the double-``dt`` bug.
     """
     C_new = {}
     for k in A:
-        C_new[k] = A[k] + b * B[k] * dt
+        C_new[k] = A[k] + b * B[k]
     return C_new
 
 
@@ -258,9 +278,9 @@ def _rk4_step(C_0, rates, dcdt, coef, dt):
         C_new = C0 + (k_1+2*k_2+2*k_3+k_4)/6
     """
     k1, rates_per_rate1 = _k_loop(C_0, rates, dcdt, coef, dt)
-    k2, rates_per_rate2 = _k_loop(_sum_k(C_0, k1, 0.5, dt), rates, dcdt, coef, dt)
-    k3, rates_per_rate3 = _k_loop(_sum_k(C_0, k2, 0.5, dt), rates, dcdt, coef, dt)
-    k4, rates_per_rate4 = _k_loop(_sum_k(C_0, k3, 1, dt), rates, dcdt, coef, dt)
+    k2, rates_per_rate2 = _k_loop(_sum_k(C_0, k1, 0.5), rates, dcdt, coef, dt)
+    k3, rates_per_rate3 = _k_loop(_sum_k(C_0, k2, 0.5), rates, dcdt, coef, dt)
+    k4, rates_per_rate4 = _k_loop(_sum_k(C_0, k3, 1), rates, dcdt, coef, dt)
 
     rates_per_rate = {}
     for rate_name in rates_per_rate1:
@@ -290,15 +310,15 @@ def _butcher5_step(C_0, rates, dcdt, coef, dt):
         C_new = C0 + (7*k_1 + 32*k_3 + 12*k_4 + 32*k_5 + 7*k_6)/90;
     """
     k1, rpr1 = _k_loop(C_0, rates, dcdt, coef, dt)
-    k2, rpr2 = _k_loop(_sum_k(C_0, k1, 1 / 4, dt), rates, dcdt, coef, dt)
-    k3, rpr3 = _k_loop(_sum_k(_sum_k(C_0, k1, 1 / 8, dt), k2, 1 / 8, dt), rates, dcdt, coef, dt)
-    k4, rpr4 = _k_loop(_sum_k(_sum_k(C_0, k2, -0.5, dt), k3, 1, dt), rates, dcdt, coef, dt)
-    k5, rpr5 = _k_loop(_sum_k(_sum_k(C_0, k1, 3 / 16, dt), k4, 9 / 16, dt), rates, dcdt, coef, dt)
+    k2, rpr2 = _k_loop(_sum_k(C_0, k1, 1 / 4), rates, dcdt, coef, dt)
+    k3, rpr3 = _k_loop(_sum_k(_sum_k(C_0, k1, 1 / 8), k2, 1 / 8), rates, dcdt, coef, dt)
+    k4, rpr4 = _k_loop(_sum_k(_sum_k(C_0, k2, -0.5), k3, 1), rates, dcdt, coef, dt)
+    k5, rpr5 = _k_loop(_sum_k(_sum_k(C_0, k1, 3 / 16), k4, 9 / 16), rates, dcdt, coef, dt)
     k6, rpr6 = _k_loop(
         _sum_k(
             _sum_k(
-                _sum_k(_sum_k(_sum_k(C_0, k1, -3 / 7, dt), k2, 2 / 7, dt), k3, 12 / 7, dt),
-                k4, -12 / 7, dt), k5, 8 / 7, dt), rates, dcdt, coef, dt)
+                _sum_k(_sum_k(_sum_k(C_0, k1, -3 / 7), k2, 2 / 7), k3, 12 / 7),
+                k4, -12 / 7), k5, 8 / 7), rates, dcdt, coef, dt)
 
     rates_per_rate = {}
     for rate_name in rpr1:
@@ -355,6 +375,31 @@ def _append_functions_constants_rates(body, functions, constants, rates, non_neg
     return body
 
 
+def _append_clipped_species(body, species_list, index_expr, allow_negative):
+    """Append clipped species-extraction lines to a generated function body.
+
+    ``index_expr(i)`` returns the right-hand-side indexing for species ``i`` as a
+    string (e.g. ``'y[0]'`` or ``'y_2d[0, :]'``). Species named in
+    ``allow_negative`` keep a symmetric magnitude bound ``[-MAX, MAX]`` so they
+    may stay negative (e.g. Temperature); all others keep the non-negative
+    concentration floor ``[MIN, MAX]``. Every species still emits an
+    ``np.clip(...)`` call for numerical-overflow safety.
+
+    Arguments:
+        body: current function body string
+        species_list: ordered list of species names
+        index_expr: callable mapping species index -> indexing expression string
+        allow_negative: set of species names allowed to remain negative
+
+    Returns:
+        Updated function body string
+    """
+    for i, s in enumerate(species_list):
+        lower = -CONCENTRATION_CLIP_MAX if s in allow_negative else CONCENTRATION_CLIP_MIN
+        body += f'\n\t {s} = np.clip({index_expr(i)}, {lower}, {CONCENTRATION_CLIP_MAX})'
+    return body
+
+
 def _validate_dcdt_species(species, dcdt):
     species_names = set(species)
     dcdt_names = set(dcdt)
@@ -371,7 +416,8 @@ def create_ode_function(species,
                         constants,
                         rates,
                         dcdt,
-                        non_negative_rates=True):
+                        non_negative_rates=True,
+                        allow_negative=None):
     """Creates the string of ODE function for single-point integration.
 
     Arguments:
@@ -381,19 +427,22 @@ def create_ode_function(species,
         rates: dict of rates provided by user
         dcdt: dict of dcdt provided by user
         non_negative_rates: prevent negative rate values (default True)
+        allow_negative: set of species names allowed to remain negative
+            (skip the non-negative clip floor); default None means all clipped
 
     Returns:
         String representation of the ODE function
     """
     _validate_dcdt_species(species, dcdt)
+    allow_negative = allow_negative or set()
     species_list = list(species.keys())
 
     body = "def f(t, y):\n"
     body += "\t dydt = np.zeros(len(y))"
 
     # Extract species with clipping
-    for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(y[{i}], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
+    body = _append_clipped_species(
+        body, species_list, lambda i: f'y[{i}]', allow_negative)
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -412,7 +461,8 @@ def create_vectorized_ode_function(species,
                                    rates,
                                    dcdt,
                                    N,
-                                   non_negative_rates=True):
+                                   non_negative_rates=True,
+                                   allow_negative=None):
     """Creates vectorized ODE function handling all N spatial points at once.
 
     State vector y has shape (N*S,) where S = number of species.
@@ -426,6 +476,8 @@ def create_vectorized_ode_function(species,
         dcdt: dict of dcdt provided by user
         N: number of spatial points
         non_negative_rates: prevent negative rate values (default True)
+        allow_negative: set of species names allowed to remain negative
+            (skip the non-negative clip floor); default None means all clipped
 
     Returns:
         String representation of the vectorized ODE function
@@ -433,14 +485,15 @@ def create_vectorized_ode_function(species,
     num_species = len(species)
     species_list = list(species.keys())
     _validate_dcdt_species(species, dcdt)
+    allow_negative = allow_negative or set()
 
     body = "def f_vectorized(t, y):\n"
     body += f"\t y_2d = y.reshape({num_species}, {N})\n"
     body += f"\t dydt_2d = np.zeros(({num_species}, {N}))\n"
 
     # Extract species (each becomes array of shape (N,))
-    for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(y_2d[{i}, :], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
+    body = _append_clipped_species(
+        body, species_list, lambda i: f'y_2d[{i}, :]', allow_negative)
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -458,7 +511,8 @@ def create_rate_function(species,
                          constants,
                          rates,
                          dcdt,
-                         non_negative_rates=False):
+                         non_negative_rates=False,
+                         allow_negative=None):
     """Creates the string of rates function for rate reconstruction.
 
     Arguments:
@@ -468,15 +522,18 @@ def create_rate_function(species,
         rates: dict of rates provided by user
         dcdt: dict of dcdt provided by user (unused, kept for API consistency)
         non_negative_rates: prevent negative rate values (default False)
+        allow_negative: set of species names allowed to remain negative
+            (skip the non-negative clip floor); default None means all clipped
 
     Returns:
         String representation of the rates function
     """
+    allow_negative = allow_negative or set()
     body = "def rates(y):\n"
 
     # Extract species with clipping
-    for i, s in enumerate(species):
-        body += f'\n\t {s} = np.clip(y[{i}], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
+    body = _append_clipped_species(
+        body, list(species), lambda i: f'y[{i}]', allow_negative)
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
@@ -493,7 +550,8 @@ def create_vectorized_rate_function(species,
                                     constants,
                                     rates,
                                     N,
-                                    non_negative_rates=False):
+                                    non_negative_rates=False,
+                                    allow_negative=None):
     """Creates vectorized rate function for rate reconstruction across N points.
 
     Processes all N spatial points at once instead of point-by-point.
@@ -507,12 +565,15 @@ def create_vectorized_rate_function(species,
         rates: dict of rates provided by user
         N: number of spatial points
         non_negative_rates: prevent negative rate values (default False)
+        allow_negative: set of species names allowed to remain negative
+            (skip the non-negative clip floor); default None means all clipped
 
     Returns:
         String representation of the vectorized rates function
     """
     num_species = len(species)
     num_rates = len(rates)
+    allow_negative = allow_negative or set()
     species_list = list(species.keys())
     rate_list = list(rates.keys())
 
@@ -521,8 +582,8 @@ def create_vectorized_rate_function(species,
     body += f"\t # Each species becomes array of shape ({N},)\n"
 
     # Extract species (each becomes array of shape (N,))
-    for i, s in enumerate(species_list):
-        body += f'\n\t {s} = np.clip(conc_2d[{i}, :], {CONCENTRATION_CLIP_MIN}, {CONCENTRATION_CLIP_MAX})'
+    body = _append_clipped_species(
+        body, species_list, lambda i: f'conc_2d[{i}, :]', allow_negative)
 
     # Add functions, constants, and rates
     body = _append_functions_constants_rates(body, functions, constants, rates, non_negative_rates)
