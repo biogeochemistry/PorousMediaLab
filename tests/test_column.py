@@ -663,3 +663,49 @@ class TestColumnSaveLoad:
         assert_allclose(target.species['immobile']['init_conc'],
                         source.profiles['immobile'])
         assert 'AL_lu' not in target.species['immobile']  # no factorization
+
+
+class TestColumnTier4Followups:
+    """Coverage gaps surfaced by the Tier-4 review: LU-cache invalidation after a
+    boundary-condition change, and the new Column allow_negative wiring."""
+
+    def test_lu_cache_refreshed_on_bc_change(self):
+        """change_boundary_conditions rebuilds AL; the cached LU factorization
+        must be refreshed to match, or transport solves would use a stale AL."""
+        import scipy.sparse.linalg as sla
+        col = Column(length=5, dx=1, tend=0.05, dt=0.01, w=0)
+        col.add_species(theta=1, name='O2', D=1.0, init_conc=0,
+                        bc_top_value=1, bc_top_type='dirichlet',
+                        bc_bot_value=0, bc_bot_type='dirichlet')
+        lu_before = col.species['O2']['AL_lu']
+        col.change_boundary_conditions('O2', 1, bc_top_value=2,
+                                       bc_top_type='neumann',
+                                       bc_bot_value=0, bc_bot_type='dirichlet')
+        lu_after = col.species['O2']['AL_lu']
+        assert lu_after is not lu_before  # cache rebuilt at the template choke point
+        B = col.species['O2']['B']
+        assert_allclose(lu_after.solve(B),
+                        sla.spsolve(col.species['O2']['AL'], B), atol=1e-12)
+
+    def test_column_temperature_stays_negative(self):
+        """Column.add_species auto-enrolls 'Temperature' as allow_negative, so a
+        Temperature species reaches sub-zero values through Column.solve()."""
+        col = Column(length=2, dx=1, tend=1.0, dt=0.1, w=0)
+        col.add_species(theta=1, name='Temperature', D=0, init_conc=5.0,
+                        bc_top_value=0, bc_top_type='flux',
+                        bc_bot_value=0, bc_bot_type='flux', int_transport=False)
+        col.constants['k'] = 10.0
+        col.rates['Rc'] = 'k'
+        col.dcdt['Temperature'] = '-Rc'
+        col.solve(verbose=False)
+        assert col.species['Temperature']['allow_negative'] is True
+        assert np.all(col.species['Temperature']['concentration'][:, -1] < -1.0)
+
+    def test_column_allow_negative_kwarg_stored(self):
+        """Explicit allow_negative=True is stored on a non-Temperature species."""
+        col = Column(length=2, dx=1, tend=0.02, dt=0.01, w=0)
+        col.add_species(theta=1, name='charge', D=0, init_conc=1.0,
+                        bc_top_value=0, bc_top_type='flux',
+                        bc_bot_value=0, bc_bot_type='flux',
+                        int_transport=False, allow_negative=True)
+        assert col.species['charge']['allow_negative'] is True
