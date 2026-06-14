@@ -931,13 +931,19 @@ class TestOdeIntegrateRefactor:
         assert_allclose(C0['A'], analytical, rtol=1e-4)
 
     @pytest.mark.parametrize("solver,min_order",
-                             [('rk4', 3.5), ('butcher5', 4.5)])
+                             [('rk4', 3.0), ('butcher5', 4.0)])
     def test_solver_convergence_order(self, solver, min_order):
         """Reference-free guard that rk4/butcher5 deliver their nominal high
         order on dC/dt=-kC. This permanently locks out the first-order Euler
         collapse caused by an erroneous extra ``* dt`` in ``_sum_k``: even if a
         golden above were re-captured from buggy code, the measured order would
-        drop to ~1 and fail here."""
+        drop to ~1 and fail here.
+
+        The step sizes 0.04/0.02 are chosen to keep both solvers' errors well
+        above the float64 roundoff floor (butcher5 reaches ~1e-15 by dt=0.005,
+        where rounding noise could perturb the measured order); the thresholds
+        (3.0 / 4.0) sit comfortably below the true orders (~4.0 / ~5.1) yet far
+        above Euler's 1.0, so the guard is robust across BLAS/numpy builds."""
         k = 2.0
         exact = np.exp(-k)  # integrate from C0=1 over t in [0, 1]
 
@@ -948,7 +954,7 @@ class TestOdeIntegrateRefactor:
                     C, {'C': '-R'}, {'R': 'k*C'}, {'k': k}, dt, solver=solver)
             return abs(float(C['C'][0]) - exact)
 
-        measured_order = np.log2(final_error(0.01) / final_error(0.005))
+        measured_order = np.log2(final_error(0.04) / final_error(0.02))
         assert measured_order >= min_order, (
             f"{solver} convergence order {measured_order:.2f} < {min_order} "
             "(possible reintroduction of the _sum_k double-dt Euler bug)")
