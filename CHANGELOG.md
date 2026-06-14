@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference-free convergence-order test locks the corrected order in. Users who
   tuned `dt` to the old behavior can increase `dt` for equivalent accuracy, or
   pin `porousmedialab<3` for byte-identical legacy runs.
+- `reconstruct_rates()` / `save_results_in_hdf5()` no longer raise when a model
+  mixes a constant-only (zero-order) rate with a species-dependent rate; rates
+  are broadcast to the spatial shape before stacking.
+- `Column.load_initial_conditions()` no longer raises for models containing a
+  no-transport / `D=0` species (e.g. pH or an immobile species); transport
+  matrices are only rebuilt for transported species.
+- `pHsolve()` now honors its `method` argument instead of always using
+  `Nelder-Mead`; the pH depth-scan now falls back to a full solve when the local
+  `+/-0.1` window edge is hit, so steep pH gradients between depths are resolved
+  correctly.
+- `Acid` now accepts `pKa=0.0` and array inputs (previously rejected by an
+  ambiguous truthiness check).
 
 ### Changed
 - **Unified negative-value clipping across all ODE paths via a per-species
@@ -25,8 +37,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Column.add_species` now accept `allow_negative=False`; the name `'Temperature'`
   is auto-enrolled for backward compatibility. This changes the default `scipy`
   path output only for signed variables.
-- Bumped to **3.0.0** (SemVer): the two changes above alter simulation output for
-  the affected solver/variable combinations.
+- Accessing an unknown attribute/species on a `Batch`/`Column` now raises
+  `AttributeError` instead of `KeyError`, so typos surface clearly and `hasattr`
+  behaves correctly.
+- `solve_henry_law` now rejects any non-positive Henry's constant (`HenryC <= 0`),
+  not only `-1`; non-positive constants are unphysical.
+- `metrics.rsquared` now raises `ValueError` on zero-variance observations
+  (delegating to the local `coefficient_of_determination`), where the previous
+  scikit-learn-backed implementation returned `0`/`NaN`.
+- The acid-base pH solver now warm-starts from the previous timestep; solver
+  strategy and tolerance-visible pH output may differ slightly from 2.2.0.
+- Bumped to **3.0.0** (SemVer): the changes above alter simulation output or
+  error behavior for the affected solver/variable/input combinations.
+
+### Removed
+- **scikit-learn is no longer a runtime dependency.** `metrics.rsquared` is now a
+  thin wrapper over the existing pure-NumPy `coefficient_of_determination`.
 
 ## [2.2.0] - 2026-06-03
 
