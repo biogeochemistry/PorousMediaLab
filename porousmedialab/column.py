@@ -141,8 +141,12 @@ class Column(ColumnPlottingMixin, Lab):
             self.species[elem]['init_conc'] = init_conc
             self.species[elem]['concentration'][:, 0] = self.species[elem]['init_conc']
             self.profiles[elem] = self.species[elem]['concentration'][:, 0]
-            self.template_AL_AR(elem)
-            self.update_matrices_due_to_bc(elem, 0)
+            # Only transported species have AL/AR/LU matrices to rebuild; a
+            # no-transport / D=0 species (e.g. pH or an immobile species) would
+            # raise in create_template_AL_AR. Mirror the add_species guard.
+            if self.species[elem]['int_transport']:
+                self.template_AL_AR(elem)
+                self.update_matrices_due_to_bc(elem, 0)
 
     def change_boundary_conditions(self, element, i, bc_top_value, bc_top_type,
                                    bc_bot_value, bc_bot_type):

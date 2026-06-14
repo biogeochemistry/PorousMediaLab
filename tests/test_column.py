@@ -598,3 +598,32 @@ class TestColumnSaveLoad:
         target.load_initial_conditions(directory=tmp_path)
 
         assert_allclose(target.species['C']['init_conc'], source.profiles['C'])
+
+    def test_load_initial_conditions_with_no_transport_species(self, tmp_path):
+        """Loading ICs for a model containing a no-transport / D=0 species must
+        not try to rebuild that species' (nonexistent) transport matrices."""
+        source = Column(length=4, dx=1, tend=0.01, dt=0.001, w=0)
+        source.add_species(
+            theta=1, name='O2', D=1.0, init_conc=np.linspace(0, 1, 5),
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=1, bc_bot_type='dirichlet')
+        source.add_species(
+            theta=1, name='immobile', D=0, init_conc=np.linspace(2, 3, 5),
+            bc_top_value=0, bc_top_type='flux',
+            bc_bot_value=0, bc_bot_type='flux', int_transport=False)
+        source.save_final_profiles(directory=tmp_path)
+
+        target = Column(length=4, dx=1, tend=0.01, dt=0.001, w=0)
+        target.add_species(
+            theta=1, name='O2', D=1.0, init_conc=0,
+            bc_top_value=0, bc_top_type='dirichlet',
+            bc_bot_value=1, bc_bot_type='dirichlet')
+        target.add_species(
+            theta=1, name='immobile', D=0, init_conc=0,
+            bc_top_value=0, bc_top_type='flux',
+            bc_bot_value=0, bc_bot_type='flux', int_transport=False)
+        target.load_initial_conditions(directory=tmp_path)  # must not raise
+
+        assert_allclose(target.species['immobile']['init_conc'],
+                        source.profiles['immobile'])
+        assert 'AL_lu' not in target.species['immobile']  # no factorization
