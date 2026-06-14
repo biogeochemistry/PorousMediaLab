@@ -269,3 +269,53 @@ class TestReconstructRates:
             conc = batch.species[sp]['concentration'][0, :]
             assert_allclose(batch.species[sp]['rates'][0, :],
                             np.diff(conc) / batch.dt, rtol=1e-7)
+
+
+class TestAllowNegativeClipping:
+    """P0 #2: signed state variables (allow_negative / 'Temperature') must keep
+    sub-zero values across every ODE path, while default species stay clipped to
+    the non-negative floor on the paths that apply it.
+
+    Note: ``scipy_sequential`` stores the raw integrator result without a
+    post-solve floor (pre-existing behavior), so default species are not floored
+    there; it is therefore excluded from the default-clip assertion below.
+    """
+
+    @pytest.mark.parametrize("method",
+                             ['scipy', 'scipy_sequential', 'rk4', 'butcher5'])
+    def test_temperature_stays_negative_all_methods(self, method):
+        """Temperature is auto-enrolled as allow_negative and must reach sub-zero
+        values in every ODE path (regression guard for the old default-scipy
+        floor at 1e-16)."""
+        batch = Batch(tend=1.0, dt=0.1, ode_method=method)
+        batch.add_species(name='Temperature', init_conc=5.0)
+        batch.constants['k'] = 10.0
+        batch.rates['Rc'] = 'k'
+        batch.dcdt['Temperature'] = '-Rc'
+        batch.solve(verbose=False)
+        final = batch.species['Temperature']['concentration'][0, -1]
+        assert final < -1.0, f"{method}: Temperature floored to {final}, expected ~ -5"
+
+    @pytest.mark.parametrize("method", ['scipy', 'rk4', 'butcher5'])
+    def test_default_species_still_clipped(self, method):
+        """A default (non-signed) species driven negative is floored at the
+        non-negative bound on every path that applies the floor."""
+        batch = Batch(tend=1.0, dt=0.1, ode_method=method)
+        batch.add_species(name='O2', init_conc=5.0)
+        batch.constants['k'] = 10.0
+        batch.rates['Rc'] = 'k'
+        batch.dcdt['O2'] = '-Rc'
+        batch.solve(verbose=False)
+        final = batch.species['O2']['concentration'][0, -1]
+        assert final >= -1e-9, f"{method}: default species not floored ({final})"
+
+    def test_allow_negative_kwarg_on_named_species(self):
+        """An explicit allow_negative=True species (not named Temperature) also
+        keeps sub-zero values on the default path."""
+        batch = Batch(tend=1.0, dt=0.1, ode_method='scipy')
+        batch.add_species(name='charge', init_conc=5.0, allow_negative=True)
+        batch.constants['k'] = 10.0
+        batch.rates['Rc'] = 'k'
+        batch.dcdt['charge'] = '-Rc'
+        batch.solve(verbose=False)
+        assert batch.species['charge']['concentration'][0, -1] < -1.0

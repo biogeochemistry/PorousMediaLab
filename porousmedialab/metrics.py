@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-from sklearn.metrics import r2_score
 
 
 def filter_nan(s, o):
@@ -245,12 +244,14 @@ def coefficient_of_determination(s, o):
 def rsquared(s, o):
     """
     coefficient of determination (r-squared)
-    using python sklern module
+
+    Backward-compatible alias for coefficient_of_determination. Previously backed
+    by sklearn's r2_score; scikit-learn was dropped as a dependency since the two
+    are mathematically identical for well-conditioned inputs.
     input:
         s: simulated
         o: observed
     output:
         r2: coefficient of determination
     """
-    s, o = filter_nan(s, o)
-    return r2_score(o, s)
+    return coefficient_of_determination(s, o)

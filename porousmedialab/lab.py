@@ -73,19 +73,33 @@ class Lab:
         self.N = 1
 
     def __getattr__(self, attr):
-        """dot notation for species
+        """dot-notation access to registered species (e.g. ``lab.O2``).
 
-        you can use lab.element and get
-        species dictionary
+        ``__getattr__`` runs only when normal attribute lookup fails, so this
+        resolves species names to their DotDict. Unknown names raise
+        ``AttributeError`` (not ``KeyError``) so typos surface clearly and
+        ``hasattr`` behaves correctly. ``_``-prefixed names, and any access
+        before ``species`` is initialised, are rejected immediately to avoid
+        infinite recursion (e.g. during copy/unpickle, which probe
+        ``__deepcopy__``/``__getstate__`` before ``__init__`` runs).
 
         Arguments:
             attr {str} -- name of the species
 
         Returns:
-            DotDict -- returns DotDict of species
-        """
+            DotDict -- DotDict of the requested species
 
-        return self.species[attr]
+        Raises:
+            AttributeError: if ``attr`` is not a registered species.
+        """
+        if attr.startswith('_') or 'species' not in self.__dict__:
+            raise AttributeError(attr)
+        try:
+            return self.__dict__['species'][attr]
+        except KeyError:
+            raise AttributeError(
+                f"{type(self).__name__!s} has no attribute or species '{attr}'"
+            ) from None
 
     def add_species(self, *args, **kwargs):
         """Register a chemical species on the model.
@@ -108,6 +122,50 @@ class Lab:
         """
         raise NotImplementedError(
             "transport_integrate is only defined for spatial models (e.g. Column)"
+        )
+
+    def integrate_one_timestep(self, i):
+        """Advance the coupled system by one timestep ``i``.
+
+        Contract method: each concrete model (``Batch``, ``Column``) defines its
+        own transport/reaction/equilibrium ordering.
+        """
+        raise NotImplementedError(
+            "integrate_one_timestep must be implemented by a Lab subclass "
+            "(e.g. Batch, Column)"
+        )
+
+    def add_time_variable(self):
+        """Register the model's time variable before solving.
+
+        Contract method: implemented by subclasses (``Batch`` adds a 'TIME'
+        species with d/dt = 1; ``Column`` is a no-op).
+        """
+        raise NotImplementedError(
+            "add_time_variable must be implemented by a Lab subclass "
+            "(e.g. Batch, Column)"
+        )
+
+    def create_acid_base_system(self):
+        """Build the acid-base ``System`` from registered components.
+
+        Contract method: implemented by subclasses, which differ in how the 'pH'
+        species is registered (0-D for ``Batch``, depth profile for ``Column``).
+        """
+        raise NotImplementedError(
+            "create_acid_base_system must be implemented by a Lab subclass "
+            "(e.g. Batch, Column)"
+        )
+
+    def update_matrices_due_to_bc(self, element, i):
+        """Apply boundary conditions to the transport right-hand side.
+
+        Contract method: only spatial models (``Column``) integrate transport;
+        zero-D models such as ``Batch`` never call this.
+        """
+        raise NotImplementedError(
+            "update_matrices_due_to_bc is only defined for spatial models "
+            "(e.g. Column)"
         )
 
     def save_results_in_hdf5(self, filename='results.h5'):
@@ -167,7 +225,7 @@ class Lab:
         if i == 100:
             total_t = len(self.time) * (
                 time.time() - self.start_computation_time
-            ) / 100 * self.dt / self.dt
+            ) / 100
             m, s = divmod(total_t, 60)
             h, m = divmod(m, 60)
             print(
@@ -222,12 +280,23 @@ class Lab:
                                                                         i]
                 c['pH_object'].conc = init_conc
             if idx_j == 0:
-                self.acid_base_system.pHsolve(guess=7, tol=1e-4)
+                # Warm-start the optimizer from the previous timestep's pH when
+                # it is a usable value, falling back to a neutral guess of 7.
+                guess = res if (np.isfinite(res) and 0 < res < 14) else 7.0
+                self.acid_base_system.pHsolve(guess=guess, tol=1e-4)
                 res = self.acid_base_system.pH
             else:
                 phs = np.linspace(res - 0.1, res + 0.1, 201)
                 idx = self.acid_base_system._diff_pos_neg(phs).argmin()
-                res = phs[idx]
+                if idx == 0 or idx == phs.size - 1:
+                    # The minimum sits on the scan-window edge, so the true pH
+                    # moved more than the +/-0.1 half-width between depths; a
+                    # local scan would be silently wrong. Fall back to a full
+                    # solve seeded at the previous depth's pH.
+                    self.acid_base_system.pHsolve(guess=res, tol=1e-4)
+                    res = self.acid_base_system.pH
+                else:
+                    res = phs[idx]
             self.species['pH']['concentration'][idx_j, i] = res
             self.profiles['pH'][idx_j] = res
 
@@ -242,7 +311,10 @@ class Lab:
         self.henry_law_equations.append({'aq': aq, 'gas': gas, 'Hcc': Hcc})
 
     def henry_equilibrium(self, aq, gas, Hcc):
-        """ For partition reactions between 2 species
+        """Backward-compatible alias for :meth:`add_partition_equilibrium`.
+
+        Kept because example notebooks call it directly; prefer
+        ``add_partition_equilibrium`` in new code.
 
         Args:
             aq (string): name of aquatic species
@@ -341,15 +413,28 @@ class Lab:
         exec(func_str, safe_globals, local_vars)
         return local_vars[func_name]
 
+    def _allow_negative_species(self):
+        """Set of species names exempt from the non-negative concentration floor.
+
+        Populated from the per-species ``allow_negative`` flag set in
+        ``add_species`` (auto-enabled for 'Temperature'). Used to keep signed
+        state variables (e.g. sub-zero temperature) intact across every ODE path.
+        """
+        return {name for name, sp in self.species.items()
+                if sp.get('allow_negative')}
+
     def create_dynamic_functions(self):
         """Create strings of dynamic functions for scipy solver and execute them.
 
         Uses exec() to compile the generated function strings. This approach is
         potentially not safe but is necessary for the dynamic ODE generation.
         """
+        allow_negative = self._allow_negative_species()
+
         # Single-point ODE (for backward compatibility with scipy_sequential)
         func_str = desolver.create_ode_function(
-            self.species, self.functions, self.constants, self.rates, self.dcdt)
+            self.species, self.functions, self.constants, self.rates, self.dcdt,
+            allow_negative=allow_negative)
         self.dynamic_functions['dydt_str'] = func_str
         self.dynamic_functions['dydt'] = self._exec_ode_function(func_str, 'f')
         self.dynamic_functions['solver'] = desolver.create_solver(
@@ -357,7 +442,8 @@ class Lab:
 
         # Vectorized ODE for all N points (default scipy method)
         vec_func_str = desolver.create_vectorized_ode_function(
-            self.species, self.functions, self.constants, self.rates, self.dcdt, self.N)
+            self.species, self.functions, self.constants, self.rates, self.dcdt,
+            self.N, allow_negative=allow_negative)
         self.dynamic_functions['dydt_vectorized_str'] = vec_func_str
         self.dynamic_functions['dydt_vectorized'] = self._exec_ode_function(
             vec_func_str, 'f_vectorized')
@@ -403,15 +489,16 @@ class Lab:
             self.dt,
             solver=self.ode_method)
 
-        try:
-            for rate_name, rate in rates_per_rate.items():
-                self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[
-                    rate_name]
-        except (KeyError, AttributeError):
-            pass
+        # init_rates_arrays() (run in pre_run_methods before the first
+        # integration) pre-allocates estimated_rates for every rate, so these
+        # keys are guaranteed to exist; a missing key now surfaces as a real
+        # error instead of being silently swallowed.
+        for rate_name in rates_per_rate:
+            self.estimated_rates[rate_name][:, i - 1] = rates_per_rate[rate_name]
 
+        allow_negative = self._allow_negative_species()
         for element in C_new:
-            if element != 'Temperature':
+            if element not in allow_negative:
                 # the concentration should be positive
                 C_new[element][C_new[element] < 0] = 0
             self.profiles[element] = C_new[element]
@@ -470,9 +557,17 @@ class Lab:
             self.dt
         )
 
-        # Reshape and clip to valid concentration range
+        # Reshape and clip to valid concentration range. Species flagged
+        # allow_negative (e.g. Temperature) keep a symmetric magnitude bound so
+        # they may stay below zero; all others keep the non-negative floor.
+        allow_negative = self._allow_negative_species()
+        lower_bounds = np.array([
+            -desolver.CONCENTRATION_CLIP_MAX if name in allow_negative
+            else desolver.CONCENTRATION_CLIP_MIN
+            for name in species_names
+        ]).reshape(num_species, 1)
         result = np.clip(result_flat.reshape(num_species, self.N),
-                         desolver.CONCENTRATION_CLIP_MIN,
+                         lower_bounds,
                          desolver.CONCENTRATION_CLIP_MAX)
 
         # Update species dictionaries with new concentrations
@@ -506,7 +601,8 @@ class Lab:
         # Use vectorized rate function - processes all N spatial points at once
         rates_vec_str = desolver.create_vectorized_rate_function(
             self.species, self.functions, self.constants, self.rates,
-            self.N, non_negative_rates=True)
+            self.N, non_negative_rates=True,
+            allow_negative=self._allow_negative_species())
         safe_globals = desolver.expression_namespace()
         local_vars = {}
         exec(rates_vec_str, safe_globals, local_vars)
@@ -541,12 +637,14 @@ class Lab:
 
     def _reconstruct_rates_numexpr(self):
         """Reconstruct rates for the explicit (rk4 / butcher5) solvers by
-        evaluating each rate expression with numexpr, clamped to non-negative.
+        evaluating each rate expression with numexpr over the full (N, T)
+        concentration arrays at once, clamped to non-negative.
+
+        numexpr evaluates the whole time axis in one call per rate, replacing the
+        previous nested timestep/rate Python loop that rebuilt the concentration
+        dict on every iteration.
         """
-        for idx_t in range(len(self.time)):
-            for name, rate in self.rates.items():
-                conc = {}
-                for spc in self.species:
-                    conc[spc] = self.species[spc]['concentration'][:, idx_t]
-                r = ne.evaluate(rate, {**self.constants, **conc})
-                self.estimated_rates[name][:, idx_t] = r * (r > 0)
+        conc = {spc: self.species[spc]['concentration'] for spc in self.species}
+        for name, rate in self.rates.items():
+            r = ne.evaluate(rate, {**self.constants, **conc})
+            self.estimated_rates[name][:, :] = r * (r > 0)

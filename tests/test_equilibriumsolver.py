@@ -74,7 +74,9 @@ class TestInputValidation:
     """Tests for input validation in Henry's Law solver."""
 
     def test_solve_henry_law_raises_on_invalid_constant(self):
-        """Test that HenryC = -1 raises ValueError."""
+        """Non-positive Henry's constants are unphysical and must raise
+        ValueError (covers the old -1 division-by-zero case and 0)."""
         total_conc = np.array([1.0, 2.0, 3.0])
-        with pytest.raises(ValueError, match="cannot be -1"):
-            solve_henry_law(total_conc, HenryC=-1)
+        for bad in (-1, 0, -0.5):
+            with pytest.raises(ValueError, match="must be positive"):
+                solve_henry_law(total_conc, HenryC=bad)

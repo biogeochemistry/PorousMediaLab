@@ -4,40 +4,37 @@
 import numpy as np
 
 
+def _effective_saturation(psi, pars):
+    """Effective saturation Se(psi), vectorized over a psi array or scalar.
+
+    Se = 1 for psi >= 0 (saturated); the van Genuchten expression otherwise.
+    ``np.where`` evaluates both branches, but the unsaturated expression is
+    finite for psi >= 0 too (positive base), so no NaN/warning is produced.
+    """
+    psi = np.asarray(psi, dtype=float)
+    return np.where(
+        psi >= 0.0,
+        1.0,
+        (1 + np.abs(psi * pars['alpha'])**pars['n'])**(-pars['m']))
+
+
 def thetaFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+    Se = _effective_saturation(psi, pars)
     return pars['thetaR'] + (pars['thetaS'] - pars['thetaR']) * Se
 
 
-thetaFun = np.vectorize(thetaFun)
-
-
 def CFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+    Se = _effective_saturation(psi, pars)
+    # At Se == 1 (psi >= 0) this evaluates to 0, matching the saturated case.
     dSedh = pars['alpha'] * pars['m'] / \
         (1 - pars['m']) * Se**(1 / pars['m']) * \
         (1 - Se**(1 / pars['m']))**pars['m']
     return Se * pars['Ss'] + (pars['thetaS'] - pars['thetaR']) * dSedh
 
 
-CFun = np.vectorize(CFun)
-
-
 def KFun(psi, pars):
-    if psi >= 0.:
-        Se = 1.
-    else:
-        Se = (1 + abs(psi * pars['alpha'])**pars['n'])**(-pars['m'])
+    Se = _effective_saturation(psi, pars)
     return pars['Ks'] * Se**pars['neta'] * (1 - (1 - Se**(1 / pars['m']))**pars['m'])**2
-
-
-KFun = np.vectorize(KFun)
 
 
 def setpars():

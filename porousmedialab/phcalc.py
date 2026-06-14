@@ -97,25 +97,28 @@ class Acid(object):
 
     def __init__(self, Ka=None, pKa=None, charge=None, conc=None):
         # Do a couple quick checks to make sure that everything has been
-        # defined.
-        if not Ka and not pKa:
+        # defined. Use ``is None`` rather than truthiness so that a falsy-but-
+        # valid input (e.g. ``pKa=0.0``) or a NumPy array (whose truth value is
+        # ambiguous) is handled correctly. When both Ka and pKa are supplied, Ka
+        # takes precedence.
+        if Ka is None and pKa is None:
             raise ValueError(
                 "You must define either Ka or pKa values.")
-        elif charge is None:
+        if charge is None:
             raise ValueError(
                 "The maximum charge for this acid must be defined.")
 
         # Make sure both Ka and pKa are calculated. For lists of values, be
         # sure to sort them to ensure that the most acidic species is defined
         # first.
-        elif not Ka:
+        if Ka is None:
             if isinstance(pKa, (int, float)):
                 self.pKa = np.array([pKa, ], dtype=float)
             else:
                 self.pKa = np.array(pKa, dtype=float)
                 self.pKa.sort()
             self.Ka = 10**(-self.pKa)
-        elif not pKa:
+        else:
             if isinstance(Ka, (int, float)):
                 self.Ka = np.array([Ka, ], dtype=float)
             else:
@@ -306,7 +309,7 @@ class System(object):
             guess = phs[guess_idx]
 
         self.pHsolution = spo.minimize(self._diff_pos_neg, guess,
-                                       method='Nelder-Mead', tol=tol)
+                                       method=method, tol=tol)
 
         if not self.pHsolution.success:
             print('Warning: Unsuccessful pH optimization!')
