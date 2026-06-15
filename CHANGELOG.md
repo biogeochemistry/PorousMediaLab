@@ -5,7 +5,9 @@ All notable changes to PorousMediaLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] (3.0.0)
+## [Unreleased]
+
+## [3.0.0] - 2026-06-15
 
 ### Fixed
 - **Restored 4th/5th-order accuracy of the `rk4` and `butcher5` ODE solvers.** A
