@@ -10,6 +10,16 @@
 
 The toolbox for batch and 1D reactive transport modelling in porous media aimed at the easiness of use for the user without computational background.
 
+## What's New in v3.0.0
+
+**Numerical-correctness fixes and a leaner, faster solver** (major release — see the [CHANGELOG](CHANGELOG.md) for behavior changes):
+
+- Restored true 4th/5th-order accuracy for the `rk4` and `butcher5` ODE solvers — a stage-arithmetic bug had silently reduced both to first-order (Euler) accuracy
+- Unified negative-value clipping across all ODE paths via a per-species `allow_negative` flag (`Temperature` auto-enrolled), so legitimately negative variables survive on the default solver
+- ~4x faster column transport via cached LU factorization; vectorized van Genuchten functions and rate reconstruction
+- Dropped the `scikit-learn` dependency; accessing an unknown species/attribute now raises `AttributeError`
+- Test suite expanded to 411 tests
+
 ## What's New in v2.2.0
 
 **Robustness and maintainability** improvements with expanded test coverage:
@@ -90,7 +100,7 @@ make clean         # Clean build artifacts
 - Install Python version 3.10 or higher ([click](https://www.python.org/downloads/));
 - Download and unzip or clone (using git) this repository (PorousMediaLab);
 - Open terminal and go to the PorousMediaLab folder using ```cd``` command. If you have problems with the terminal, check this [guide](https://www.davidbaumgold.com/tutorials/command-line/);
-- Install dependencies: ```pip install numpy numexpr scipy matplotlib seaborn h5py scikit-learn```
+- Install dependencies: ```pip install numpy numexpr scipy matplotlib seaborn h5py```
 - In terminal run command ```jupyter notebook```;
 - You will see the folders of the PorousMediaLab project; you can go in "examples" folder and play with them.
 
